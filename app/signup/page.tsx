@@ -1,4 +1,5 @@
 "use client";
+import { cn } from "@/lib/utils";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,9 @@ import {
 } from "@/components/ui/field";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
@@ -24,6 +27,7 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateForm = () => {
     if (!fullName.trim()) {
@@ -71,10 +75,12 @@ export default function SignupPage() {
       }
 
       // Create auth user
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      const { data: authData, error: signUpError } = await supabase.auth.signUp(
+        {
+          email,
+          password,
+        }
+      );
 
       if (signUpError) {
         throw new Error(signUpError.message || "Signup failed");
@@ -87,7 +93,9 @@ export default function SignupPage() {
       console.log("✅ Auth user created:", authData.user.email);
 
       // Create a simple hash for password_hash field
-      const passwordHash = `$2a$10$${Buffer.from(password).toString('base64').substring(0, 53)}`;
+      const passwordHash = `$2a$10$${Buffer.from(password)
+        .toString("base64")
+        .substring(0, 53)}`;
 
       // Create user record in users table
       const { error: userError } = await supabase.from("users").insert([
@@ -132,150 +140,186 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md">
-        <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <div className="flex flex-col items-center gap-2 text-center">
-              <h1 className="text-4xl md:text-5xl font-bold text-[#244672] my-3">
-                Create Account
-              </h1>
-              <FieldDescription>
-                Already have an account?{" "}
-                <a href="/login" className="text-green-600 hover:underline font-medium">
-                  Sign in
-                </a>
-              </FieldDescription>
-            </div>
-
-            <Field>
-              <FieldLabel>Full Name</FieldLabel>
-              <Input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="John Doe"
-                className="py-5 border border-gray-400 rounded-none"
-                required
-                disabled={loading || success}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel>Email</FieldLabel>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="m@example.com"
-                className="py-5 border border-gray-400 rounded-none"
-                required
-                disabled={loading || success}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel>Phone (Optional)</FieldLabel>
-              <Input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+254 712 345 678"
-                className="py-5 border border-gray-400 rounded-none"
-                disabled={loading || success}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel>Password</FieldLabel>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="py-5 border border-gray-400 rounded-none"
-                placeholder="At least 8 characters"
-                required
-                disabled={loading || success}
-              />
-              <FieldDescription className="text-xs text-slate-500 mt-1">
-                Password must be at least 8 characters long
-              </FieldDescription>
-            </Field>
-
-            <Field>
-              <FieldLabel>Confirm Password</FieldLabel>
-              <Input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="py-5 border border-gray-400 rounded-none"
-                placeholder="Re-enter your password"
-                required
-                disabled={loading || success}
-              />
-            </Field>
-
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                Account created successfully! Redirecting to login...
-              </div>
-            )}
-
-            <Field>
-              <Button
-                className="py-5 text-lg bg-[#33B200] hover:bg-[#2a9500] w-full"
-                type="submit"
-                disabled={loading || success}
-              >
-                {loading ? "Creating Account..." : success ? "Account Created!" : "Sign Up"}
-              </Button>
-            </Field>
-
-            {/* <FieldSeparator>Or</FieldSeparator>
-
-            <Field className="grid gap-4 sm:grid-cols-1">
-              <Button
-                variant="outline"
-                className="border border-gray-300 py-5"
-                type="button"
-                disabled={loading || success}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  className="w-5 h-5 mr-2"
-                >
-                  <path
-                    d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                    fill="currentColor"
+    <div className="bg-backgro und bg-[#b38f62]/30 flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+      <Card className="overflow-hidden w-full mx-auto max-w-5xl lg:mx-40 p-0">
+        <CardContent className="grid p-0 md:grid-cols-2">
+          <form onSubmit={handleSubmit} className="p-6 md:p-8">
+            <FieldGroup>
+              <div className="flex flex-col items-center gap-2 text-center">
+                <Link href="/" className="flex items-center gap-2">
+                  <img
+                    src="/logo.png"
+                    alt="Peckers Services Logo"
+                    className="h-12 sm:h-14 lg:h-24 w-auto"
                   />
-                </svg>
-                Continue with Google
-              </Button>
-            </Field> */}
+                </Link>
+                <h1 className="text-2xl font-bold">Create Account</h1>
+                <p className="text-muted-foreground text-balance">
+                  Fill in your details to get started
+                </p>
+              </div>
 
-            <FieldDescription className="px-6 text-center text-xs">
-              By signing up, you agree to our <br />{" "}
-              <a href="#" className="hover:underline">
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a href="#" className="hover:underline">
-                Privacy Policy
-              </a>
-              .
-            </FieldDescription>
-          </FieldGroup>
-        </form>
-      </div>
+              <Field>
+                <FieldLabel htmlFor="fullName">Full Name</FieldLabel>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="John Doe"
+                  required
+                  disabled={loading || success}
+                />
+              </Field>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Field>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="m@example.com"
+                    required
+                    disabled={loading || success}
+                  />
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="phone">Phone (Optional)</FieldLabel>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+254 712 345 678"
+                    disabled={loading || success}
+                  />
+                </Field>
+              </div>
+
+              <Field>
+                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 8 characters"
+                    required
+                    disabled={loading || success}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={loading}
+                    className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <FieldDescription className="text-xs text-slate-500 mt-1">
+                  Password must be at least 8 characters long
+                </FieldDescription>
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="confirmPassword">
+                  Confirm Password
+                </FieldLabel>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter your password"
+                    required
+                    disabled={loading || success}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={loading}
+                    className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </Field>
+
+              {error && (
+                <div className="flex gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-md">
+                  <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+
+              {success && (
+                <div className="flex gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-md">
+                  <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-emerald-700">
+                    Account created successfully! Redirecting...
+                  </p>
+                </div>
+              )}
+
+              <Field>
+                <Button
+                  type="submit"
+                  disabled={loading || success}
+                  className="w-full"
+                >
+                  {loading
+                    ? "Creating Account..."
+                    : success
+                    ? "Account Created!"
+                    : "Sign Up"}
+                </Button>
+              </Field>
+
+              <FieldDescription className="text-center">
+                Already have an account?{" "}
+                <Link href="/login" className="font-semibold hover:underline">
+                  Login
+                </Link>
+              </FieldDescription>
+            </FieldGroup>
+          </form>
+
+          <div className="bg-muted relative hidden md:block">
+            <img
+              src="https://www.care.com/c/wp-content/uploads/sites/2/2022/07/GettyImages-1305309025.jpg"
+              alt="Image"
+              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.9] dark:grayscale"
+            />
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-black/50"></div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <FieldDescription className="px-6 text-center">
+        By clicking continue, you agree to our{" "}
+        <Link href="/terms" className="hover:underline">
+          Terms of Service
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="hover:underline">
+          Privacy Policy
+        </Link>
+        .
+      </FieldDescription>
     </div>
   );
 }
