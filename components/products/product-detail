@@ -1,0 +1,88 @@
+// app/products/[slug]/page.tsx
+import { getProductById } from '@/lib/products'
+import { notFound } from 'next/navigation'
+
+interface ProductDetailProps {
+  params: {
+    slug: string
+  }
+}
+
+export default async function ProductDetail({ params }: ProductDetailProps) {
+  try {
+    const product = await getProductById(params.slug)
+
+    if (!product) {
+      notFound()
+    }
+
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Image */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <img
+              src={product.image_url}
+              alt={product.name}
+              className="w-full h-96 object-cover rounded"
+            />
+          </div>
+
+          {/* Product Details */}
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold">{product.name}</h1>
+              <p className="text-gray-600 mt-2">{product.category}</p>
+            </div>
+
+            {/* Rating */}
+            <div className="flex items-center space-x-2">
+              <div className="flex text-yellow-400">
+                {'★'.repeat(Math.round(product.rating || 0))}
+              </div>
+              <span className="text-gray-600">({product.review_count} reviews)</span>
+            </div>
+
+            {/* Price */}
+            <div>
+              {product.is_on_sale ? (
+                <div className="flex items-center space-x-3">
+                  <span className="text-3xl font-bold text-green-600">${product.sale_price}</span>
+                  <span className="text-xl text-gray-400 line-through">${product.price}</span>
+                  <span className="text-red-600 font-bold">{product.discount_percentage}% OFF</span>
+                </div>
+              ) : (
+                <span className="text-3xl font-bold">${product.price}</span>
+              )}
+            </div>
+
+            {/* Stock Status */}
+            <div>
+              {product.stock > product.low_stock_threshold ? (
+                <p className="text-green-600 font-semibold">In Stock</p>
+              ) : product.stock > 0 ? (
+                <p className="text-orange-600 font-semibold">Only {product.stock} left</p>
+              ) : (
+                <p className="text-red-600 font-semibold">Out of Stock</p>
+              )}
+            </div>
+
+            {/* Description */}
+            <div className="border-t pt-4">
+              <h3 className="font-semibold text-lg mb-2">Description</h3>
+              <p className="text-gray-700">{product.description}</p>
+            </div>
+
+            {/* Add to Cart Button */}
+            <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  } catch (error) {
+    console.error('Error loading product:', error)
+    notFound()
+  }
+}
