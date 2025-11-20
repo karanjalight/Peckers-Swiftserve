@@ -39,40 +39,40 @@ const navData = {
       icon: BarChart3,
       isActive: true,
     },
-    {
-      title: "Products",
-      url: "/admin/products",
-      icon: Box,
-      isActive: true,   
-      items: [
-        {
-          title: "All Products",
-          url: "/admin/products",
-        },
-        {
-          title: "Add Product",
-          url: "/admin/products/create",
-        },
-        // {
-        //   title: "Categories",
-        //   url: "/admin/categories",
-        // },
-      ],
-    },
+    // {
+    //   title: "Products",
+    //   url: "/admin/products",
+    //   icon: Box,
+    //   isActive: true,   
+    //   items: [
+    //     {
+    //       title: "All Products",
+    //       url: "/admin/products",
+    //     },
+    //     {
+    //       title: "Add Product",
+    //       url: "/admin/products/create",
+    //     },
+    //     // {
+    //     //   title: "Categories",
+    //     //   url: "/admin/categories",
+    //     // },
+    //   ],
+    // },
 
     
 
-    {
-      title: "Orders",
-      url: "/admin/orders",
-      icon: ShoppingCart,
-    },
-    {
-      title: "Customers",
-      url: "/admin/customers",
-      icon: Users,
-      isActive: true,
-    },
+    // {
+    //   title: "Orders",
+    //   url: "/admin/orders",
+    //   icon: ShoppingCart,
+    // },
+    // {
+    //   title: "Customers",
+    //   url: "/admin/customers",
+    //   icon: Users,
+    //   isActive: true,
+    // },
     // ⭐⭐⭐ NEW BLOGS SECTION ⭐⭐⭐
     {
       title: "Blogs",
