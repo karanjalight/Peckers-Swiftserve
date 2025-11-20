@@ -17,11 +17,11 @@ export default function AboutHero({
   title,
   highlight,
   breadcrumbs = [],
-  background = "/about-3.JPG",
+  background =     "https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-13-1024x683.jpeg",
 }: AboutHeroProps) {
   return (
     <section
-    className="relative flex lg:h-[53vh] h-[50%] flex-col md:flex-row items-center  lg:justify-between px-6 sm:px-10 md:px-32 py-8 md:py-20 bg-cover md:bg-bottom bg-no-repeat bg-bottom text-white"
+    className="relative flex lg:h-[53vh] h-[50%] flex-col md:flex-row items-center  lg:justify-between px-6 sm:px-10 md:px-32 py-8 md:py-20 bg-cover md:bg-center bg-no-repeat bg-bottom text-white"
     style={{ backgroundImage: `url('${background}')` }}
     >
       {/* Overlays */}
@@ -33,7 +33,7 @@ export default function AboutHero({
       <div className="relative z-10 lg:my-40 my-40 sm:mt-28  text-center ">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight">
             {title}{" "}
-            <span className="text-[#33B200] ml-2">{highlight}</span>
+            <span className="text-[#b38f62] ml-2">{highlight}</span>
           </h1>
 
           {/* Breadcrumbs */}
@@ -68,8 +68,8 @@ export default function AboutHero({
                       href={crumb.href || "#"}
                       className={`text-sm font-medium ${
                         index === breadcrumbs.length - 1
-                          ? "text-[#33B200]"
-                          : "text-white hover:text-[#33B200]"
+                          ? "text-[#b38f62]"
+                          : "text-white hover:text-[#b38f62]"
                       } no-underline`}
                     >
                       {crumb.label}

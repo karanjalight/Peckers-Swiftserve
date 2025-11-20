@@ -17,7 +17,7 @@ export default function ProductHero({
   title,
   highlight,
   breadcrumbs = [],
-  background = "/bb1.JPG",
+  background =  "https://www.blueline-kennels.com/wp-content/uploads/2023/09/Security-Services-Strip-I-scaled.jpg",
 }: ProductHeroProps) {
   return (
     <section

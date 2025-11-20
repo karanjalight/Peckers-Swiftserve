@@ -18,7 +18,7 @@ export default function BlogHero({
   title,
   highlight,
   breadcrumbs = [],
-  background = "/bb10.JPG",
+  background = "https://media.cntravellerme.com/photos/66c317d16aacc794b5e81302/16:9/w_2560%2Cc_limit/517003864",
   coverImage,
   useCoverImage = false,
 }: BlogHeroProps) {
@@ -39,7 +39,7 @@ export default function BlogHero({
         <div className="relative z-10 lg:my-40 my-20 sm:mt-28 text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight">
             {title}{" "}
-            <span className="text-[#33B200] ml-2">{highlight}</span>
+            <span className="text-[#b38f62] ml-2">{highlight}</span>
           </h1>
 
           {/* Breadcrumbs */}
@@ -74,8 +74,8 @@ export default function BlogHero({
                       href={crumb.href || "#"}
                       className={`text-sm font-medium ${
                         index === breadcrumbs.length - 1
-                          ? "text-[#33B200]"
-                          : "text-white hover:text-[#33B200]"
+                          ? "text-[#b38f62]"
+                          : "text-white hover:text-[#b38f62]"
                       } no-underline`}
                     >
                       {crumb.label}
