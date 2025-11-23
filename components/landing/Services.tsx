@@ -28,7 +28,7 @@ export default function Home() {
   };
 
   return (
-    <div className="w-full flex flex-col lg:flex-row items-end  ">
+    <div className="w-full flex flex-col lg:gap-10  lg:flex-row items-end  ">
       <div className="relative lg:w-1/3 lg:h-[70vh] h-[30vh]">
         {/* Adjust h-64 to your desired height */}
         <img
@@ -38,12 +38,8 @@ export default function Home() {
         />
         <div className="absolute bottom-0 right-0 bg-white text-gray-700 px-5 lg:py-6 ">
           <div>
-            <h2 className="lg:text-3xl text-xl font-bold " >
-                Verified
-            </h2>
-            <p className="text-sm">
-                Service Provider
-            </p>
+            <h2 className="lg:text-3xl text-xl font-bold ">Verified</h2>
+            <p className="text-sm">Service Provider</p>
           </div>
         </div>
       </div>
@@ -57,7 +53,17 @@ export default function Home() {
 
             {/* Subheading */}
             <p className="text-gray-600 text-md mb-12 max-w-2xl">
-              Peckers Services Ltd operates at the intersection of family reliability, workplace efficiency, and modern lifestyle convenience. We bring together Household Support, Corporate Training, and Performance Analytics under one trusted brand.
+            Peckers Swiftserve Ltd is Kenya’s ﬁrst fully
+integrated provider of Household Support and
+Corporate Productivity Solutions. We operate at
+the intersection of family reliability, workplace
+efﬁciency, and modern lifestyle convenience. As
+Kenya’s work life dynamics evolve, Families and
+organizations increasingly need trusted,
+professional, reliable and tech enables support.
+Peckers answers this need through a structured
+compliant and performance driven service
+model.
             </p>
 
             {/* Features Grid */}
@@ -78,7 +84,8 @@ export default function Home() {
                     6-Hour Deployment
                   </h3>
                   <p className="text-gray-600 text-md lg:pr-5">
-                    Fast response time for <br /> backup nannies when <br /> you need them most.
+                    Fast response time for <br /> backup nannies when <br /> you
+                    need them most.
                   </p>
                 </div>
               </div>
@@ -86,10 +93,11 @@ export default function Home() {
               {/* Feature 2: Affordable Cost Installation */}
               <div className="flex items-start gap-4">
                 <div className="bg-purple-100 p-3  flex-shrink-0">
-                  <img src="/landing-1.png"
-                      alt="Professional Services"
-                      className="h-9 w-auto"
-                    />
+                  <img
+                    src="/landing-1.png"
+                    alt="Professional Services"
+                    className="h-9 w-auto"
+                  />
                 </div>
                 <div>
                   <h3 className="font-bold text-[#02273f] text-lg mb-2">
@@ -112,7 +120,15 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-[#02273f] flex-shrink-0" />
-                <span className="text-gray-700">Pharma & Corporate Training</span>
+                <span className="text-gray-700">
+                  Pharma & Corporate Training
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-[#02273f] flex-shrink-0" />
+                <span className="text-gray-700">
+                Contract-Managed Nannies
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-[#02273f] flex-shrink-0" />
@@ -120,19 +136,22 @@ export default function Home() {
                   Performance Dashboards & Analytics
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-5 h-5 text-[#02273f] flex-shrink-0" />
-                <span className="text-gray-700">Technology-Backed Services</span>
-              </div>
+              
             </div>
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4">
-              <Link href="/about" className="flex lg:w-60 w-full text-center justify-center items-center gap-2 px-6 py-3 border-2 border-[#b38f62] text-[#8a5f2c]  font-semibold hover:bg-[#b38f62] hover:text-white transition-all duration-300 group">
+              <Link
+                href="/about"
+                className="flex lg:w-60 w-full text-center justify-center items-center gap-2 px-6 py-3 border-2 border-[#b38f62] text-[#8a5f2c]  font-semibold hover:bg-[#b38f62] hover:text-white transition-all duration-300 group"
+              >
                 Our Services
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href="/contact" className="flex lg:w-60 w-full text-center justify-center items-center gap-2 px-6 py-3 bg-[#b38f62] text-white  font-semibold hover:bg-sky-500 transition-all duration-300 shadow-lg hover:shadow-xl group">
+              <Link
+                href="/contact"
+                className="flex lg:w-60 w-full text-center justify-center items-center gap-2 px-6 py-3 bg-[#b38f62] text-white  font-semibold hover:bg-sky-500 transition-all duration-300 shadow-lg hover:shadow-xl group"
+              >
                 Contact Us
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>

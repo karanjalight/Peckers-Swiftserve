@@ -71,31 +71,14 @@ interface Service {
 }
 
 export default function ServicesShowcase() {
-  const [activeTab, setActiveTab] = useState<string>("Corporate Training");
+  const [activeTab, setActiveTab] = useState<string>("House Hold");
 
   const cards: Service[] = [
-    {
-      id: 4,
-      title: "Graduate Medical Rep Training",
-      color: "Corporate Training",
-      icon: TrainingIcon,
-      image: "https://www.netcare.co.za/Portals/_default/Images/Education-training/fecc-02.jpg",
-      gradient: "from-indigo-700/30 to-indigo-900/50",
-      slug: "services/mr-training",
-    },
-    {
-      id: 5,
-      title: "Corporate MR Upskilling",
-      color: "Corporate Training",
-      icon: TrainingIcon,
-      image: "https://www.ku.ac.ke/wp-content/uploads/2025/11/sika3.jpeg",
-      gradient: "from-indigo-700/30 to-indigo-900/50",
-      slug: "services/mr-upskilling",
-    },
+    
     {
       id: 1,
       title: "Backup & Emergency Nannies",
-      color: "Household",
+      color: "House Hold",
       icon: NannyIcon,
       image: "https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-4-1024x683.jpeg",
       gradient: "from-purple-700/30 to-purple-900/50",
@@ -104,7 +87,7 @@ export default function ServicesShowcase() {
     {
       id: 2,
       title: "Sunday / Day-Bug Nanny Services",
-      color: "Household",
+      color: "House Hold",
       icon: NannyIcon,
       image: "https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-3-1024x683.jpeg",
       gradient: "from-purple-700/30 to-purple-900/50",
@@ -113,7 +96,7 @@ export default function ServicesShowcase() {
     {
       id: 3,
       title: "Contract-Managed Nannies",
-      color: "Household",
+      color: "House Hold",
       icon: NannyIcon,
       image: "https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-5-1024x683.jpeg",
       gradient: "from-purple-700/30 to-purple-900/50",
@@ -122,7 +105,7 @@ export default function ServicesShowcase() {
     {
       id: 6,
       title: "Performance Dashboards",
-      color: "Analytics",
+      color: "Corporate",
       icon: AnalyticsIcon,
       image: "https://www.slideteam.net/media/catalog/product/cache/1280x720/b/u/business_performance_dashboard_supplier_relationship_management_supplier_strategy_slide01.jpg",
       gradient: "from-blue-700/30 to-blue-900/50",
@@ -130,12 +113,30 @@ export default function ServicesShowcase() {
     },
     {
       id: 7,
-      title: "Temporary Security & Dog Handlers",
-      color: "Security",
+      title: "Temporary Security with Guard Dogs",
+      color: "House Hold",
       icon: SecurityIcon,
       image: "https://www.sgasecurity.com/application/files/4817/0988/9136/k-9-1.jpg",
-      gradient: "from-red-700/30 to-red-900/50",
+      gradient: "from-purple-700/30 to-purple-900/50",
       slug: "services/security-dogs",
+    },
+    {
+      id: 4,
+      title: "Graduate Medical Rep Training",
+      color: "Corporate",
+      icon: TrainingIcon,
+      image: "https://www.netcare.co.za/Portals/_default/Images/Education-training/fecc-02.jpg",
+      gradient: "from-indigo-700/30 to-indigo-900/50",
+      slug: "services/mr-training",
+    },
+    {
+      id: 5,
+      title: "Corporate MR Upskilling",
+      color: "Corporate",
+      icon: TrainingIcon,
+      image: "https://www.ku.ac.ke/wp-content/uploads/2025/11/sika3.jpeg",
+      gradient: "from-indigo-700/30 to-indigo-900/50",
+      slug: "services/mr-upskilling",
     },
   ];
 
@@ -167,7 +168,7 @@ export default function ServicesShowcase() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-8 py-3 transition-all duration-300 ${
+              className={`px-8 lg:px-12 py-3 transition-all duration-300 ${
                 activeTab === tab
                   ? "bg-[#b38f62] text-white"
                   : "bg-white text-gray-700 border-2 border-gray-300 hover:border-purple-800 hover:text-purple-800"
