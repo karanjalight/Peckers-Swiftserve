@@ -19,6 +19,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import ProductsHero from "@/components/hero/ProductsHero";
+import SecurityForm from "@/components/forms/SecurityForm";
 
 export default function TemporarySecurity() {
   const [showForm, setShowForm] = useState(false);
@@ -39,157 +40,12 @@ export default function TemporarySecurity() {
             <p className="text-gray-600 mb-10 text-lg leading-relaxed">
               Going on leave, working night shifts, or leaving home temporarily?
               Get professional armed response + trained guard dogs deployed to
-              your premises <span className="text-[#b38f62] font-semibold">within hours</span>.
+              your premises{" "}
+              <span className="text-[#b38f62] font-semibold">within hours</span>
+              .
             </p>
 
-            <form className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Full Name *
-                  </label>
-                  <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
-                    <User className="text-[#244672] w-5 h-5" />
-                    <input
-                      type="text"
-                      className="w-full bg-transparent focus:outline-none"
-                      placeholder="Enter your full name"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Phone Number *
-                  </label>
-                  <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
-                    <Phone className="text-[#244672] w-5 h-5" />
-                    <input
-                      type="tel"
-                      className="w-full bg-transparent focus:outline-none"
-                      placeholder="0700 000 000"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Email (Optional)
-                  </label>
-                  <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
-                    <Mail className="text-[#244672] w-5 h-5" />
-                    <input
-                      type="email"
-                      className="w-full bg-transparent focus:outline-none"
-                      placeholder="example@gmail.com"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Property Location *
-                  </label>
-                  <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
-                    <MapPin className="text-[#244672] w-5 h-5" />
-                    <input
-                      type="text"
-                      className="w-full bg-transparent focus:outline-none"
-                      placeholder="e.g. Karen, Runda, Kitengela, Thika..."
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Start Date *
-                  </label>
-                  <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
-                    <Calendar className="text-[#244672] w-5 h-5" />
-                    <input
-                      type="date"
-                      className="w-full bg-transparent focus:outline-none"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Duration *
-                  </label>
-                  <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
-                    <Clock className="text-[#244672] w-5 h-5" />
-                    <select className="w-full bg-transparent focus:outline-none" required>
-                      <option value="">Select duration</option>
-                      <option>1–3 nights</option>
-                      <option>4–7 nights</option>
-                      <option>1–4 weeks</option>
-                      <option>1–2 months</option>
-                      <option>Custom</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Number of Guard Dogs Needed
-                  </label>
-                  <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
-                    <Dog className="text-[#244672] w-5 h-5" />
-                    <select className="w-full bg-transparent focus:outline-none">
-                      <option>1 Guard Dog + Handler</option>
-                      <option>2 Guard Dogs + Handlers</option>
-                      <option>3+ (Large compound/estate)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Reason for Temporary Security
-                  </label>
-                  <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
-                    <AlertTriangle className="text-[#244672] w-5 h-5" />
-                    <select className="w-full bg-transparent focus:outline-none">
-                      <option>Family travel / vacation</option>
-                      <option>Night shift work</option>
-                      <option>House help exited</option>
-                      <option>Construction / renovation period</option>
-                      <option>High-risk period</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="block text-gray-700 font-medium mb-2">
-                  Additional Notes / Special Instructions
-                </label>
-                <div className="flex items-start border rounded-lg p-3 gap-3 bg-gray-50">
-                  <FileText className="text-[#244672] w-5 h-5 mt-1" />
-                  <textarea
-                    className="w-full bg-transparent h-32 focus:outline-none"
-                    placeholder="Property size, entry points, existing alarms, aggressive dog preference, etc..."
-                  ></textarea>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-[#b38f62] text-white py-4 text-lg font-semibold hover:bg-[#b38f62] transition"
-              >
-                Deploy Security Team Now
-              </button>
-
-              <p className="text-center text-sm text-gray-500 mt-2">
-                You will receive a call within 15 minutes to confirm deployment ✔
-              </p>
-            </form>
+            <SecurityForm />
           </section>
         )}
 
@@ -197,7 +53,7 @@ export default function TemporarySecurity() {
         {!showForm && (
           <section className="lg:w-2/3">
             <div className="lg:mb-10 bg-white lg:px-8 lg:py-8 p-4">
-              <div className="px-4 lg:px-4 py-12 md:py-16">
+              <div className="px-4 lg:px-4 py-12 md:py-4">
                 <h1 className="text-3xl md:text-4xl font-bold text-[#244672] mb-8 md:mb-12">
                   Temporary Security Services with Guard Dogs
                 </h1>
@@ -219,9 +75,11 @@ export default function TemporarySecurity() {
                     </h2>
 
                     <p className="text-gray-800 leading-relaxed text-lg">
-                      Traveling? Night shifts? House help just left? Don’t leave your home vulnerable.
-                      Peckers Swift Swerve deploys armed response officers + highly trained guard dogs
-                      to protect your property — from <strong>1 night to 60 nights</strong>. No long contracts.
+                      Traveling? Night shifts? House help just left? Don’t leave
+                      your home vulnerable. Peckers Swift Swerve deploys armed
+                      response officers + highly trained guard dogs to protect
+                      your property — from <strong>1 night to 60 nights</strong>
+                      . No long contracts.
                     </p>
 
                     <ul className="space-y-4 text-gray-800 text-lg">
@@ -256,15 +114,33 @@ export default function TemporarySecurity() {
 
                   <div className="grid md:grid-cols-2 gap-8 mt-12">
                     {[
-                      { icon: Shield, title: "Visible & Effective Deterrence", desc: "The presence of guard dogs alone prevents 90% of intrusions." },
-                      { icon: Home, title: "Ideal When House Help Leaves", desc: "Instant coverage the same day your staff exits — no gaps." },
-                      { icon: Clock, title: "From 1 Night to 60 Nights", desc: "Take only what you need. Cancel or extend anytime." },
-                      { icon: FileText, title: "Daily Summary Reports", desc: "Photos, patrol logs & incident reports sent to your phone." },
+                      {
+                        icon: Shield,
+                        title: "Visible & Effective Deterrence",
+                        desc: "The presence of guard dogs alone prevents 90% of intrusions.",
+                      },
+                      {
+                        icon: Home,
+                        title: "Ideal When House Help Leaves",
+                        desc: "Instant coverage the same day your staff exits — no gaps.",
+                      },
+                      {
+                        icon: Clock,
+                        title: "From 1 Night to 60 Nights",
+                        desc: "Take only what you need. Cancel or extend anytime.",
+                      },
+                      {
+                        icon: FileText,
+                        title: "Daily Summary Reports",
+                        desc: "Photos, patrol logs & incident reports sent to your phone.",
+                      },
                     ].map((item) => (
                       <div key={item.title} className="flex gap-4">
                         <item.icon className="w-12 h-12 text-[#b38f62] flex-shrink-0" />
                         <div>
-                          <h3 className="font-bold text-xl text-[#244672]">{item.title}</h3>
+                          <h3 className="font-bold text-xl text-[#244672]">
+                            {item.title}
+                          </h3>
                           <p className="text-gray-700 mt-2">{item.desc}</p>
                         </div>
                       </div>
@@ -336,10 +212,18 @@ export default function TemporarySecurity() {
             </button>
 
             <div className="px-4 py-8 space-y-4 text-gray-700 border-t">
-              <h2 className="text-2xl font-bold text-[#244672]">Contact Us 24/7</h2>
-              <p><strong>Emergency Line:</strong> 07009744522</p>
-              <p><strong>Email:</strong> security@peckersswiftswerve.co.ke</p>
-              <p><strong>Location:</strong> Nairobi, Kenya</p>
+              <h2 className="text-2xl font-bold text-[#244672]">
+                Contact Us 24/7
+              </h2>
+              <p>
+                <strong>Emergency Line:</strong> 07009744522
+              </p>
+              <p>
+                <strong>Email:</strong> security@peckersswiftswerve.co.ke
+              </p>
+              <p>
+                <strong>Location:</strong> Nairobi, Kenya
+              </p>
             </div>
           </div>
         </section>

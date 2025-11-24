@@ -33,7 +33,7 @@ export default function ProductHero({
       <div className="relative z-10 lg:my-40 my-20 sm:mt-28  text-center ">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight">
             {title}{" "}
-            <span className="text-[#33B200] ml-2">{highlight}</span>
+            <span className="text-[#b38f62] ml-2">{highlight}</span>
           </h1>
 
           {/* Breadcrumbs */}

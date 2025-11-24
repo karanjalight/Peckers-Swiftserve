@@ -66,39 +66,21 @@ export default function InfiniteCarousel() {
 
   const cards = [
     {
-      id: 4,
-      title: "Graduate Medical Rep Training",
-      color: "Corporate Training",
-      icon: TrainingIcon,
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTC2xi73BKZlVu4dSst8Pfza0TEega04jpMmg&s",
-      gradient: "from-gray-900/60 to-indigo-900/50",
-      slug: "services/mr-training",
-    },
-    {
-      id: 5,
-      title: "Corporate MR Upskilling",
-      color: "Corporate Training",
-      icon: TrainingIcon,
-      image: "https://www.ku.ac.ke/wp-content/uploads/2025/11/sika3.jpeg",
-      gradient: "from-gray-900/60 to-indigo-900/50",
-      slug: "services/mr-upskilling",
-    },
-    {
       id: 1,
       title: "Backup & Emergency Nannies",
       color: "Household",
       icon: NannyIcon,
       image: "https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-4-1024x683.jpeg",
-      gradient: "from-gray-900/60 to-indigo-900/50",
+      gradient: "from-gray-700/40 to-gray-900/60",
       slug: "services/backup-nannies",
     },
     {
       id: 2,
-      title: "Sunday / Day-Bug Nanny Services",
+      title: "Sunday & Day-Bug Nanny Services",
       color: "Household",
       icon: NannyIcon,
       image: "https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-3-1024x683.jpeg",
-      gradient: "from-gray-900/60 to-indigo-900/50",
+      gradient: "from-gray-700/40 to-gray-900/60",
       slug: "services/sunday-nannies",
     },
     {
@@ -107,17 +89,16 @@ export default function InfiniteCarousel() {
       color: "Household",
       icon: NannyIcon,
       image: "https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-5-1024x683.jpeg",
-      gradient: "from-gray-900/60 to-indigo-900/50",
+      gradient: "from-gray-700/40 to-gray-900/60",
       slug: "services/contract-nannies",
     },
-    
     {
       id: 6,
       title: "Performance Dashboards",
-      color: "Analytics",
+      color: "Corporate",
       icon: AnalyticsIcon,
       image: "https://www.slideteam.net/media/catalog/product/cache/1280x720/b/u/business_performance_dashboard_supplier_relationship_management_supplier_strategy_slide01.jpg",
-      gradient: "from-gray-900/60 to-indigo-900/50",
+      gradient: "from-gray-700/40 to-gray-900/60",
       slug: "services/performance-dashboards",
     },
     {
@@ -126,8 +107,26 @@ export default function InfiniteCarousel() {
       color: "Security",
       icon: SecurityIcon,
       image: "https://www.sgasecurity.com/application/files/4817/0988/9136/k-9-1.jpg",
-      gradient: "from-gray-900/60 to-indigo-900/50",
+      gradient: "from-gray-700/40 to-gray-900/60",
       slug: "services/security-dogs",
+    },
+    {
+      id: 4,
+      title: "Graduate Medical Rep Training",
+      color: "Corporate",
+      icon: TrainingIcon,
+      image: "https://www.netcare.co.za/Portals/_default/Images/Education-training/fecc-02.jpg",
+      gradient: "from-gray-700/40 to-gray-900/60",
+      slug: "services/mr-training",
+    },
+    {
+      id: 5,
+      title: "Corporate Staff Upskilling",
+      color: "Corporate",
+      icon: TrainingIcon,
+      image: "https://www.ku.ac.ke/wp-content/uploads/2025/11/sika3.jpeg",
+      gradient: "from-gray-700/40 to-gray-900/60",
+      slug: "services/mr-upskilling",
     },
   ];
 
@@ -228,7 +227,7 @@ export default function InfiniteCarousel() {
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                         {/* Overlay */}
-                        <div className={`absolute inset-0 bg-gradient-to-t ${card.gradient}`} />
+                        <div className={`absolute inset-0 bg-gradient-to-b ${card.gradient}`} />
                       </div>
 
                       {/* Content */}
