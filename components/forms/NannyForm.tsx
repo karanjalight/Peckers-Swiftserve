@@ -151,17 +151,38 @@ export default function NannyForm() {
           {/* Hours Needed */}
           <div>
             <label className="block text-gray-700 font-medium mb-2">
-              Hours / Duration *
+              Service Duration *
             </label>
-            <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
-              <Clock className="text-[#244672] w-5 h-5" />
-              <input
-                type="text"
-                className="w-full bg-transparent focus:outline-none"
-                placeholder="4 hours, full day, overnight..."
-                required
-              />
-            </div>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center justify-between w-full border rounded-lg p-3 gap-3 bg-gray-50 text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <CalendarIcon className="text-[#244672] w-5 h-5" />
+                    <span className="text-gray-600">
+                      {dateRange?.from && dateRange?.to
+                        ? `${format(dateRange.from, "PPP")} → ${format(
+                            dateRange.to,
+                            "PPP"
+                          )}`
+                        : "Select date range"}
+                    </span>
+                  </div>
+                </button>
+              </PopoverTrigger>
+
+              <PopoverContent className="p-0 bg-white shadow-lg rounded-xl">
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={2}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
