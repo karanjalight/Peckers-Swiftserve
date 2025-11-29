@@ -53,17 +53,16 @@ export default function Home() {
 
             {/* Subheading */}
             <p className="text-gray-600 text-md mb-12 max-w-2xl">
-            Peckers Swiftserve Ltd is Kenya’s ﬁrst fully
-integrated provider of Household Support and
-Corporate Productivity Solutions. We operate at
-the intersection of family reliability, workplace
-efﬁciency, and modern lifestyle convenience. As
-Kenya’s work life dynamics evolve, Families and
-organizations increasingly need trusted,
-professional, reliable and tech enables support.
-Peckers answers this need through a structured
-compliant and performance driven service
-model.
+              Peckers Swiftserve Ltd is Kenya’s ﬁrst fully integrated provider
+              of Household Support and Corporate Productivity Solutions.{" "}
+              <span className="font-bold text-[#02273f]">
+                We operate at the intersection of family reliability, workplace
+                efﬁciency, and modern lifestyle convenience.
+              </span>{" "}
+              As Kenya’s work life dynamics evolve, Families and organizations
+              increasingly need trusted, professional, reliable and tech enables
+              support. Peckers answers this need through a structured compliant
+              and performance driven service model.
             </p>
 
             {/* Features Grid */}
@@ -115,28 +114,25 @@ model.
               <div className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-[#02273f] flex-shrink-0" />
                 <span className="text-gray-700">
-                  Backup & Emergency Nannies
+                Emergency/Sunday Nanny
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-[#02273f] flex-shrink-0" />
                 <span className="text-gray-700">
-                  Pharma & Corporate Training
+                Home Security
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-[#02273f] flex-shrink-0" />
-                <span className="text-gray-700">
-                Contract-Managed Nannies
-                </span>
+                <span className="text-gray-700">Home Based Care</span>
               </div>
               <div className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-[#02273f] flex-shrink-0" />
                 <span className="text-gray-700">
-                  Performance Dashboards & Analytics
+                Corporate  Support
                 </span>
               </div>
-              
             </div>
 
             {/* CTA Buttons */}

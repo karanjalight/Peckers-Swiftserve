@@ -105,14 +105,14 @@ export default function EmergencyNanny() {
   return (
     <main className="min-h-screen">
       <Navbar />
-      <AboutHero title="Emergency Nanny" highlight=" Consultancy" />
+      <AboutHero title="Hire" highlight="Nanny Services" />
 
       <div className="mx-auto flex lg:flex-row gap-6 flex-col px-4 sm:px-6 lg:px-8 py-4">
         {/* FORM */}
         {showForm && (
           <section className="lg:w-2/3 bg-white p-8 lg:p-12 border  ">
             <h2 className="text-4xl font-bold text-[#244672] mb-4">
-              Emergency Nanny Request
+               Nanny Request
             </h2>
 
             <p className="text-gray-600 mb-10 text-lg leading-relaxed">
@@ -149,7 +149,7 @@ export default function EmergencyNanny() {
                           <img
                             src="https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-13-1024x683.jpeg"
                             alt="Emergency Nanny"
-                            className="w-[120vh] lg:h-[60vh] h-[20vh] object-cover"
+                            className="w-[120vh] lg:h-[40vh] h-[20vh] object-cover"
                             loading="lazy"
                           />
                         </div>
@@ -321,7 +321,7 @@ export default function EmergencyNanny() {
             {/* Benefits Section */}
             <div className="px-4 py-12">
               <h1 className="text-3xl md:text-4xl font-bold text-[#244672] mb-8">
-                Emergency Nanny
+                Summary
               </h1>
 
               <div className="text-lg space-y-8 text-gray-700 leading-relaxed">
@@ -372,17 +372,17 @@ export default function EmergencyNanny() {
               onClick={() => setShowForm(!showForm)}
               className="w-full bg-[#b38f62] text-white py-3 font-semibold hover:bg-[#b38f62] transition mb-4"
             >
-              {showForm ? "Close Form" : "Hire Nanny Now"}
+              {showForm ? "Close Form" : "Book Nanny Now"}
             </button>
             {/* CONTACT SECTION */}
             <div className="px-4 py-8 space-y-4 text-gray-700">
               <h2 className="text-2xl font-bold text-[#244672]">Contact Us</h2>
 
               <p>
-                <strong>Phone:</strong> 0700 000 000
+                <strong>Phone:</strong> +25474 1767 944
               </p>
               <p>
-                <strong>Email:</strong> support@peckersswiftswerve.co.ke
+                <strong>Email:</strong> info@peckersswiftswerve.co.ke
               </p>
               <p>
                 <strong>Location:</strong> Nairobi, Kenya

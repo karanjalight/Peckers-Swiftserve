@@ -39,26 +39,26 @@ const navData = {
       icon: BarChart3,
       isActive: true,
     },
-    // {
-    //   title: "Products",
-    //   url: "/admin/products",
-    //   icon: Box,
-    //   isActive: true,   
-    //   items: [
-    //     {
-    //       title: "All Products",
-    //       url: "/admin/products",
-    //     },
-    //     {
-    //       title: "Add Product",
-    //       url: "/admin/products/create",
-    //     },
-    //     // {
-    //     //   title: "Categories",
-    //     //   url: "/admin/categories",
-    //     // },
-    //   ],
-    // },
+    {
+      title: "Orders",
+      url: "/admin/orders",
+      icon: Box,
+      isActive: true,   
+      items: [
+        {
+          title: "All Orders",
+          url: "/admin/orders/all-orders",
+        },
+        {
+          title: "Nanny Orders",
+          url: "/admin/orders/nanny",
+        },
+        {
+          title: "Security Orders",
+          url: "/admin/orders/security",
+        },
+      ],
+    },
 
     
 
@@ -78,7 +78,7 @@ const navData = {
       title: "Blogs",
       url: "/admin/blogs",
       icon: PenTool,
-      isActive: true,
+      isActive: false,
       items: [
         {
           title: "All Blogs",

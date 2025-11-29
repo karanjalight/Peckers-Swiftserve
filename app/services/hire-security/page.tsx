@@ -101,7 +101,7 @@ export default function TemporarySecurity() {
                       onClick={() => setShowForm(true)}
                       className="w-full bg-[#b38f62] text-white py-4 text-lg font-semibold hover:bg-[#b38f62] transition"
                     >
-                      Secure My Home Now
+                      Hire Security
                     </button>
                   </div>
                 </section>
@@ -151,7 +151,7 @@ export default function TemporarySecurity() {
                     onClick={() => setShowForm(true)}
                     className="mt-12 w-full max-w-md mx-auto bg-[#b38f62] text-white py-4 text-lg font-semibold hover:bg-[#b38f62] transition"
                   >
-                    Get Protected Tonight
+                    Hire Security
                   </button>
                 </section>
               </div>
@@ -208,7 +208,7 @@ export default function TemporarySecurity() {
               onClick={() => setShowForm(!showForm)}
               className="w-full bg-[#b38f62] text-white py-4 text-lg font-semibold hover:bg-[#b38f62] transition"
             >
-              {showForm ? "Close Form" : "Deploy Security Team"}
+              {showForm ? "Close Form" : "Hire Security"}
             </button>
 
             <div className="px-4 py-8 space-y-4 text-gray-700 border-t">

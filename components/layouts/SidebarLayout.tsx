@@ -26,7 +26,7 @@ interface SidebarLayoutProps {
 export default function SidebarLayout({
   children,
   title = "Dashboard",
-  breadcrumb = ["Cytek", title],
+  breadcrumb = ["Peckers", title],
 }: SidebarLayoutProps) {
   return (
     <SidebarProvider>

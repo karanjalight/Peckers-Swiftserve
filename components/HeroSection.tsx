@@ -8,23 +8,23 @@ export default function HeroSection() {
   // 4 CORE SERVICES (switched with each image)
   const services = [
     {
-      title: "Emergency Nanny",
-      desc: "Instant access to trusted, verified nannies — deployed within minutes.",
+      title: "Emergency/Sunday Nanny",
+      desc: "Stranded without a nanny for a day or two? We’ve got you covered. Our Emergency/Sunday Nanny service provides dependable, short-notice childcare when plans fall apart.",
       cta: "/services/emergency-nanny",
     },
     {
       title: "Home Security",
-      desc: "Going out of town? Don't worry we will keep your home safe with our verified trained Dogs and guard",
+      desc: "Going out of town or disturbed by suspicious activity in your area? Our trained security dogs and professional handlers ensure your home stays protected and watched over.",
       cta: "/contact-nanny",
     },
     {
       title: "Home Based Care",
-      desc: "We offer quick service, verified nurses and love to all patients and clients",
+      desc: "We provide reliable support with qualified caregivers/nutrionist who bring compassion and dedicated care to every patient and client.",
       cta: "/dashboard",
     },
     {
       title: "Corporate  Support",
-      desc: "Performance Analytics, Graduate Salespersons Training, Corporate Staff Upskilling.",
+      desc: "Performance Analytics, Graduate Salespersons Training, Corporate Staff Mindshifting.",
       cta: "/dashboard",
     },
    

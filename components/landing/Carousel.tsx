@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 // Your SVG Icons remain the same (NannyIcon, TrainingIcon, etc.)
@@ -68,64 +68,72 @@ export default function InfiniteCarousel() {
     {
       id: 1,
       title: "Backup & Emergency Nannies",
-      color: "Household",
+      color: "House Hold",
       icon: NannyIcon,
       image: "https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-4-1024x683.jpeg",
-      gradient: "from-gray-700/40 to-gray-900/60",
+      gradient: "from-gray-700/30 to-gray-900/50",
       slug: "services/backup-nannies",
     },
     {
       id: 2,
-      title: "Sunday & Day-Bug Nanny Services",
-      color: "Household",
+      title: "Sunday / Day-Bug Nanny Services",
+      color: "House Hold",
       icon: NannyIcon,
       image: "https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-3-1024x683.jpeg",
-      gradient: "from-gray-700/40 to-gray-900/60",
+      gradient: "from-gray-700/30 to-gray-900/50",
       slug: "services/sunday-nannies",
     },
     {
       id: 3,
       title: "Contract-Managed Nannies",
-      color: "Household",
+      color: "House Hold",
       icon: NannyIcon,
       image: "https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-5-1024x683.jpeg",
-      gradient: "from-gray-700/40 to-gray-900/60",
+      gradient: "from-gray-700/30 to-gray-900/50",
       slug: "services/contract-nannies",
     },
     {
       id: 6,
-      title: "Performance Dashboards",
+      title: "Performance Dashboards / Analytics",
       color: "Corporate",
       icon: AnalyticsIcon,
       image: "https://www.slideteam.net/media/catalog/product/cache/1280x720/b/u/business_performance_dashboard_supplier_relationship_management_supplier_strategy_slide01.jpg",
-      gradient: "from-gray-700/40 to-gray-900/60",
+      gradient: "from-gray-900/80 to-blue-900/50",
       slug: "services/performance-dashboards",
     },
     {
       id: 7,
-      title: "Temporary Security & Dog Handlers",
-      color: "Security",
+      title: "Home Security",
+      color: "House Hold",
       icon: SecurityIcon,
       image: "https://www.sgasecurity.com/application/files/4817/0988/9136/k-9-1.jpg",
-      gradient: "from-gray-700/40 to-gray-900/60",
+      gradient: "from-gray-700/30 to-gray-900/50",
+      slug: "services/security-dogs",
+    }, {
+      id: 8,
+      title: "Home Based Care",
+      color: "House Hold",
+      icon: SecurityIcon,
+      image: "https://gocare.co.ke/wp-content/uploads/2025/03/Home-Nursing-Care-Services.jpeg",
+      gradient: "from-gray-700/30 to-gray-900/50",
       slug: "services/security-dogs",
     },
     {
       id: 4,
-      title: "Graduate Medical Rep Training",
+      title: "Graduate Salespersons Training (Pharma/FMCG)",
       color: "Corporate",
       icon: TrainingIcon,
       image: "https://www.netcare.co.za/Portals/_default/Images/Education-training/fecc-02.jpg",
-      gradient: "from-gray-700/40 to-gray-900/60",
+      gradient: "from-gray-700/90 to-gray-900/50",
       slug: "services/mr-training",
     },
     {
       id: 5,
-      title: "Corporate Staff Upskilling",
+      title: "Corporate Staff Coaching",
       color: "Corporate",
       icon: TrainingIcon,
       image: "https://www.ku.ac.ke/wp-content/uploads/2025/11/sika3.jpeg",
-      gradient: "from-gray-700/40 to-gray-900/60",
+      gradient: "from-gray-700/90 to-gray-900/50",
       slug: "services/mr-upskilling",
     },
   ];
@@ -146,6 +154,7 @@ export default function InfiniteCarousel() {
     return () => window.removeEventListener("resize", updateCardsPerPage);
   }, []);
 
+  
   const totalPages = Math.ceil(cards.length / cardsPerPage);
   const allCardsVisible = cardsPerPage >= cards.length;
 
@@ -167,6 +176,33 @@ export default function InfiniteCarousel() {
 
   const visibleCards = cards.slice(currentPage * cardsPerPage, currentPage * cardsPerPage + cardsPerPage);
 
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
+  
+    let scrollPosition = 0;
+    const cardWidth = 350; // width + gap
+    const scrollSpeed = 1; // slow & smooth
+  
+    const scroll = () => {
+      scrollPosition += scrollSpeed;
+  
+      if (scrollPosition >= scrollContainer.scrollWidth / 2) {
+        scrollPosition = 0; // seamless restart
+      }
+  
+      scrollContainer.scrollLeft = scrollPosition;
+    };
+  
+    const intervalId = setInterval(scroll, 20);
+  
+    return () => clearInterval(intervalId);
+  }, [cards.length]);
+  
+  
+
   return (
     <div className="my-10 lg:py-20 bg-[#d4b97f]">
       <div className="w-full px-4  sm:px-8 lg:px-20">
@@ -176,7 +212,7 @@ export default function InfiniteCarousel() {
               Explore Our Services
             </h1>
             <p className="text-gray-600 mb-6 text-left text-sm sm:text-base max-w-lg md:w-[65vh]">
-              Peckers Services Ltd offers household support, corporate training, security, and analytics solutions. Browse our service categories:
+            Peckers Swiftserve Ltd offers household support, corporate training, security, and analytics solutions. Browse our service categories:
             </p>
           </div>
           {!allCardsVisible && (
@@ -203,6 +239,7 @@ export default function InfiniteCarousel() {
           <div className="relative">
             <div className="py-2">
               <div
+               ref={scrollRef}
                 className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 transition-all duration-600 ${
                   isAnimating
                     ? direction === "next"
