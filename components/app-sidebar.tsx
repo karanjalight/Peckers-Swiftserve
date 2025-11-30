@@ -75,6 +75,22 @@ const navData = {
     // },
     // ⭐⭐⭐ NEW BLOGS SECTION ⭐⭐⭐
     {
+      title: "ATS",
+      url: "/admin/ats/jobs",
+      icon: PenTool,
+      isActive: false,
+      items: [
+        {
+          title: "Jobs",
+          url: "/admin/ats/jobs",
+        },
+        {
+          title: "Applicants",
+          url: "/admin/ats/applicants",
+        },
+      ],
+    },
+    {
       title: "Blogs",
       url: "/admin/blogs",
       icon: PenTool,
