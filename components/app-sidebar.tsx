@@ -47,7 +47,7 @@ const navData = {
       items: [
         {
           title: "All Orders",
-          url: "/admin/orders/all-orders",
+          url: "/admin/orders/all",
         },
         {
           title: "Nanny Orders",

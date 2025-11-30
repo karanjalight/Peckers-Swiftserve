@@ -14,7 +14,10 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import SidebarLayout from "@/components/layouts/SidebarLayout";
 
-type ServiceType = "emergency_under_6_hours" | "sunday_day_bug" | "short_term_daily";
+type ServiceType =
+  | "emergency_under_6_hours"
+  | "sunday_day_bug"
+  | "short_term_daily";
 
 interface NannyRequest {
   id: string;
@@ -58,7 +61,9 @@ export default function NannyRequestsPage() {
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterService, setFilterService] = useState<ServiceType | "all">("all");
+  const [filterService, setFilterService] = useState<ServiceType | "all">(
+    "all"
+  );
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
 
@@ -169,7 +174,9 @@ export default function NannyRequestsPage() {
 
       if (updateError) throw updateError;
       setRequests(
-        requests.map((req) => (req.id === id ? { ...req, [field]: value } : req))
+        requests.map((req) =>
+          req.id === id ? { ...req, [field]: value } : req
+        )
       );
     } catch (err) {
       console.error("Error updating request:", err);
@@ -212,7 +219,9 @@ export default function NannyRequestsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Nanny Requests</h1>
+            <h1 className="text-3xl font-bold text-slate-900">
+              Nanny Requests
+            </h1>
             <p className="text-slate-600 mt-1">Manage nanny service requests</p>
           </div>
           <div className="flex gap-3 flex-wrap">
@@ -389,9 +398,7 @@ export default function NannyRequestsPage() {
                         {SERVICE_TYPES[request.service_needed]}
                       </td>
                       <td className="px-6 py-4 text-slate-600 text-xs">
-                        <div>
-                          {formatDate(request.start_date)}
-                        </div>
+                        <div>{formatDate(request.start_date)}</div>
                         <div>→ {formatDate(request.end_date)}</div>
                       </td>
                       <td className="px-6 py-4">
@@ -406,7 +413,11 @@ export default function NannyRequestsPage() {
                       <td className="px-6 py-4">
                         <button
                           onClick={() =>
-                            handleStatusUpdate(request.id, "is_paid", !request.is_paid)
+                            handleStatusUpdate(
+                              request.id,
+                              "is_paid",
+                              !request.is_paid
+                            )
                           }
                           className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
                             request.is_paid
@@ -437,27 +448,12 @@ export default function NannyRequestsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              // Copy request details to clipboard
-                              const details = `
-Name: ${request.full_name}
-Phone: ${request.phone}
-Email: ${request.email || "N/A"}
-Location: ${request.location}
-Service: ${SERVICE_TYPES[request.service_needed]}
-Start: ${formatDate(request.start_date)}
-End: ${formatDate(request.end_date)}
-Household: ${request.household_description || "N/A"}
-Notes: ${request.notes || "N/A"}
-                              `.trim();
-                              navigator.clipboard.writeText(details);
-                              alert("Request details copied!");
-                            }}
+                        <Link
+                            href={`/admin/orders/nanny/${request.id}`}
                             className="p-1 hover:bg-slate-100 rounded-lg transition-colors text-slate-600 hover:text-slate-900"
                           >
                             <Eye className="w-4 h-4" />
-                          </button>
+                          </Link>
                           <button
                             onClick={() => handleDelete(request.id)}
                             className="p-1 hover:bg-red-100 rounded-lg transition-colors text-slate-600 hover:text-red-600"
