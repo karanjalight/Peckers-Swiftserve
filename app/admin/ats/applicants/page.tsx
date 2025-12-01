@@ -141,7 +141,7 @@ export default function ApplicantsPage() {
             <h1 className="text-3xl font-bold text-slate-900">Applicants</h1>
             <p className="text-slate-600 mt-1">Manage job applicants</p>
           </div>
-          <div className="flex gap-4">
+          <div className="lg:ex hidden gap-4">
             <Link
               href="/admin/ats/applicants/create"
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium rounded-lg"
