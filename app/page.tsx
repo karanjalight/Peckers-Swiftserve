@@ -29,9 +29,8 @@ export default async function HomePage() {
       <Navbar />
       <HeroSection />
 
-      <div className="w-full">
-        <Stats />
-      </div>
+      <Stats />
+
 
       <Service />
       <Tabs />

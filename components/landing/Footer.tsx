@@ -31,8 +31,8 @@ const Footer = () => {
   const quickLinks = [
     { name: "Home", href: "/" },
     { name: "About Us", href: "/about" },
-    { name: "Household Staffing", href: "/about#household" },
-    { name: "Pharma Training", href: "/about#training" },
+    { name: "Jobs", href: "/jobs" },
+    { name: "blogs", href: "/blogs" },
     { name: "Contact Us", href: "/contact" },
   ];
 
@@ -44,11 +44,11 @@ const Footer = () => {
   ];
 
   const services = [
-    { name: "Backup Nannies", href: "/about#household" },
-    { name: "Contract Nannies", href: "/about#household" },
-    { name: "Pharma Training", href: "/about#training" },
-    { name: "Performance Analytics", href: "/about#analytics" },
-    { name: "Corporate Solutions", href: "/about#training" },
+    { name: "Emergency Nannies", href: "/services/emergency-nanny" },
+    { name: "Sunday / Day-Bug Nannies", href: "/services/emergency-nanny" },
+    { name: "Contract Managed Nannies", href: "/services/emergency-nanny" },
+    { name: "Home Based Care", href: "/services/emergency-nanny" },
+    { name: "Home Security", href: "/services/hire-security" },
   ];
 
   return (
@@ -151,23 +151,7 @@ const Footer = () => {
               </div>
 
               {/* Pages */}
-              <div>
-                <h4 className="text-sky-400 font-semibold text-lg mb-4">
-                  Pages
-                </h4>
-                <ul className="space-y-2">
-                  {pages.map((link) => (
-                    <li key={link.name}>
-                      <a
-                        href={link.href}
-                        className="text-gray-300 hover:text-sky-400 transition-colors text-sm"
-                      >
-                        {link.name}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              
 
               {/* Services */}
               <div>

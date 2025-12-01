@@ -76,8 +76,14 @@ export default function Navbar() {
             pathname={pathname}
             isScrolled={isScrolled}
           />
+          <NavLink
+            href="/jobs"
+            label="Jobs"
+            pathname={pathname}
+            isScrolled={isScrolled}
+          />
 
-          <Dropdown
+          {/* <Dropdown
             label="Our Services"
             items={[
               { name: "Household Staffing", href: "/about#household" },
@@ -88,7 +94,7 @@ export default function Navbar() {
             toggleDropdown={toggleDropdown}
             pathname={pathname}
             isScrolled={isScrolled}
-          />
+          /> */}
 
           <NavLink
             href="/blogs"
