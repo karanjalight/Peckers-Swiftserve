@@ -31,9 +31,9 @@ export default function ProductHero({
       {/* Content */}
       <div className="w-full z-10">
       <div className="relative z-10 lg:my-40 my-20 sm:mt-28  text-center ">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight">
-            {title}{" "}
-            <span className="text-[#b38f62] ml-2">{highlight}</span>
+          <h1 className="text-4xl text-red-600 sm:text-5xl md:text-6xl font-bold leading-tight">
+            {title}{" "} <span className="text-white">with {" "}</span>
+            <span className="text-red-600 ml-2">{highlight}</span>
           </h1>
 
           {/* Breadcrumbs */}
