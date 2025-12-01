@@ -66,13 +66,13 @@ export default function Navbar() {
           />
           <NavLink
             href="/services/emergency-nanny"
-            label="Hire Nanny"
+            label="Book Nanny"
             pathname={pathname}
             isScrolled={isScrolled}
           />
           <NavLink
             href="/services/hire-security"
-            label="Hire Security"
+            label="Book Guard dogs"
             pathname={pathname}
             isScrolled={isScrolled}
           />

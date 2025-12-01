@@ -61,16 +61,16 @@ const Footer = () => {
             {/* Description */}
             <div className="max-w-md mx-auto lg:mx-0">
               <p className="text-gray-300 leading-relaxed mb-6 text-sm sm:text-base">
-			  Peckers Swiftserve Ltd is Kenya’s ﬁrst fully integrated provider
-              of Household Support and Corporate Productivity Solutions.{" "}
-              <span className="font-bold text-white">
-                We operate at the intersection of family reliability, workplace
-                efﬁciency, and modern lifestyle convenience.
-              </span>{" "}
-              As Kenya’s work life dynamics evolve, Families and organizations
-              increasingly need trusted, professional, reliable and tech enables
-              support. Peckers answers this need through a structured compliant
-              and performance driven service model.
+                Peckers Swiftserve Ltd is Kenya’s ﬁrst fully integrated provider
+                of Household Support and Corporate Productivity Solutions.{" "}
+                <span className="font-bold text-white">
+                  We operate at the intersection of family reliability,
+                  workplace efﬁciency, and modern lifestyle convenience.
+                </span>{" "}
+                As Kenya’s work life dynamics evolve, Families and organizations
+                increasingly need trusted, professional, reliable and tech
+                enables support. Peckers answers this need through a structured
+                compliant and performance driven service model.
               </p>
             </div>
 
@@ -151,7 +151,6 @@ const Footer = () => {
               </div>
 
               {/* Pages */}
-              
 
               {/* Services */}
               <div>

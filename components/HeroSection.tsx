@@ -13,9 +13,9 @@ export default function HeroSection() {
       cta: "/services/emergency-nanny",
     },
     {
-      title: "Home Security",
+      title: "Protective guard dogs with handlers",
       desc: "Going out of town or disturbed by suspicious activity in your area? Our trained security dogs and professional handlers ensure your home stays protected and watched over.",
-      cta: "/hire-security",
+      cta: "/services/hire-security",
     },
     {
       title: "Home Based Care",
@@ -24,7 +24,7 @@ export default function HeroSection() {
     },
     {
       title: "Corporate  Support",
-      desc: "Performance Analytics, Graduate Salespersons Training, Corporate Staff Upskilling.",
+      desc: "Performance Analytics, Graduate Salespersons Training, Corporate Staff mindshift.",
       cta: "/contact",
     },
    

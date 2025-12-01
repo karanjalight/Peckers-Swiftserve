@@ -27,14 +27,14 @@ export default function TemporarySecurity() {
   return (
     <main className="min-h-screen">
       <Navbar />
-      <ProductsHero title="Temporary Security" highlight=" with Guard Dogs" />
+      <ProductsHero title="Guard dogs" highlight="Handlers" />
 
       <div className="mx-auto flex lg:flex-row gap-6 flex-col px-4 sm:px-6 lg:px-8 py-4">
         {/* FORM - LEFT SIDE ON LARGE SCREENS */}
         {showForm && (
           <section className="lg:w-2/3 bg-white p-8 lg:p-12 border">
             <h2 className="text-4xl font-bold text-[#244672] mb-4">
-              Request Temporary Security with Guard Dogs
+              Request Guard dogs with handlers
             </h2>
 
             <p className="text-gray-600 mb-10 text-lg leading-relaxed">
@@ -55,7 +55,7 @@ export default function TemporarySecurity() {
             <div className="lg:mb-10 bg-white lg:px-8 lg:py-8 p-4">
               <div className="px-4 lg:px-4 py-12 md:py-4">
                 <h1 className="text-3xl md:text-4xl font-bold text-[#244672] mb-8 md:mb-12">
-                  Temporary Security Services with Guard Dogs
+                Guard dogs with handlers
                 </h1>
 
                 {/* Hero Section */}
@@ -71,7 +71,7 @@ export default function TemporarySecurity() {
 
                   <div className="w-full lg:px-0 px-4 lg:pb-0 pb-12 space-y-6">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-                      Professional Temporary Security with Trained Guard Dogs
+                      Protective  Guard dogs with handlers
                     </h2>
 
                     <p className="text-gray-800 leading-relaxed text-lg">
@@ -164,7 +164,7 @@ export default function TemporarySecurity() {
           <div className="lg:mb-10 bg-white lg:px-8 lg:py-8 p-4 space-y-8">
             <div className="px-4 py-8">
               <h1 className="text-3xl font-bold text-[#244672] mb-6">
-                Temporary Security with Guard Dogs
+                Guard dogs with handlers
               </h1>
 
               <div className="text-lg space-y-6 text-gray-700 leading-relaxed">

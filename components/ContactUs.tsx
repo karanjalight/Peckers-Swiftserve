@@ -81,7 +81,8 @@ export default function ContactUs() {
               <MapPin className="w-7 h-7 text-[#b38f62]" />
               <div>
                 <h4 className="font-semibold text-gray-800">Location</h4>
-                <p className="text-gray-600">Nairobi, Kenya</p>
+                <p className="text-gray-600">Nairobi, Kenya
+Serving Nairobi, <br /> Kiambu, Nakuru, Mombasa, Eldoret</p>
               </div>
             </div>
 
@@ -89,16 +90,14 @@ export default function ContactUs() {
               <Phone className="w-7 h-7 text-[#b38f62]" />
               <div>
                 <h4 className="font-semibold text-gray-800">Phone</h4>
-                <p className="text-gray-600">+254 712 345 678</p>
-                <p className="text-gray-600">+254 798 234 556</p>
+                <p className="text-gray-600">+254 741 767 944</p>
               </div>
-            </div>
+            </div>  
 
             <div className="flex items-start gap-4">
               <Mail className="w-7 h-7 text-[#b38f62]" />
               <div>
                 <h4 className="font-semibold text-gray-800">Email</h4>
-                <p className="text-gray-600">support@peckersswiftserve.co.ke</p>
                 <p className="text-gray-600">info@peckersswiftserve.co.ke</p>
               </div>
             </div>

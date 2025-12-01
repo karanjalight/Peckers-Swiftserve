@@ -105,7 +105,7 @@ export default function EmergencyNanny() {
   return (
     <main className="min-h-screen">
       <Navbar />
-      <AboutHero title="Hire" highlight="Nanny Services" />
+      <AboutHero title="Book" highlight="Sunday | Emergency" />
 
       <div className="mx-auto flex lg:flex-row gap-6 flex-col px-4 sm:px-6 lg:px-8 py-4">
         {/* FORM */}
