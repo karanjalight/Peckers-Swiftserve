@@ -680,9 +680,7 @@ export default function ApplyJobPage({
                   >
                    View Jobs
                   </Link>
-                </div>
-
-                
+                </div>                
               </div>
             </div>
           </div>

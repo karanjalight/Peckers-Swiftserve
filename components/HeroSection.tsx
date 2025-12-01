@@ -15,17 +15,17 @@ export default function HeroSection() {
     {
       title: "Home Security",
       desc: "Going out of town or disturbed by suspicious activity in your area? Our trained security dogs and professional handlers ensure your home stays protected and watched over.",
-      cta: "/contact-nanny",
+      cta: "/hire-security",
     },
     {
       title: "Home Based Care",
       desc: "We provide reliable support with qualified caregivers/nutrionist who bring compassion and dedicated care to every patient and client.",
-      cta: "/dashboard",
+      cta: "/services/emergency-nanny",
     },
     {
       title: "Corporate  Support",
-      desc: "Performance Analytics, Graduate Salespersons Training, Corporate Staff Mindshifting.",
-      cta: "/dashboard",
+      desc: "Performance Analytics, Graduate Salespersons Training, Corporate Staff Upskilling.",
+      cta: "/contact",
     },
    
   ];
@@ -74,7 +74,7 @@ export default function HeroSection() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
-                className="bg-[#02273f] hover:bg-[#0d141a] lg:py-6 py-2 px-10 text-sm sm:text-base text-lg"
+                className="bg-[#02273f] hover:bg-[#0d141a] lg:py-6 py-2 px-10 text-sm sm:text-base lg:text-lg"
                 asChild
               >
                 <Link href={services[currentIndex].cta}>Explore Service</Link>
