@@ -304,7 +304,7 @@ export default function ApplyJobPage({
       <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-blue-50/30">
         <Navbar />
         <div className="max-w-2xl mx-auto px-6 py-32 text-center">
-          <div className="bg-white p-12 rounded-3xl shadow-2xl border border-blue-100">
+          <div className="bg-white p-12  shadow-2xl border border-blue-100">
             <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-800 to-blue-800 rounded-full flex items-center justify-center">
               <CheckCircle2
                 className="w-10 h-10 text-white"
@@ -346,7 +346,7 @@ export default function ApplyJobPage({
 
         <section className="max-w-7xl mx-auto px-6 py-16">
           {error && (
-            <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
+            <div className="mb-8 p-4 bg-red-50 border border-red-200  flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-red-900">Application Error</p>
@@ -358,7 +358,7 @@ export default function ApplyJobPage({
           <div className="grid lg:grid-cols-3 gap-8">
             <form
               onSubmit={handleSubmit}
-              className="bg-white p-10 lg:col-span-2 rounded-3xl  border border-gray-300 space-y-8"
+              className="bg-white p-10 lg:col-span-2   border border-gray-300 space-y-8"
             >
               {/* Personal Information */}
               <div>
@@ -648,7 +648,7 @@ export default function ApplyJobPage({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full px-8 py-4 bg-gradient-to-r from-blue-800 via-blue-800 to-blue-800 text-white font-bold rounded-2xl hover:from-blue-700 hover:via-blue-800 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full px-8 py-4 bg-gradient-to-r from-blue-800 via-blue-800 to-blue-800 text-white font-bold  hover:from-blue-700 hover:via-blue-800 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -669,14 +669,14 @@ export default function ApplyJobPage({
             <div className="lg:col-span-1">
               <div className="sticky top-8 space-y-6">
                 {/* Apply Card */}
-                <div className="bg-gradient-to-br from-blue-800 via-blue-900 to-blue-900 p-8 rounded-3xl shadow-2xl text-white">
+                <div className="bg-gradient-to-br from-blue-800 via-blue-900 to-blue-900 p-8  shadow-2xl text-white">
                   <h3 className="text-2xl font-bold mb-3">View other jobs</h3>
                   <p className="text-blue-50 mb-6">
                     Join our team and make an impact in your career.
                   </p>
                   <Link
                     href=""
-                    className="block w-full px-8 py-4 bg-white text-blue-800 font-bold rounded-2xl hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl hover:scale-105 text-center"
+                    className="block w-full px-8 py-4 bg-white text-blue-800 font-bold  hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl hover:scale-105 text-center"
                   >
                    View Jobs
                   </Link>

@@ -61,7 +61,7 @@ export default async function JobsPage() {
           </div>
 
           {/* Filters */}
-          <div className="mb-12 flex flex-col md:flex-row gap-4 items-center justify-between bg-white backdrop-blur-xl p-6  border border-gray-200">
+          <div className="mb-12 hidden lex flex-col md:flex-row gap-4 items-center justify-between bg-white backdrop-blur-xl p-6  border border-gray-200">
             <div className="w-full md:w-1/3 relative">
               <input
                 type="text"
@@ -86,7 +86,7 @@ export default async function JobsPage() {
             {jobs.map((job, index) => (
               <div
                 key={job.id}
-                className="group relative flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-8  border border-gray-100 hover:shadow-2xl hover:border-blue-200 transition-all duration-300 overflow-hidden"
+                className="group relative flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-8  border border-gray-300 hover:shadow-2xl hover:border-blue-200 transition-all duration-300 overflow-hidden"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 {/* Gradient accent bar */}
@@ -100,7 +100,7 @@ export default async function JobsPage() {
                   <div className="flex items-start gap-4">
                     {/* Company Icon */}
                     <div className="relative">
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-900 to-blue-800 flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300">
+                      <div className="w-14 h-14  bg-gradient-to-br from-blue-900 to-blue-800 flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300">
                         <Briefcase className="w-7 h-7 text-white" strokeWidth={2.5} />
                       </div>
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-900 rounded-full animate-pulse" />
@@ -117,12 +117,12 @@ export default async function JobsPage() {
 
                   {/* Job Details */}
                   <div className="flex flex-wrap gap-3">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-blue-50 to-blue-50 rounded-xl border border-blue-200/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-blue-50 to-blue-50  border border-blue-200/50 shadow-sm hover:shadow-md transition-shadow">
                       <MapPin className="w-4 h-4 text-blue-800" strokeWidth={2.5} />
                       <span className="font-semibold text-gray-700 text-sm">{job.location}</span>
                     </div>
                     
-                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-blue-50 to-cyan-50  border border-blue-200/50 shadow-sm hover:shadow-md transition-shadow">
                       <Briefcase className="w-4 h-4 text-blue-800" strokeWidth={2.5} />
                       <span className="font-semibold text-gray-700 text-sm capitalize">
                         {job.employment_type.replace('_', ' ')}
@@ -130,7 +130,7 @@ export default async function JobsPage() {
                     </div>
                     
                     {job.salary_min && (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl border border-amber-200/50 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-amber-50 to-yellow-50  border border-amber-200/50 shadow-sm hover:shadow-md transition-shadow">
                         <DollarSign className="w-4 h-4 text-amber-600" strokeWidth={2.5} />
                         <span className="font-semibold text-gray-700 text-sm">
                           Ksh {job.salary_min.toLocaleString()} - {job.salary_max?.toLocaleString() || '—'}
@@ -139,7 +139,7 @@ export default async function JobsPage() {
                     )}
                     
                     {job.application_deadline && (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl border border-rose-200/50 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-rose-50 to-pink-50  border border-rose-200/50 shadow-sm hover:shadow-md transition-shadow">
                         <Clock className="w-4 h-4 text-rose-600" strokeWidth={2.5} />
                         <span className="font-semibold text-gray-700 text-sm">
                           Apply by {new Date(job.application_deadline).toLocaleDateString()}
@@ -153,7 +153,7 @@ export default async function JobsPage() {
                 <div className="mt-6 md:mt-0 md:ml-8 w-full md:w-auto relative z-10">
                   <Link
                     href={`/jobs/${job.id}`}
-                    className="group/btn relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-800 via-blue-900 to-blue-800 text-white rounded-2xl font-bold hover:from-blue-700 hover:via-blue-800 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 w-full md:w-auto overflow-hidden"
+                    className="group/btn relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-800 via-blue-900 to-blue-800 text-white  font-bold hover:from-blue-700 hover:via-blue-800 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 w-full md:w-auto overflow-hidden"
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700" />
                     <span className="relative">View Details</span>

@@ -60,7 +60,7 @@ export default function JobsPage() {
       if (error) throw error;
 
       setJobs(jobs.filter((job) => job.id !== id));
-    //   alert("Job deleted successfully");
+      //   alert("Job deleted successfully");
     } catch (err: any) {
       console.error("Error deleting job:", err);
       alert(err.message || "Failed to delete job");
@@ -84,13 +84,11 @@ export default function JobsPage() {
       switch (sortBy) {
         case "newest":
           return (
-            new Date(b.created_at).getTime() -
-            new Date(a.created_at).getTime()
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           );
         case "oldest":
           return (
-            new Date(a.created_at).getTime() -
-            new Date(b.created_at).getTime()
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           );
         case "title":
           return a.title.localeCompare(b.title);
@@ -110,7 +108,7 @@ export default function JobsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "open":
-        return "bg-green-100 text-green-700";
+        return "bg-blue-100 text-blue-700";
       case "paused":
         return "bg-yellow-100 text-yellow-700";
       case "closed":
@@ -125,26 +123,33 @@ export default function JobsPage() {
   return (
     <SidebarLayout title="ATS - Jobs">
       <div className="flex-1 space-y-6 p-2 pt-6 bg-white min-h-screen">
-        
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Jobs</h1>
             <p className="text-slate-600 mt-1">Manage job listings</p>
           </div>
-          <Link
-            href="/admin/ats/jobs/create"
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white hover:bg-green-700 transition-colors font-medium rounded-lg"
-          >
-            <Plus className="w-4 h-4" />
-            Create Job
-          </Link>
+          <div className="flex gap-4">
+            <Link
+              href="/admin/ats/applicants"
+              className="flex items-center gap-2 px-4 py-2 border border-blue-600 text-blue-800 hover:bg-blue-200 transition-colors font-medium rounded-lg"
+            >
+              <Plus className="w-4 h-4" />
+              View Applicants
+            </Link>
+            <Link
+              href="/admin/ats/jobs/create"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium rounded-lg"
+            >
+              <Plus className="w-4 h-4" />
+              Create Job
+            </Link>
+          </div>
         </div>
 
         {/* Filters */}
         <div className="bg-white border border-slate-300 rounded-lg p-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-
             {/* Search */}
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-2">
@@ -157,7 +162,7 @@ export default function JobsPage() {
                   placeholder="Search jobs..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -170,7 +175,7 @@ export default function JobsPage() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {statuses.map((status) => (
                   <option key={status} value={status}>
@@ -188,7 +193,7 @@ export default function JobsPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="newest">Newest</option>
                 <option value="oldest">Oldest</option>
@@ -205,7 +210,6 @@ export default function JobsPage() {
                 jobs found
               </div>
             </div>
-
           </div>
         </div>
 
@@ -220,7 +224,7 @@ export default function JobsPage() {
               <p className="text-red-600">{error}</p>
               <button
                 onClick={fetchJobs}
-                className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 Retry
               </button>
@@ -230,12 +234,24 @@ export default function JobsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-300 bg-slate-50">
-                    <th className="px-6 py-4 text-left font-semibold text-slate-600">Job</th>
-                    <th className="px-6 py-4 text-left font-semibold text-slate-600">Location</th>
-                    <th className="px-6 py-4 text-left font-semibold text-slate-600">Type</th>
-                    <th className="px-6 py-4 text-left font-semibold text-slate-600">Status</th>
-                    <th className="px-6 py-4 text-left font-semibold text-slate-600">Created</th>
-                    <th className="px-6 py-4 text-left font-semibold text-slate-600">Actions</th>
+                    <th className="px-6 py-4 text-left font-semibold text-slate-600">
+                      Job
+                    </th>
+                    <th className="px-6 py-4 text-left font-semibold text-slate-600">
+                      Location
+                    </th>
+                    <th className="px-6 py-4 text-left font-semibold text-slate-600">
+                      Type
+                    </th>
+                    <th className="px-6 py-4 text-left font-semibold text-slate-600">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left font-semibold text-slate-600">
+                      Created
+                    </th>
+                    <th className="px-6 py-4 text-left font-semibold text-slate-600">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
 
@@ -247,7 +263,7 @@ export default function JobsPage() {
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-green-100 text-green-700">
+                          <div className="p-2 rounded-lg bg-blue-100 text-blue-700">
                             <Briefcase className="w-5 h-5" />
                           </div>
                           <div>
@@ -336,7 +352,7 @@ export default function JobsPage() {
 
             <div className="bg-white border border-slate-300 rounded-lg p-4">
               <p className="text-sm text-slate-600">Open</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-blue-600">
                 {jobs.filter((j) => j.status === "open").length}
               </p>
             </div>
