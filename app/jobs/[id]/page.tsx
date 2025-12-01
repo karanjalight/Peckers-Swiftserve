@@ -37,18 +37,18 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
 
   if (!job) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-rose-50/20 to-red-50/30">
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-blue-50/30">
         <Navbar />
         <div className=" px-6 py-32 text-center">
-          <div className="bg-white/80 backdrop-blur-sm p-12 rounded-3xl shadow-2xl border border-red-100">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center">
-              <Briefcase className="w-10 h-10 text-red-500" />
+          <div className="bg-white/80 backdrop-blur-sm p-12 rounded-3xl shadow-2xl border border-blue-100">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
+              <Briefcase className="w-10 h-10 text-blue-500" />
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-3">Job Not Found</h2>
             <p className="text-gray-600 mb-8">This position may have been filled or is no longer available.</p>
             <Link
               href="/jobs"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold rounded-2xl hover:from-red-700 hover:to-rose-700 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-600 text-white font-bold rounded-2xl hover:from-blue-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl hover:scale-105"
             >
               <ArrowLeft className="w-5 h-5" />
               Back to Jobs
@@ -69,7 +69,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/20 to-blue-50/30 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-400/10 to-blue-400/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-400/10 to-blue-400/10 rounded-full blur-3xl" />
       
       <div className="relative z-10">
         <Navbar />
@@ -123,8 +123,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                   </div>
                   
                   {job.salary_min && (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl border border-amber-200/50">
-                      <DollarSign className="w-4 h-4 text-amber-600" strokeWidth={2.5} />
+                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-blue-50 to-blue-50 rounded-xl border border-blue-200/50">
+                      <DollarSign className="w-4 h-4 text-blue-600" strokeWidth={2.5} />
                       <span className="font-semibold text-gray-700 text-sm">
                         Ksh {job.salary_min.toLocaleString()} - {job.salary_max?.toLocaleString() || '—'}
                       </span>
@@ -132,8 +132,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                   )}
                   
                   {job.application_deadline && (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl border border-rose-200/50">
-                      <Clock className="w-4 h-4 text-rose-600" strokeWidth={2.5} />
+                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-blue-50 to-blue-50 rounded-xl border border-blue-200/50">
+                      <Clock className="w-4 h-4 text-blue-600" strokeWidth={2.5} />
                       <span className="font-semibold text-gray-700 text-sm">
                         Apply by {new Date(job.application_deadline).toLocaleDateString()}
                       </span>
@@ -149,7 +149,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                     <Sparkles className="w-6 h-6 text-blue-600" />
                     <h2 className="text-2xl font-bold text-gray-900">About This Role</h2>
                   </div>
-                  <div className="prose prose-lg max-w-none">
+                  <div className="pblue pblue-lg max-w-none">
                     <p className="text-gray-700 leading-relaxed whitespace-pre-line">{job.description}</p>
                   </div>
                 </div>

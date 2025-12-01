@@ -288,7 +288,7 @@ export default function ApplyJobPage({
       setSuccess(true);
       setTimeout(() => {
         router.push("/jobs");
-      }, 3000);
+      }, 9000);
     } catch (err: any) {
       console.error(err);
       setError(
@@ -572,8 +572,7 @@ export default function ApplyJobPage({
                 <div className="space-y-4">
                   <div className="p-4 bg-blue-50 border border-blue-200 ">
                     <p className="text-sm text-blue-800">
-                      <span className="font-semibold">Required:</span> CV/Resume
-                      |<span className="font-semibold ml-2">Optional:</span>{" "}
+                      <span className="font-semibold">Required:</span> CV/Resume,
                       Good Conduct Certificate, Form 4 Certificate, ID Photo
                     </p>
                   </div>
