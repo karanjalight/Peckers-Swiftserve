@@ -1,5 +1,6 @@
 // app/jobs/[id]/page.tsx
 import Navbar from '@/components/Navbar';
+import ShareCard from '@/components/ShareCard';
 import BlogHero from '@/components/hero/BlogHero';
 import Footer from '@/components/landing/Footer';
 import { supabase } from '@/lib/supabase';
@@ -122,14 +123,14 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                     </span>
                   </div>
                   
-                  {job.salary_min && (
+                  {/* {job.salary_min && (
                     <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-blue-50 to-blue-50 rounded-xl border border-blue-200/50">
                       <DollarSign className="w-4 h-4 text-blue-600" strokeWidth={2.5} />
                       <span className="font-semibold text-gray-700 text-sm">
                         Ksh {job.salary_min.toLocaleString()} - {job.salary_max?.toLocaleString() || '—'}
                       </span>
                     </div>
-                  )}
+                  )} */}
                   
                   {job.application_deadline && (
                     <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-blue-50 to-blue-50 rounded-xl border border-blue-200/50">
@@ -198,18 +199,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
 
                  
 
-                {/* Share Card */}
-                <div className="bg-white/80 backdrop-blur-sm p-6  border border-gray-100">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Share this job</h3>
-                  <div className="flex gap-3">
-                    <button className="flex-1 px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-600 font-semibold rounded-xl transition-colors">
-                      LinkedIn
-                    </button>
-                    <button className="flex-1 px-4 py-3 bg-gray-50 hover:bg-gray-100 text-gray-600 font-semibold rounded-xl transition-colors">
-                      Copy Link
-                    </button>
-                  </div>
-                </div>
+                <ShareCard jobId={job.id} title={job.title} location={job.location} />
+
               </div>
             </div>
           </div>

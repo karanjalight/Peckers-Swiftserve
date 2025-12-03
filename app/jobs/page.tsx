@@ -36,7 +36,7 @@ export default async function JobsPage() {
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-blue-50/30 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-900/10 to-blue-900/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-blue-400/10 to-blue-400/10 rounded-full blur-3xl" />
       
       <div className="relative z-10">
         <Navbar />
@@ -90,7 +90,7 @@ export default async function JobsPage() {
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 {/* Gradient accent bar */}
-                <div className="absolute left-0 top-0 w-1.5 h-full bg-gradient-to-b from-blue-900 via-blue-900 to-purple-500 transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
+                <div className="absolute left-0 top-0 w-1.5 h-full bg-gradient-to-b from-blue-900 via-blue-900 to-blue-500 transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-top" />
                 
                 {/* Hover glow effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-900/0 via-blue-900/5 to-blue-900/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -129,18 +129,18 @@ export default async function JobsPage() {
                       </span>
                     </div>
                     
-                    {job.salary_min && (
+                    {/* {job.salary_min && (
                       <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-amber-50 to-yellow-50  border border-amber-200/50 shadow-sm hover:shadow-md transition-shadow">
                         <DollarSign className="w-4 h-4 text-amber-600" strokeWidth={2.5} />
                         <span className="font-semibold text-gray-700 text-sm">
                           Ksh {job.salary_min.toLocaleString()} - {job.salary_max?.toLocaleString() || '—'}
                         </span>
                       </div>
-                    )}
+                    )} */}
                     
                     {job.application_deadline && (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-rose-50 to-pink-50  border border-rose-200/50 shadow-sm hover:shadow-md transition-shadow">
-                        <Clock className="w-4 h-4 text-rose-600" strokeWidth={2.5} />
+                      <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-blue-50 to-blue-50  border border-blue-200/50 shadow-sm hover:shadow-md transition-shadow">
+                        <Clock className="w-4 h-4 text-blue-600" strokeWidth={2.5} />
                         <span className="font-semibold text-gray-700 text-sm">
                           Apply by {new Date(job.application_deadline).toLocaleDateString()}
                         </span>

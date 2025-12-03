@@ -20,6 +20,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import Link from "next/link";
+import ShareCard from "@/components/ShareCard";
 
 interface Job {
   id: string;
@@ -73,6 +74,8 @@ export default function ApplyJobPage({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  
+  
 
   useEffect(() => {
     async function fetchJob() {
@@ -572,8 +575,9 @@ export default function ApplyJobPage({
                 <div className="space-y-4">
                   <div className="p-4 bg-blue-50 border border-blue-200 ">
                     <p className="text-sm text-blue-800">
-                      <span className="font-semibold">Required:</span> CV/Resume,
-                      Good Conduct Certificate, Form 4 Certificate, ID Photo
+                      <span className="font-semibold">Required PDF:</span>{" "}
+                      CV/Resume, Good Conduct Certificate, Form 4 Certificate,
+                      ID 
                     </p>
                   </div>
 
@@ -617,7 +621,7 @@ export default function ApplyJobPage({
 
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        ID Photo
+                        National ID 
                       </label>
                       <input
                         type="file"
@@ -668,18 +672,20 @@ export default function ApplyJobPage({
             <div className="lg:col-span-1">
               <div className="sticky top-8 space-y-6">
                 {/* Apply Card */}
-                <div className="bg-gradient-to-br from-blue-800 via-blue-900 to-blue-900 p-8  shadow-2xl text-white">
+                <div className="bg-gradient-to-br rounded from-blue-800 via-blue-900 to-blue-900 p-8  shadow-2xl text-white">
                   <h3 className="text-2xl font-bold mb-3">View other jobs</h3>
                   <p className="text-blue-50 mb-6">
                     Join our team and make an impact in your career.
                   </p>
                   <Link
-                    href=""
+                    href="/jobs"
                     className="block w-full px-8 py-4 bg-white text-blue-800 font-bold  hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl hover:scale-105 text-center"
                   >
-                   View Jobs
+                    View Jobs
                   </Link>
-                </div>                
+                </div>
+
+                {/* <ShareCard jobId={data.id} title={data.title} location={job.location} /> */}
               </div>
             </div>
           </div>
