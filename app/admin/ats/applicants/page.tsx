@@ -64,7 +64,7 @@
       setLoading(true);
       setError("");
       try {
-        const { data, error } = await supabase
+        const { data, error, status, statusText } = await supabase
           .from("job_applications")
           .select(`
             *,
@@ -72,12 +72,14 @@
             job:jobs(*)
           `)
           .order("applied_at", { ascending: false });
-
+    
+        console.log("Supabase response:", { data, error, status, statusText });
+    
         if (error) throw error;
         setApplications(data || []);
       } catch (err: any) {
         console.error("Error fetching applications:", err);
-        setError(err.message || "Failed to load applications");
+        setError(`Error ${err.status || ''}: ${err.message || "Unknown error"}`);
       } finally {
         setLoading(false);
       }
@@ -410,7 +412,7 @@
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <Link
-                              href={`/admin/ats/applicants/${app.id}`}
+                              href={`/admin/applicants/${app.applicant_id}`}
                               className="p-1 hover:bg-slate-100 rounded-lg transition-colors text-slate-600 hover:text-slate-900"
                               title="View details"
                             >
