@@ -412,7 +412,7 @@
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <Link
-                              href={`/admin/applicants/${app.applicant_id}`}
+                              href={`/admin/ats/applicants/${app.id}`}
                               className="p-1 hover:bg-slate-100 rounded-lg transition-colors text-slate-600 hover:text-slate-900"
                               title="View details"
                             >
