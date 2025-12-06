@@ -113,7 +113,7 @@ const AboutSection = () => {
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-[#b38f62] rounded-full"></div>
-                <span className="text-base font-medium">Reliable Nanny & Security Services</span>
+                <span className="text-base font-medium">Reliable Nanny & Guard dog + Handler Services</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-[#b38f62] rounded-full"></div>
