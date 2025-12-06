@@ -49,6 +49,7 @@ const Footer = () => {
     { name: "Contract Managed Nannies", href: "/services/emergency-nanny" },
     { name: "Home Based Care", href: "/services/emergency-nanny" },
     { name: "Home Security", href: "/services/hire-security" },
+    { name: "Corporate Support", href: "/services/corporate-support" },
   ];
 
   return (
@@ -199,10 +200,10 @@ const Footer = () => {
                     </div>
                     <div className="flex flex-col justify-center">
                       <a
-                        href="mailto:info@peckers.co.ke"
+                        href="mailto:info@peckersswiftserve.com"
                         className="hover:text-sky-400 transition-colors font-medium"
                       >
-                        info@peckersswiftserve.co.ke
+                        info@peckersswiftserve.com
                       </a>
                     </div>
                   </li>

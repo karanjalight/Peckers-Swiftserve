@@ -170,13 +170,13 @@ export default function SecurityForm() {
           {/* Date Range */}
           <div>
             <label className="block text-gray-700 font-medium mb-2">
-              Security Service Duration *
+               Service Duration *
             </label>
             <Popover>
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center justify-between w-full border rounded-lg p-3 gap-3 bg-gray-50 text-left"
+                  className="flex items-center  w-full border rounded-lg p-3 gap-3 bg-gray-50 text-right"
                 >
                   <CalendarIcon className="text-[#244672] w-5 h-5" />
                   <span className="text-gray-600">

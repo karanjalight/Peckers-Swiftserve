@@ -76,7 +76,7 @@ export default function TemporarySecurity() {
 
                     <p className="text-gray-800 leading-relaxed text-lg">
                       Traveling? Night shifts? House help just left? Don’t leave
-                      your home vulnerable. Peckers Swift Swerve deploys armed
+                      your home vulnerable. Peckers Swift serve deploys armed
                       response officers + highly trained guard dogs to protect
                       your property — from <strong>1 night to 60 nights</strong>
                       . No long contracts.
@@ -101,7 +101,7 @@ export default function TemporarySecurity() {
                       onClick={() => setShowForm(true)}
                       className="w-full bg-[#b38f62] text-white py-4 text-lg font-semibold hover:bg-[#b38f62] transition"
                     >
-                      Hire Security
+                      Book Service
                     </button>
                   </div>
                 </section>
@@ -151,7 +151,7 @@ export default function TemporarySecurity() {
                     onClick={() => setShowForm(true)}
                     className="mt-12 w-full max-w-md mx-auto bg-[#b38f62] text-white py-4 text-lg font-semibold hover:bg-[#b38f62] transition"
                   >
-                    Hire Security
+                    Book Service
                   </button>
                 </section>
               </div>
@@ -208,7 +208,7 @@ export default function TemporarySecurity() {
               onClick={() => setShowForm(!showForm)}
               className="w-full bg-[#b38f62] text-white py-4 text-lg font-semibold hover:bg-[#b38f62] transition"
             >
-              {showForm ? "Close Form" : "Hire Security"}
+              {showForm ? "Close Form" : "Book Service"}
             </button>
 
             <div className="px-4 py-8 space-y-4 text-gray-700 border-t">
@@ -216,10 +216,10 @@ export default function TemporarySecurity() {
                 Contact Us 24/7
               </h2>
               <p>
-                <strong>Emergency Line:</strong> 07009744522
+                <strong>Emergency Line:</strong> +254 741767944
               </p>
               <p>
-                <strong>Email:</strong> security@peckersswiftswerve.co.ke
+                <strong>Email:</strong> security@peckersswiftserve.com
               </p>
               <p>
                 <strong>Location:</strong> Nairobi, Kenya

@@ -105,7 +105,7 @@ export default function EmergencyNanny() {
   return (
     <main className="min-h-screen">
       <Navbar />
-      <AboutHero title="Book" highlight="Sunday | Emergency" />
+      <AboutHero title="Book" highlight="Sunday | Emergency"  background="/planding3.jpeg"/>
 
       <div className="mx-auto flex lg:flex-row gap-6 flex-col px-4 sm:px-6 lg:px-8 py-4">
         {/* FORM */}
@@ -379,10 +379,10 @@ export default function EmergencyNanny() {
               <h2 className="text-2xl font-bold text-[#244672]">Contact Us</h2>
 
               <p>
-                <strong>Phone:</strong> +25474 1767 944
+                <strong>Phone:</strong> +254 741767944
               </p>
               <p>
-                <strong>Email:</strong> info@peckersswiftswerve.co.ke
+                <strong>Email:</strong> info@peckersswiftserve.com
               </p>
               <p>
                 <strong>Location:</strong> Nairobi, Kenya

@@ -19,7 +19,7 @@ import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { supabase } from "@/lib/supabase";
 
-export default function NannyForm() {
+export default function CorporateForm() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
@@ -104,7 +104,7 @@ export default function NannyForm() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Full Name */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Full Name *</label>
+            <label className="block text-gray-700 font-medium mb-2">Full Name / Organisation *</label>
             <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
               <User className="text-[#244672] w-5 h-5" />
               <input
@@ -171,7 +171,7 @@ export default function NannyForm() {
 
           {/* ID Number */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">ID Number *</label>
+            <label className="block text-gray-700 font-medium mb-2">ID Number / KRA Pin*</label>
             <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
               <User className="text-[#244672] w-5 h-5" />
               <input
@@ -180,7 +180,7 @@ export default function NannyForm() {
                 value={form.id_number}
                 onChange={handleChange}
                 className="w-full bg-transparent focus:outline-none"
-                placeholder="Enter your ID Number"
+                placeholder="Enter your ID/KRA Number"
                 required
               />
             </div>
@@ -189,7 +189,7 @@ export default function NannyForm() {
           {/* Children */}
           <div>
             <label className="block text-gray-700 font-medium mb-2">
-              Number of people in the House
+              Number of people  
             </label>
             <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
               <Baby className="text-[#244672] w-5 h-5" />
@@ -199,9 +199,27 @@ export default function NannyForm() {
                 value={form.children}
                 onChange={handleChange}
                 className="w-full bg-transparent focus:outline-none"
-                placeholder="e.g. 1 child (2 years), 2 adults "
+                placeholder="e.g. 3 "
                 required
               />
+            </div>
+          </div>
+
+          {/* Service Needed */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-2">Type of  Organisation *</label>
+            <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
+              <ClipboardList className="text-[#244672] w-5 h-5" />
+              <select
+                name="service_needed"
+                value={form.service_needed}
+                onChange={handleChange}
+                className="w-full bg-transparent focus:outline-none"
+                required
+              >
+                <option value="emergency_under_6_hours">Individual</option>
+                <option value="sunday_day_bug">Organisation</option>
+              </select>
             </div>
           </div>
 
@@ -218,18 +236,19 @@ export default function NannyForm() {
                 required
               >
                 <option value="">Select service</option>
-                <option value="emergency_under_6_hours">Emergency Nanny (Under 6 Hours)</option>
-                <option value="sunday_day_bug">Sunday / Day-Bug Nanny</option>
-                <option value="short_term_daily">Short-Term / Daily Nanny</option>
-                <option value="short_term_daily">Monthly / Own Managed </option>
-                <option value="short_term_daily">Monthly / Company Managed </option>
+                <option value="emergency_under_6_hours">Training & Consulting</option>
+                <option value="emergency_under_6_hours">Market Campaigns</option>
+                <option value="emergency_under_6_hours">Sales Person Recruitment</option>
+                <option value="emergency_under_6_hours">Performance Dashboards</option>
               </select>
             </div>
           </div>
 
+
+
           {/* Date Range */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Service Duration *</label>
+            <label className="block text-gray-700 font-medium mb-2">Start Date *</label>
             <Popover>
               <PopoverTrigger asChild>
                 <button
@@ -268,7 +287,7 @@ export default function NannyForm() {
               value={form.notes}
               onChange={handleChange}
               className="w-full bg-transparent h-32 focus:outline-none"
-              placeholder="Share details about your staff preference and any special needs in your home."
+              placeholder="Share details about your staff/individual preference and any special needs."
             ></textarea>
           </div>
         </div>

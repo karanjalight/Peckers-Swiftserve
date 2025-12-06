@@ -77,6 +77,12 @@ export default function Navbar() {
             isScrolled={isScrolled}
           />
           <NavLink
+            href="/services/corporate-support"
+            label="Corporate Support"
+            pathname={pathname}
+            isScrolled={isScrolled}
+          />
+          <NavLink
             href="/jobs"
             label="Jobs"
             pathname={pathname}

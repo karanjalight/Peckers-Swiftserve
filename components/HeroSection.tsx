@@ -33,7 +33,7 @@ export default function HeroSection() {
   
   const backgroundImages = [
     "/planding3.jpeg",
-    "https://www.blueline-kennels.com/wp-content/uploads/2023/09/Security-Services-Strip-I-scaled.jpg",
+    "security.png",
     "/homecare2.jpeg",
     "/dashboards.png",
   ];

@@ -94,12 +94,12 @@ export default function InfiniteCarousel() {
     },
     {
       id: 6,
-      title: "Performance Dashboards / Analytics",
+      title: "Corporate Support",
       color: "Corporate",
       icon: AnalyticsIcon,
       image: "https://www.slideteam.net/media/catalog/product/cache/1280x720/b/u/business_performance_dashboard_supplier_relationship_management_supplier_strategy_slide01.jpg",
       gradient: "from-gray-900/80 to-blue-900/50",
-      slug: "services/performance-dashboards",
+      slug: "services/corporate-support",
     },
     {
       id: 7,
