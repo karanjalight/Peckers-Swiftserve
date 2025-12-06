@@ -43,7 +43,7 @@ const FAQSection = () => {
           {/* Left Side - Image */}
           <div className="relative overflow-hidden lg:w-2/5 w-full h-[30vh]  lg:h-screen">
               <img
-              src="https://hatarisecurity.co.ke/wp-content/uploads/2019/07/canine-dogs-for-sale-in-kenya.jpg"
+              src="/nannyfamily.jpeg"
               alt="Peckers Services Ltd"
               className="w-full h-full  object-center object-cover"
             />

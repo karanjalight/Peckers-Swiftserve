@@ -3,13 +3,15 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+
 export default function HeroSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  
   // 4 CORE SERVICES (switched with each image)
   const services = [
     {
       title: "Emergency/Sunday Nanny",
-      desc: "Stranded without a nanny for a day or two? We’ve got you covered. Our Emergency/Sunday Nanny service provides dependable, short-notice childcare when plans fall apart.",
+      desc: "Stranded without a nanny for a day or two? We've got you covered. Our Emergency/Sunday Nanny service provides dependable, short-notice childcare when plans fall apart.",
       cta: "/services/emergency-nanny",
     },
     {
@@ -23,19 +25,19 @@ export default function HeroSection() {
       cta: "/services/emergency-nanny",
     },
     {
-      title: "Corporate  Support",
+      title: "Corporate Support",
       desc: "Performance Analytics, Graduate Salespersons Training, Corporate Staff mindshift.",
       cta: "/contact",
     },
-   
   ];
+  
   const backgroundImages = [
-    "https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-13-1024x683.jpeg",
+    "/planding3.jpeg",
     "https://www.blueline-kennels.com/wp-content/uploads/2023/09/Security-Services-Strip-I-scaled.jpg",
-    "https://gocare.co.ke/wp-content/uploads/2025/03/Home-Nursing-Care-Services.jpeg",
-    "https://archerpoint.com/wp-content/uploads/2019/05/bi.jpg",
-    
+    "/homecare2.jpeg",
+    "/dashboards.png",
   ];
+  
   // Auto switch every 7s
   useEffect(() => {
     const interval = setInterval(() => {
@@ -43,19 +45,25 @@ export default function HeroSection() {
     }, 7000);
     return () => clearInterval(interval);
   }, [services.length]);
+  
   return (
-    <section className="relative flex lg:h-[75vh] h-[70vh] items-center px-6 sm:px-10 md:px-20 overflow-hidden text-white">
-      {/* BACKGROUND IMAGES */}
-      {backgroundImages.map((image, index) => (
+    <section className="relative flex lg:h-[79vh] h-[70vh] items-center px-6 sm:px-10 md:px-20 overflow-hidden text-white">
+      {/* BACKGROUND IMAGES - Now with AnimatePresence */}
+      <AnimatePresence mode="wait">
         <motion.div
-          key={image}
-          className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
-          style={{ backgroundImage: `url('${image}')` }}
-          animate={{ opacity: currentIndex === index ? 1 : 0 }}
+          key={currentIndex}
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url('${backgroundImages[currentIndex]}')` }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
         />
-      ))}
+      </AnimatePresence>
+      
       {/* DARK OVERLAY */}
       <div className="absolute inset-0 bg-black/50" />
+      
       {/* TEXT + ANIMATION */}
       <div className="relative z-10 lg:mt-32 mt-12 w-full max-w-3xl">
         <AnimatePresence mode="wait">
@@ -65,7 +73,8 @@ export default function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -30 }}
             transition={{ duration: 0.8 }}
-            className="text-center bg-[#b38f62]/60 lg:px-20 lg:py-10 p-4  md:text-left mt-6 md:mt-6"          >
+            className="text-center bg-[#b38f62]/60 lg:px-20 lg:py-10 p-4 md:text-left mt-6 md:mt-6"
+          >
             <h1 className="text-2xl sm:text-5xl md:text-6xl font-bold mb-4">
               {services[currentIndex].title}
             </h1>
