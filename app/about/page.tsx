@@ -13,6 +13,7 @@ export default function HomePage() {
       <Navbar />
       <AboutHero title="About"
         highlight="Us"
+        background='/nannyfamily.jpeg'
         breadcrumbs={[
           { label: "Home", href: "/" },
           {

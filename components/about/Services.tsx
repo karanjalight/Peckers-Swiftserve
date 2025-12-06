@@ -10,7 +10,7 @@ const AboutSection = () => {
         {/* Left Image */}
         <div className="w-full   flex justify-start">
           <img
-            src="https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-11-1024x683.jpeg"
+            src="/dashboard.jpeg"
             alt="About Us"
             className="w-[120vh] lg:h-[60vh] h-[20vh]  object-cover"
             loading="lazy"
@@ -73,8 +73,8 @@ const AboutSection = () => {
       </section>
       {/* Why Choose Us Section */}
       <div
-        className="lg:flex flex-col lg:flex-row lg:h-[650px] bg-cover bg-right"
-        style={{ backgroundImage: "url('https://advanceguarding.co.uk/wp-content/uploads/2017/01/Security_dog_1500x630.jpg')" }}
+        className="lg:flex flex-col lg:flex-row lg:h-[650px] bg-contain"
+        style={{ backgroundImage: "url('nannybed.jpeg')" }}
       >
         {/* Left Vertical Text */}
         <div className="hidden lg:flex lg:w-2/5 bg-white lg:px-20 items-center justify-start">
