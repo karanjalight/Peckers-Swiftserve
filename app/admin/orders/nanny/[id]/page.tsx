@@ -21,7 +21,7 @@ import {
   Check,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import SidebarLayout from "@/components/layouts/SidebarLayout";
 
@@ -89,7 +89,7 @@ const STATUS_STEPS = [
   { key: "completed", label: "Completed", icon: CheckCircle, color: "green" },
 ];
 
-export default function NannyRequestDetail({ params }: { params: { id: string } }) {
+export default function NannyRequestDetail() {
   const router = useRouter();
   const [request, setRequest] = useState<NannyRequest | null>(null);
   const [payment, setPayment] = useState<NannyPayment | null>(null);
@@ -102,6 +102,9 @@ export default function NannyRequestDetail({ params }: { params: { id: string } 
   const [successMessage, setSuccessMessage] = useState("");
   const [selectedNannyId, setSelectedNannyId] = useState("");
   const [showNannyDropdown, setShowNannyDropdown] = useState(false);
+  const params = useParams();
+  const id = params?.id as string;
+
 
   const [quoteForm, setQuoteForm] = useState({
     amount: "",

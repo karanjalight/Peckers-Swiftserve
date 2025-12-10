@@ -29,7 +29,7 @@ export default function Home() {
 
   return (
     <div className="w-full flex flex-col lg:gap-10  lg:flex-row items-end  ">
-      <div className="relative lg:w-1/3 lg:h-[70vh] h-[30vh]">
+      <div className="relative lg:w-1/3 w-full lg:h-[70vh] h-[30vh]">
         {/* Adjust h-64 to your desired height */}
         <img
           src="https://insightsocial.org/wp-content/uploads/2023/11/Impacto-cultural.jpg"

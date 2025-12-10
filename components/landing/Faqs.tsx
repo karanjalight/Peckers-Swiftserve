@@ -41,7 +41,7 @@ const FAQSection = () => {
       <div className=" mx-auto">
         <div className="flex lg:flex-row flex-col gap-8 items-center">
           {/* Left Side - Image */}
-          <div className="relative overflow-hidden lg:w-2/5 w-full h-[30vh]  lg:h-screen">
+          <div className="relative overflow-hidden lg:w-2/5 w-full h-[42vh]  lg:h-screen">
               <img
               src="/nannyfamily.jpeg"
               alt="Peckers Services Ltd"
