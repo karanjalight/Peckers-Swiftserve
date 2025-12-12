@@ -37,9 +37,10 @@ export default async function HomePage() {
       <CarouselComponent />
       <Testimonials />
       <Faqs />
-      <Articles />
+      {/* <Articles /> */}
       <Footer />
     </main>
   );
 }
 
+  

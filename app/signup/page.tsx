@@ -11,11 +11,12 @@ import {
   FieldLabel,
   FieldSeparator,
 } from "@/components/ui/field";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { useEffect } from "react";
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
@@ -27,7 +28,16 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
+
+  // Prefill form from query params
+  useEffect(() => {
+    const emailParam = searchParams?.get("email");
+    const phoneParam = searchParams?.get("phone");
+    if (emailParam) setEmail(emailParam);
+    if (phoneParam) setPhone(phoneParam);
+  }, [searchParams]);
 
   const validateForm = () => {
     if (!fullName.trim()) {
@@ -92,11 +102,6 @@ export default function SignupPage() {
 
       console.log("✅ Auth user created:", authData.user.email);
 
-      // Create a simple hash for password_hash field
-      const passwordHash = `$2a$10$${Buffer.from(password)
-        .toString("base64")
-        .substring(0, 53)}`;
-
       // Create user record in users table
       const { error: userError } = await supabase.from("users").insert([
         {
@@ -104,11 +109,6 @@ export default function SignupPage() {
           full_name: fullName,
           email,
           phone: phone || null,
-          role: "customer", // New signups are customers by default
-          is_active: true,
-          password_hash: passwordHash,
-          is_email_verified: false,
-          is_phone_verified: false,
         },
       ]);
 
@@ -118,19 +118,60 @@ export default function SignupPage() {
       }
 
       console.log("✅ User account created successfully");
+
+      // Link existing requests to this user account
+      try {
+        const linkResponse = await fetch("/api/link-requests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: authData.user.id,
+            email: email,
+            phone: phone || null,
+          }),
+        });
+
+        const linkData = await linkResponse.json();
+        if (linkData.success && linkData.linkedCount > 0) {
+          console.log(`✅ Linked ${linkData.linkedCount} requests to account`);
+        }
+      } catch (linkError) {
+        console.error("Error linking requests:", linkError);
+        // Don't fail signup if linking fails
+      }
+
       setSuccess(true);
 
-      // Clear form
-      setFullName("");
-      setEmail("");
-      setPhone("");
-      setPassword("");
-      setConfirmPassword("");
+      // Get redirect URL or default to account page
+      const redirectUrl = searchParams?.get("redirect") || "/account";
 
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        router.push("/login?signup=success");
-      }, 2000);
+      // Set session cookies and redirect
+      const { data: sessionData, error: sessionError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (!sessionError && sessionData.session) {
+        // Set cookies via API route
+        await fetch("/api/auth/set-cookie", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: sessionData.session.access_token,
+            refresh_token: sessionData.session.refresh_token,
+          }),
+        });
+
+        // Redirect after 1 second
+        setTimeout(() => {
+          router.push(redirectUrl);
+        }, 1000);
+      } else {
+        // If auto-login fails, redirect to login page
+        setTimeout(() => {
+          router.push(`/login?signup=success&redirect=${encodeURIComponent(redirectUrl)}`);
+        }, 2000);
+      }
     } catch (err: any) {
       console.log("❌ Error:", err.message);
       setError(err.message);

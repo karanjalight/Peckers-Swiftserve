@@ -86,9 +86,6 @@ export default function SignupPage() {
 
       console.log("✅ Auth user created:", authData.user.email);
 
-      // Create a simple hash for password_hash field
-      const passwordHash = `$2a$10$${Buffer.from(password).toString('base64').substring(0, 53)}`;
-
       // Create user record in users table
       const { error: userError } = await supabase.from("users").insert([
         {
@@ -96,11 +93,6 @@ export default function SignupPage() {
           full_name: fullName,
           email,
           phone: phone || null,
-          role: "customer", // New signups are customers by default
-          is_active: true,
-          password_hash: passwordHash,
-          is_email_verified: false,
-          is_phone_verified: false,
         },
       ]);
 

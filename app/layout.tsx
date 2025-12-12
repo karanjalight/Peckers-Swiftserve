@@ -1,32 +1,28 @@
 import type { Metadata } from "next";
-import { Inter , Outfit } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const montserrat = Montserrat({
   subsets: ["latin"],
-  variable: "--font-inter",
-});
-
-const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-outfit",
+  variable: "--font-montserrat",
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Peckers Services Ltd - Household Support & Corporate Productivity Solutions",
-  description: "Peckers Services Ltd is Kenya's first fully integrated provider of Household Support and Corporate Productivity Solutions. We offer Backup Nannies, Pharma Training, and Performance Analytics. Trust, continuity, and world-class professionalism.",
+  description:
+    "Peckers Services Ltd is Kenya's first fully integrated provider of Household Support and Corporate Productivity Solutions.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
-      <body
-        className={`$${inter.variable} ${outfit.variable}}  antialiased`}
-      >
+    <html lang="en" className={montserrat.variable}>
+      <body className={`${montserrat.variable} antialiased`}>
         {children}
       </body>
     </html>
