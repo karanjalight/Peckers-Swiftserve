@@ -79,7 +79,7 @@ interface Customer {
 export default function CustomerDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const customerId = params.id as string;
+  const customerId = params?.id as string | undefined;
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,6 +89,12 @@ export default function CustomerDetailPage() {
 
   useEffect(() => {
     const fetchCustomer = async () => {
+      if (!customerId) {
+        setError('Customer ID is required');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
@@ -102,9 +108,7 @@ export default function CustomerDetailPage() {
       }
     };
 
-    if (customerId) {
-      fetchCustomer();
-    }
+    fetchCustomer();
   }, [customerId]);
 
   const handleCopy = (text: string, type: string) => {
@@ -114,9 +118,10 @@ export default function CustomerDetailPage() {
   };
 
   const handleVerifyEmail = async () => {
+    if (!customerId) return;
     try {
       setActionLoading('email');
-      await verifyCustomerEmail(customerId);
+      await verifyCustomerEmail(customerId!);
       setCustomer((prev) => prev ? { ...prev, is_email_verified: true } : null);
     } catch (err) {
       alert('Failed to verify email');
@@ -126,9 +131,10 @@ export default function CustomerDetailPage() {
   };
 
   const handleVerifyPhone = async () => {
+    if (!customerId) return;
     try {
       setActionLoading('phone');
-      await verifyCustomerPhone(customerId);
+      await verifyCustomerPhone(customerId!);
       setCustomer((prev) => prev ? { ...prev, is_phone_verified: true } : null);
     } catch (err) {
       alert('Failed to verify phone');
@@ -138,13 +144,14 @@ export default function CustomerDetailPage() {
   };
 
   const handleToggleActive = async () => {
+    if (!customerId) return;
     try {
       setActionLoading('active');
       if (customer?.is_active) {
-        await deactivateCustomer(customerId);
+        await deactivateCustomer(customerId!);
         setCustomer((prev) => prev ? { ...prev, is_active: false } : null);
       } else {
-        await activateCustomer(customerId);
+        await activateCustomer(customerId!);
         setCustomer((prev) => prev ? { ...prev, is_active: true } : null);
       }
     } catch (err) {

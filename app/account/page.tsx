@@ -92,7 +92,9 @@ export default function AccountPage() {
   const [nannyRequests, setNannyRequests] = useState<NannyRequest[]>([]);
   const [securityRequests, setSecurityRequests] = useState<SecurityRequest[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "payments">("overview");
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [redemptions, setRedemptions] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"overview" | "requests" | "payments" | "subscriptions" | "redemptions">("overview");
 
   useEffect(() => {
     checkAuthAndFetchData();
@@ -122,41 +124,53 @@ export default function AccountPage() {
 
       setUser(userData);
 
-      // Fetch nanny requests
+      // Fetch nanny requests (by user_id, email, or phone)
       const { data: nannyData, error: nannyError } = await supabase
         .from("nanny_requests")
         .select("*")
-        .eq("user_id", session.user.id)
+        .or(`user_id.eq.${session.user.id},email.eq.${userData.email},phone.eq.${userData.phone || 'null'}`)
         .order("created_at", { ascending: false });
 
-      if (!nannyError && nannyData) {
+      if (nannyError) {
+        console.error("Error fetching nanny requests:", nannyError);
+      } else if (nannyData) {
         setNannyRequests(nannyData);
       }
 
-      // Fetch security requests
+      // Fetch security requests (by user_id, email, or phone)
       const { data: securityData, error: securityError } = await supabase
         .from("security_requests")
         .select("*")
-        .eq("user_id", session.user.id)
+        .or(`user_id.eq.${session.user.id},email.eq.${userData.email},phone.eq.${userData.phone || 'null'}`)
         .order("created_at", { ascending: false });
 
-      if (!securityError && securityData) {
+      if (securityError) {
+        console.error("Error fetching security requests:", securityError);
+      } else if (securityData) {
         setSecurityRequests(securityData);
       }
 
-      // Fetch nanny payments
+      // Fetch nanny payments (by user_id or by matching request)
       const { data: nannyPayments, error: nannyPayError } = await supabase
         .from("nanny_payments")
         .select("*")
-        .eq("user_id", session.user.id)
+        .or(`user_id.eq.${session.user.id}${nannyData?.map(r => `,request_id.eq.${r.id}`).join('') || ''}`)
         .order("created_at", { ascending: false });
 
-      // Fetch security payments
+      if (nannyPayError) {
+        console.error("Error fetching nanny payments:", nannyPayError);
+      }
+
+      // Fetch security payments (by user_id or by matching request)
       const { data: securityPayments, error: securityPayError } = await supabase
         .from("security_payments")
         .select("*")
-        .eq("user_id", session.user.id)
+        .or(`user_id.eq.${session.user.id}${securityData?.map(r => `,request_id.eq.${r.id}`).join('') || ''}`)
         .order("created_at", { ascending: false });
+
+      if (securityPayError) {
+        console.error("Error fetching security payments:", securityPayError);
+      }
 
       const allPayments: Payment[] = [
         ...(nannyPayments || []).map((p: any) => ({ ...p, type: "nanny" as const })),
@@ -164,6 +178,48 @@ export default function AccountPage() {
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       setPayments(allPayments);
+
+      // Fetch user subscriptions
+      const { data: subscriptionsData, error: subscriptionsError } = await supabase
+        .from("user_subscriptions")
+        .select(`
+          *,
+          subscription_packages (
+            name,
+            service_type,
+            service_days,
+            validity_days
+          )
+        `)
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false });
+
+      if (subscriptionsError) {
+        console.error("Error fetching subscriptions:", subscriptionsError);
+      } else {
+        setSubscriptions(subscriptionsData || []);
+      }
+
+      // Fetch subscription redemptions
+      const { data: redemptionsData, error: redemptionsError } = await supabase
+        .from("subscription_redemptions")
+        .select(`
+          *,
+          user_subscriptions (
+            subscription_packages (
+              name,
+              service_type
+            )
+          )
+        `)
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false });
+
+      if (redemptionsError) {
+        console.error("Error fetching redemptions:", redemptionsError);
+      } else {
+        setRedemptions(redemptionsData || []);
+      }
     } catch (error) {
       console.error("Error:", error);
     } finally {
@@ -370,6 +426,26 @@ export default function AccountPage() {
               >
                 Payments ({payments.length})
               </button>
+              <button
+                onClick={() => setActiveTab("subscriptions")}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "subscriptions"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Subscriptions ({subscriptions.length})
+              </button>
+              <button
+                onClick={() => setActiveTab("redemptions")}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "redemptions"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Redemptions ({redemptions.length})
+              </button>
             </nav>
           </div>
 
@@ -563,6 +639,244 @@ export default function AccountPage() {
                     <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500">No payments found</p>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Subscriptions Tab */}
+            {activeTab === "subscriptions" && (
+              <div className="space-y-4">
+                {subscriptions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 mb-4">No subscriptions yet</p>
+                    <button
+                      onClick={() => router.push("/subscriptions")}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Browse Packages
+                    </button>
+                  </div>
+                ) : (
+                  subscriptions.map((subscription) => {
+                    const isExpired = new Date(subscription.expiry_date) < new Date();
+                    const daysRemaining = Math.ceil(
+                      (new Date(subscription.expiry_date).getTime() - new Date().getTime()) /
+                        (1000 * 60 * 60 * 24)
+                    );
+
+                    return (
+                      <div
+                        key={subscription.id}
+                        className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-start gap-4 flex-1">
+                            <div
+                              className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                                subscription.subscription_packages?.service_type === "nanny"
+                                  ? "bg-pink-100"
+                                  : "bg-green-100"
+                              }`}
+                            >
+                              {subscription.subscription_packages?.service_type === "nanny" ? (
+                                <Baby className="w-6 h-6 text-pink-600" />
+                              ) : (
+                                <Shield className="w-6 h-6 text-green-600" />
+                              )}
+                            </div>
+
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 text-lg">
+                                {subscription.subscription_packages?.name || "Unknown Package"}
+                              </h3>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Purchased on {formatDate(subscription.purchase_date)}
+                              </p>
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                                <div>
+                                  <p className="text-xs text-gray-500">Days Remaining</p>
+                                  <p className="text-lg font-semibold text-gray-900">
+                                    {subscription.service_days_remaining} / {subscription.service_days_total}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Days Used</p>
+                                  <p className="text-lg font-semibold text-gray-900">
+                                    {subscription.service_days_used}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Valid Until</p>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {formatDate(subscription.expiry_date)}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Status</p>
+                                  {isExpired ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                      <XCircle className="w-3 h-3" />
+                                      Expired
+                                    </span>
+                                  ) : subscription.status === "active" ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      <CheckCircle className="w-3 h-3" />
+                                      Active
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                      {subscription.status}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {!isExpired && subscription.status === "active" && subscription.service_days_remaining > 0 && (
+                                <div className="mt-4">
+                                  <button
+                                    onClick={() =>
+                                      router.push(`/subscriptions/redeem/${subscription.id}`)
+                                    }
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                  >
+                                    Redeem Days
+                                  </button>
+                                </div>
+                              )}
+
+                              {daysRemaining <= 7 && daysRemaining > 0 && (
+                                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                  <p className="text-sm text-yellow-800">
+                                    ⚠️ Your subscription expires in {daysRemaining} days
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {/* Redemptions Tab */}
+            {activeTab === "redemptions" && (
+              <div className="space-y-4">
+                {redemptions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No redemptions found</p>
+                  </div>
+                ) : (
+                  redemptions.map((redemption) => {
+                    const pkg =
+                      redemption.user_subscriptions?.subscription_packages;
+                    const isCompleted = redemption.status === "completed";
+                    const isPending = redemption.status === "pending";
+                    const isApproved = redemption.status === "approved";
+                    const isRejected = redemption.status === "rejected";
+
+                    return (
+                      <div
+                        key={redemption.id}
+                        className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-start gap-4 flex-1">
+                            <div
+                              className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                                pkg?.service_type === "nanny"
+                                  ? "bg-pink-100"
+                                  : "bg-green-100"
+                              }`}
+                            >
+                              {pkg?.service_type === "nanny" ? (
+                                <Baby className="w-6 h-6 text-pink-600" />
+                              ) : (
+                                <Shield className="w-6 h-6 text-green-600" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 text-lg">
+                                {pkg?.name || "Subscription Redemption"}
+                              </h3>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Requested on{" "}
+                                {formatDate(redemption.created_at)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div>
+                            {isCompleted && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <CheckCircle className="w-3 h-3" />
+                                Completed
+                              </span>
+                            )}
+                            {isApproved && !isCompleted && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <CheckCircle className="w-3 h-3" />
+                                Approved
+                              </span>
+                            )}
+                            {isPending && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                <Clock className="w-3 h-3" />
+                                Pending
+                              </span>
+                            )}
+                            {isRejected && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <XCircle className="w-3 h-3" />
+                                Rejected
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            <span>
+                              Start: {formatDate(redemption.service_start_date)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            <span>
+                              End: {formatDate(redemption.service_end_date)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Package className="w-4 h-4" />
+                            <span>{redemption.days_to_redeem} days</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            <span>{redemption.location}</span>
+                          </div>
+                        </div>
+
+                        {redemption.notes && (
+                          <div className="mt-3 text-sm text-gray-600">
+                            <strong>Notes:</strong> {redemption.notes}
+                          </div>
+                        )}
+
+                        {redemption.rejection_reason && isRejected && (
+                          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+                            <strong>Rejection reason:</strong>{" "}
+                            {redemption.rejection_reason}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}

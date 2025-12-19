@@ -13,7 +13,7 @@ import {
   Truck,
   HelpCircle,
   PenTool, // you can change this icon
-
+  CreditCard,
   LogOut,
 } from "lucide-react";
 
@@ -103,6 +103,26 @@ const navData = {
         {
           title: "Write New Blog",
           url: "/admin/blogs/create",
+        },
+      ],
+    },
+    {
+      title: "Subscriptions",
+      url: "/admin/subscriptions",
+      icon: CreditCard,
+      isActive: false,
+      items: [
+        {
+          title: "Packages",
+          url: "/admin/subscriptions",
+        },
+        {
+          title: "Customers",
+          url: "/admin/subscriptions/customers",
+        },
+        {
+          title: "Redemptions",
+          url: "/admin/subscriptions/redemptions",
         },
       ],
     },

@@ -77,6 +77,21 @@ interface NannyAssignment {
   nanny: Nanny;
 }
 
+interface AtsApplicant {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  email: string | null;
+  years_of_experience: number | null;
+  location: string | null;
+}
+
+interface CustomerPreferredNanny {
+  applicant_id: string;
+  applicant: AtsApplicant | null;
+}
+
 const SERVICE_TYPES: Record<ServiceType, string> = {
   emergency_under_6_hours: "Emergency Nanny (Under 6 Hours)",
   sunday_day_bug: "Sunday / Day-Bug Nanny",
@@ -102,6 +117,7 @@ export default function NannyRequestDetail() {
   const [successMessage, setSuccessMessage] = useState("");
   const [selectedNannyId, setSelectedNannyId] = useState("");
   const [showNannyDropdown, setShowNannyDropdown] = useState(false);
+  const [preferredNanny, setPreferredNanny] = useState<CustomerPreferredNanny | null>(null);
   const params = useParams();
   const id = params?.id as string;
 
@@ -163,6 +179,30 @@ export default function NannyRequestDetail() {
       if (assignData) {
         setAssignment(assignData);
         setSelectedNannyId(assignData.nanny_id);
+      }
+
+      // Fetch customer preferred nanny from ATS (if any)
+      const { data: selection } = await supabase
+        .from("nanny_customer_selections")
+        .select("applicant_id")
+        .eq("nanny_request_id", params.id)
+        .maybeSingle();
+
+      if (selection?.applicant_id) {
+        const { data: applicant } = await supabase
+          .from("applicants")
+          .select(
+            "id, first_name, last_name, phone, email, years_of_experience, location"
+          )
+          .eq("id", selection.applicant_id)
+          .maybeSingle();
+
+        setPreferredNanny({
+          applicant_id: selection.applicant_id,
+          applicant: applicant || null,
+        });
+      } else {
+        setPreferredNanny(null);
       }
     } catch (err) {
       console.error("Error fetching details:", err);
@@ -722,6 +762,47 @@ export default function NannyRequestDetail() {
 
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-6">
+          {/* Customer Preferred Nanny from ATS */}
+          {preferredNanny && preferredNanny.applicant && (
+            <div className="bg-white rounded border border-purple-300 p-6">
+              <h3 className="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+                <Users className="w-5 h-5 text-purple-700" />
+                Customer Preferred Nanny (ATS)
+              </h3>
+              <p className="text-xs text-slate-500 mb-4">
+                Selected by the customer on the booking success page. Use this as a guide when assigning an internal nanny.
+              </p>
+              <div className="bg-gradient-to-br from-purple-50 to-slate-50 rounded-xl p-4 border border-purple-100">
+                <p className="text-sm text-slate-500 font-medium mb-1">
+                  Name
+                </p>
+                <p className="text-lg font-bold text-slate-900">
+                  {preferredNanny.applicant.first_name}{" "}
+                  {preferredNanny.applicant.last_name}
+                </p>
+                <p className="mt-2 text-xs text-slate-600">
+                  {preferredNanny.applicant.location || "Location on file"}
+                  {preferredNanny.applicant.years_of_experience != null && (
+                    <>
+                      {" "}
+                      • {preferredNanny.applicant.years_of_experience} yrs
+                      experience
+                    </>
+                  )}
+                </p>
+                <p className="mt-2 text-xs text-slate-600">
+                  Phone: {preferredNanny.applicant.phone}
+                  {preferredNanny.applicant.email && (
+                    <> • Email: {preferredNanny.applicant.email}</>
+                  )}
+                </p>
+                <div className="mt-3 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+                  <Star className="w-3 h-3 text-emerald-600" />
+                  <span>ATS status: hired nanny</span>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Success Message */}
           {successMessage && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
@@ -878,44 +959,7 @@ export default function NannyRequestDetail() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Duration (Hours)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={quoteForm.duration_hours}
-                  onChange={(e) =>
-                    setQuoteForm((prev) => ({
-                      ...prev,
-                      duration_hours: e.target.value,
-                    }))
-                  }
-                  placeholder="e.g., 8"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Hourly Rate (Ksh)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={quoteForm.hourly_rate}
-                  onChange={(e) =>
-                    setQuoteForm((prev) => ({
-                      ...prev,
-                      hourly_rate: e.target.value,
-                    }))
-                  }
-                  placeholder="e.g., 500"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                />
-              </div>
+              
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">

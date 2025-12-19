@@ -86,7 +86,7 @@ export async function POST(req: Request) {
       html,
       text: textVersion,
       // Add reply-to for better deliverability
-      reply_to: process.env.RESEND_REPLY_TO?.trim() || fromEmail,
+      replyTo: process.env.RESEND_REPLY_TO?.trim() || fromEmail,
     });
 
     if (error) {

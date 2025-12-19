@@ -35,6 +35,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  Legend,
 } from "recharts";
 import { Loader, TrendingUp, TrendingDown, Baby, Shield, ShoppingCart } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -109,23 +110,25 @@ export default function DashboardPage() {
 
       if (ordersError) throw ordersError;
 
-      // Fetch nanny payments
+      // Fetch all nanny payments
       const { data: nannyPayments, error: nannyPaymentsError } = await supabase
         .from("nanny_payments")
         .select("id, amount, status, created_at, request_id")
-        .eq("status", "paid")
         .order("created_at", { ascending: false });
 
-      if (nannyPaymentsError) throw nannyPaymentsError;
+      if (nannyPaymentsError) {
+        console.error("Error fetching nanny payments:", nannyPaymentsError);
+      }
 
-      // Fetch security payments
+      // Fetch all security payments
       const { data: securityPayments, error: securityPaymentsError } = await supabase
         .from("security_payments")
         .select("id, amount, status, created_at, request_id")
-        .eq("status", "paid")
         .order("created_at", { ascending: false });
 
-      if (securityPaymentsError) throw securityPaymentsError;
+      if (securityPaymentsError) {
+        console.error("Error fetching security payments:", securityPaymentsError);
+      }
 
       // Fetch nanny requests
       const { data: nannyRequests, error: nannyRequestsError } = await supabase
@@ -145,24 +148,25 @@ export default function DashboardPage() {
       const { data: users, error: usersError } = await supabase
         .from("users")
         .select("id, full_name, created_at")
-        .eq("role", "customer")
         .order("created_at", { ascending: false });
 
-      if (usersError) throw usersError;
+      if (usersError) {
+        console.error("Error fetching users:", usersError);
+      }
 
-      // Calculate sales
-      const orderSales = (orders || []).reduce(
-        (sum, order) => sum + (order.total_amount || 0),
-        0
-      );
-      const nannySales = (nannyPayments || []).reduce(
-        (sum, payment) => sum + parseFloat(payment.amount.toString()),
-        0
-      );
-      const securitySales = (securityPayments || []).reduce(
-        (sum, payment) => sum + parseFloat(payment.amount.toString()),
-        0
-      );
+      // Calculate sales (only count paid payments)
+      const orderSales = (orders || [])
+        .filter((order) => order.payment_status === "paid")
+        .reduce((sum, order) => sum + (order.total_amount || 0), 0);
+      
+      const nannySales = (nannyPayments || [])
+        .filter((payment) => payment.status === "paid")
+        .reduce((sum, payment) => sum + parseFloat(payment.amount.toString()), 0);
+      
+      const securitySales = (securityPayments || [])
+        .filter((payment) => payment.status === "paid")
+        .reduce((sum, payment) => sum + parseFloat(payment.amount.toString()), 0);
+      
       const totalSales = orderSales + nannySales + securitySales;
 
       // Calculate new users (last 30 days)
@@ -201,31 +205,35 @@ export default function DashboardPage() {
         salesByMonth[monthKey].sales += order.total_amount || 0;
       });
 
-      // Process nanny payments
-      (nannyPayments || []).forEach((payment) => {
-        const date = new Date(payment.created_at);
-        const monthKey = date.toLocaleDateString("en-US", {
-          month: "short",
+      // Process nanny payments (only count paid)
+      (nannyPayments || [])
+        .filter((payment) => payment.status === "paid")
+        .forEach((payment) => {
+          const date = new Date(payment.created_at);
+          const monthKey = date.toLocaleDateString("en-US", {
+            month: "short",
+          });
+          if (!salesByMonth[monthKey]) {
+            salesByMonth[monthKey] = { sales: 0, nanny: 0, security: 0, orders: 0 };
+          }
+          salesByMonth[monthKey].nanny += parseFloat(payment.amount.toString());
+          salesByMonth[monthKey].sales += parseFloat(payment.amount.toString());
         });
-        if (!salesByMonth[monthKey]) {
-          salesByMonth[monthKey] = { sales: 0, nanny: 0, security: 0, orders: 0 };
-        }
-        salesByMonth[monthKey].nanny += parseFloat(payment.amount.toString());
-        salesByMonth[monthKey].sales += parseFloat(payment.amount.toString());
-      });
 
-      // Process security payments
-      (securityPayments || []).forEach((payment) => {
-        const date = new Date(payment.created_at);
-        const monthKey = date.toLocaleDateString("en-US", {
-          month: "short",
+      // Process security payments (only count paid)
+      (securityPayments || [])
+        .filter((payment) => payment.status === "paid")
+        .forEach((payment) => {
+          const date = new Date(payment.created_at);
+          const monthKey = date.toLocaleDateString("en-US", {
+            month: "short",
+          });
+          if (!salesByMonth[monthKey]) {
+            salesByMonth[monthKey] = { sales: 0, nanny: 0, security: 0, orders: 0 };
+          }
+          salesByMonth[monthKey].security += parseFloat(payment.amount.toString());
+          salesByMonth[monthKey].sales += parseFloat(payment.amount.toString());
         });
-        if (!salesByMonth[monthKey]) {
-          salesByMonth[monthKey] = { sales: 0, nanny: 0, security: 0, orders: 0 };
-        }
-        salesByMonth[monthKey].security += parseFloat(payment.amount.toString());
-        salesByMonth[monthKey].sales += parseFloat(payment.amount.toString());
-      });
 
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const sales = months.map((month) => ({
@@ -284,7 +292,7 @@ export default function DashboardPage() {
       });
 
       // Add nanny payments
-      (nannyPayments || []).slice(0, 3).forEach((payment) => {
+      (nannyPayments || []).slice(0, 5).forEach((payment) => {
         allTransactions.push({
           date: new Date(payment.created_at).toLocaleDateString("en-US", {
             month: "short",
@@ -292,13 +300,13 @@ export default function DashboardPage() {
           }),
           name: "Nanny Service",
           amount: parseFloat(payment.amount.toString()),
-          status: "Paid",
+          status: payment.status === "paid" ? "Paid" : "Pending",
           type: "Nanny",
         });
       });
 
       // Add security payments
-      (securityPayments || []).slice(0, 3).forEach((payment) => {
+      (securityPayments || []).slice(0, 5).forEach((payment) => {
         allTransactions.push({
           date: new Date(payment.created_at).toLocaleDateString("en-US", {
             month: "short",
@@ -306,7 +314,7 @@ export default function DashboardPage() {
           }),
           name: "Security Service",
           amount: parseFloat(payment.amount.toString()),
-          status: "Paid",
+          status: payment.status === "paid" ? "Paid" : "Pending",
           type: "Security",
         });
       });

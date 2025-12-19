@@ -99,7 +99,7 @@ const statusSteps = [
 export default function OrderDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const orderId = params.id as string;
+  const orderId = params?.id as string | undefined;
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -110,6 +110,12 @@ export default function OrderDetailsPage() {
 
   useEffect(() => {
     const fetchOrder = async () => {
+      if (!orderId) {
+        setError('Order ID is required');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
@@ -123,13 +129,11 @@ export default function OrderDetailsPage() {
       }
     };
 
-    if (orderId) {
-      fetchOrder();
-    }
+    fetchOrder();
   }, [orderId]);
 
   const handleStatusUpdate = async (newStatus: string) => {
-    if (!order) return;
+    if (!orderId || !order) return;
     try {
       setUpdating(true);
       const additionalData: any = {};
@@ -141,7 +145,7 @@ export default function OrderDetailsPage() {
         additionalData.delivered_at = new Date().toISOString();
       }
 
-      await updateOrderStatus(orderId, newStatus, additionalData);
+      await updateOrderStatus(orderId!, newStatus, additionalData);
       
       setOrder({
         ...order,
@@ -158,10 +162,10 @@ export default function OrderDetailsPage() {
   };
 
   const handlePaymentStatusUpdate = async (newStatus: string) => {
-    if (!order) return;
+    if (!orderId || !order) return;
     try {
       setUpdating(true);
-      await updateOrderPaymentStatus(orderId, newStatus);
+      await updateOrderPaymentStatus(orderId!, newStatus);
       
       setOrder({
         ...order,

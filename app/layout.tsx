@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
-import { Montserrat } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const montserrat = Montserrat({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-montserrat",
+  variable: "--font-inter",
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-jakarta",
   weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
 });
@@ -21,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={montserrat.variable}>
-      <body className={`${montserrat.variable} antialiased`}>
+    <html lang="en" className={`${inter.variable} ${plusJakarta.variable}`}>
+      <body className={`${inter.className} antialiased`}>
         {children}
       </body>
     </html>

@@ -103,17 +103,17 @@ export default function Navbar() {
           /> */}
 
           <NavLink
-            href="/blogs"
-            label="Blogs"
+            href="/subscriptions"
+            label="Subscriptions"
             pathname={pathname}
             isScrolled={isScrolled}
           />
-          <NavLink
+          {/* <NavLink
             href="/contact"
             label="Contact Us"
             pathname={pathname}
             isScrolled={isScrolled}
-          />
+          /> */}
         </div>
 
         {/* Desktop Buttons */}

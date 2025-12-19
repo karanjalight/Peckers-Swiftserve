@@ -28,7 +28,7 @@ const AboutSection = () => {
           <p className="text-gray-800 leading-relaxed">
             We provide professional services that simplify your life and
             enhance business performance. From corporate training and analytics
-            dashboards to reliable nannies and security personnel, we ensure
+            dashboards to reliable nannies and guard dogs with handlers, we ensure
             top-quality support tailored to your needs.
           </p>
 

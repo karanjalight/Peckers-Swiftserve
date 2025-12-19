@@ -694,7 +694,10 @@ export default function ReportsPage() {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, value }) => `${name}: Ksh ${(value / 1000).toFixed(1)}k`}
+                        label={(props: any) => {
+                          const { name, value } = props as { name: string; value: number };
+                          return `${name}: Ksh ${(value / 1000).toFixed(1)}k`;
+                        }}
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"

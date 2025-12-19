@@ -1,7 +1,7 @@
 "use client";
 import { cn } from "@/lib/utils";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,12 +13,12 @@ import {
 } from "@/components/ui/field";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, CheckCircle, Eye, EyeOff, Loader } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { useEffect } from "react";
 
-export default function SignupPage() {
+function SignupContent() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -362,5 +362,19 @@ export default function SignupPage() {
         .
       </FieldDescription>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-svh flex items-center justify-center">
+          <Loader className="w-6 h-6 animate-spin text-blue-700" />
+        </div>
+      }
+    >
+      <SignupContent />
+    </Suspense>
   );
 }

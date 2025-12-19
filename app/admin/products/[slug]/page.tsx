@@ -87,7 +87,7 @@ function validateProduct(product: Partial<Product>): { [key: string]: string } {
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const productId = params.slug as string;
+  const productId = params?.slug as string | undefined;
 
   const [product, setProduct] = useState<Product | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -110,10 +110,21 @@ export default function ProductDetailPage() {
   }, [formData?.category]);
 
   useEffect(() => {
-    fetchProduct();
+    if (productId) {
+      fetchProduct();
+    } else {
+      setError("Product ID is required");
+      setLoading(false);
+    }
   }, [productId]);
 
   const fetchProduct = async () => {
+    if (!productId) {
+      setError("Product ID is required");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);

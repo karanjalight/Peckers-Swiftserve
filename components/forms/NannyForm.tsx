@@ -268,7 +268,7 @@ export default function NannyForm() {
           {/* Date Range */}
           <div>
             <label className="block text-gray-700 font-medium mb-2">
-              Service Duration *
+              Service Duration <span className="text-gray-500">(click outside the calendar to proceed )</span>*
             </label>
             <Popover>
               <PopoverTrigger asChild>
