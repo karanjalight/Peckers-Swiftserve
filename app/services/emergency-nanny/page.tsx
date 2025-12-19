@@ -107,7 +107,7 @@ export default function EmergencyNanny() {
       <Navbar />
       <AboutHero title="Book" highlight="Sunday | Emergency"  background="/planding3.jpeg"/>
 
-      <div className="mx-auto flex lg:flex-row gap-6 flex-col px-4 sm:px-6 lg:px-8 py-4">
+      <div className="mx-auto flex lg:flex-row gap-6 flex-col px-2 sm:px-6 lg:px-8 py-4">
         {/* FORM */}
         {showForm && (
           <section className="lg:w-2/3 bg-white p-8 lg:p-12 border  ">
@@ -131,7 +131,7 @@ export default function EmergencyNanny() {
         {/* ===================== LEFT SECTION ===================== */}
         {!showForm && (
           <section className="lg:w-2/3">
-            <div className=" lg:mb-10 bg-white lg:px-8 lg:py-8  p-4">
+            <div className=" lg:mb-10 bg-white lg:px-8 lg:py-8  px-0 py-2 p-4">
               <div className="w-full bg-white">
                 {/* Header Section */}
                 <div className="px-4 lg:px-4 py-12 md:py-16">
@@ -139,7 +139,7 @@ export default function EmergencyNanny() {
                     Backup & Emergency Nanny Services
                   </h1>
 
-                  <div className="max-w-6xl text-gray-700 mb-12">
+                  <div className="max-w-6xl text-gray-700 lg:mb-12">
                     {/* ⭐ NEW CONTENT INSERTED HERE ⭐ */}
                     <div>
                       {/* Top About Section */}
@@ -147,9 +147,9 @@ export default function EmergencyNanny() {
                         {/* Left Image */}
                         <div className="w-full flex justify-start">
                           <img
-                            src="https://sashleynannies.co.ke/wp-content/uploads/2023/01/sashley-nannies-13-1024x683.jpeg"
+                            src="/nannyfeed.jpeg"
                             alt="Emergency Nanny"
-                            className="w-[120vh] lg:h-[40vh] h-[20vh] object-cover"
+                            className="w-[120vh] lg:h-[40vh] h-[30vh] object-cover"
                             loading="lazy"
                           />
                         </div>
@@ -319,7 +319,7 @@ export default function EmergencyNanny() {
         <section className="lg:w-1/3">
           <div className="lg:mb-10 bg-white lg:px-8 lg:py-8 p-4">
             {/* Benefits Section */}
-            <div className="px-4 py-12">
+            <div className="px-4 lg:py-12">
               <h1 className="text-3xl md:text-4xl font-bold text-[#244672] mb-8">
                 Summary
               </h1>

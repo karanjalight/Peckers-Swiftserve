@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import SidebarLayout from "@/components/layouts/SidebarLayout";
@@ -83,8 +83,9 @@ interface Application {
 export default function ApplicationDetailsPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = use(params);
   const router = useRouter();
   const [application, setApplication] = useState<Application | null>(null);
   const [applicant, setApplicant] = useState<Applicant | null>(null);
@@ -100,10 +101,21 @@ export default function ApplicationDetailsPage({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchApplicationDetails();
-  }, [params.id]);
+    if (id) {
+      fetchApplicationDetails();
+    } else {
+      setError("Invalid application ID");
+      setLoading(false);
+    }
+  }, [id]);
 
   const fetchApplicationDetails = async () => {
+    if (!id) {
+      setError("Application ID is required");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
@@ -111,7 +123,7 @@ export default function ApplicationDetailsPage({
       const { data: appData, error: appError } = await supabase
         .from("job_applications")
         .select("*")
-        .eq("id", params.id)
+        .eq("id", id)
         .single();
 
       if (appError) throw appError;
@@ -176,7 +188,7 @@ export default function ApplicationDetailsPage({
           notes: notes.trim() || null,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", params.id);
+        .eq("id", id);
 
       if (error) throw error;
 
@@ -197,7 +209,7 @@ export default function ApplicationDetailsPage({
       const { error } = await supabase
         .from("job_applications")
         .delete()
-        .eq("id", params.id);
+        .eq("id", id);
 
       if (error) throw error;
 

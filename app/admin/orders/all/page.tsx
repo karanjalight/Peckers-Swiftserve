@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import SidebarLayout from "@/components/layouts/SidebarLayout";
+import Link from "next/link";
 
 type ServiceType = "emergency_under_6_hours" | "sunday_day_bug" | "short_term_daily";
 type SecurityDogOption = "one_dog_one_handler" | "two_dogs_two_handlers" | "three_plus";
@@ -526,32 +527,21 @@ export default function AllRequestsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              // Copy request details to clipboard
-                              const details = `
-Type: ${request.type === "nanny" ? "Nanny" : "Security"}
-Name: ${request.full_name}
-Phone: ${request.phone}
-Email: ${request.email || "N/A"}
-Location: ${request.location}
-ID: ${request.id_number}
-Service: ${getServiceDetails(request)}
-Start: ${formatDate(request.start_date)}
-End: ${formatDate(request.end_date)}
-${request.type === "nanny" ? `Household: ${(request as NannyRequest).household_description || "N/A"}` : `Dogs: ${(request as SecurityRequest).dog_option ? DOG_OPTIONS[(request as SecurityRequest).dog_option!] : "N/A"}`}
-Notes: ${request.notes || "N/A"}
-                              `.trim();
-                              navigator.clipboard.writeText(details);
-                              alert("Request details copied!");
-                            }}
+                          <Link
+                            href={
+                              request.type === "nanny"
+                                ? `/admin/orders/nanny/${request.id}`
+                                : `/admin/orders/security/${request.id}`
+                            }
                             className="p-1 hover:bg-slate-100 rounded-lg transition-colors text-slate-600 hover:text-slate-900"
+                            title="View Details"
                           >
                             <Eye className="w-4 h-4" />
-                          </button>
+                          </Link>
                           <button
                             onClick={() => handleDelete(request)}
                             className="p-1 hover:bg-red-100 rounded-lg transition-colors text-slate-600 hover:text-red-600"
+                            title="Delete Request"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

@@ -29,10 +29,21 @@ export default function JobDetailPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchJob();
+    if (id) {
+      fetchJob();
+    } else {
+      setError("Invalid job ID");
+      setLoading(false);
+    }
   }, [id]);
 
   const fetchJob = async () => {
+    if (!id) {
+      setError("Job ID is required");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase

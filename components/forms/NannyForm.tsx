@@ -13,15 +13,21 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function NannyForm() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
@@ -33,7 +39,11 @@ export default function NannyForm() {
     notes: "",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -44,18 +54,22 @@ export default function NannyForm() {
       return;
     }
 
-    const { data, error } = await supabase.from("nanny_requests").insert({
-      full_name: form.full_name,
-      phone: form.phone,
-      email: form.email,
-      location: form.location,
-      id_number: form.id_number,
-      household_description: form.children,
-      service_needed: form.service_needed,
-      start_date: dateRange.from.toISOString().split("T")[0],
-      end_date: dateRange.to.toISOString().split("T")[0],
-      notes: form.notes,
-    });
+    const { data, error } = await supabase
+      .from("nanny_requests")
+      .insert({
+        full_name: form.full_name,
+        phone: form.phone,
+        email: form.email,
+        location: form.location,
+        id_number: form.id_number,
+        household_description: form.children,
+        service_needed: form.service_needed,
+        start_date: dateRange.from.toISOString().split("T")[0],
+        end_date: dateRange.to.toISOString().split("T")[0],
+        notes: form.notes,
+      })
+      .select()
+      .single();
 
     if (error) {
       console.error(error);
@@ -73,6 +87,8 @@ export default function NannyForm() {
         notes: "",
       });
       setDateRange(undefined);
+      router.push(`/services/success/${data.id}`);
+
     }
   };
 
@@ -83,9 +99,13 @@ export default function NannyForm() {
           <div className="flex justify-center mb-6">
             <CheckCircle className="w-24 h-24 text-green-500" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-3">Request Received!</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">
+            Request Received!
+          </h2>
           <p className="text-gray-600 mb-6">
-            Thank you for submitting your nanny request. We've received your information and are processing your request. Our team will be in touch shortly.
+            Thank you for submitting your nanny request. We've received your
+            information and are processing your request. Our team will be in
+            touch shortly.
           </p>
           <button
             onClick={() => setSubmitted(false)}
@@ -104,7 +124,9 @@ export default function NannyForm() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Full Name */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Full Name *</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Full Name *
+            </label>
             <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
               <User className="text-[#244672] w-5 h-5" />
               <input
@@ -121,7 +143,9 @@ export default function NannyForm() {
 
           {/* Phone */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Phone Number *</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Phone Number *
+            </label>
             <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
               <Phone className="text-[#244672] w-5 h-5" />
               <input
@@ -138,7 +162,9 @@ export default function NannyForm() {
 
           {/* Email */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Email (Optional)</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Email (Optional)
+            </label>
             <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
               <Mail className="text-[#244672] w-5 h-5" />
               <input
@@ -154,7 +180,9 @@ export default function NannyForm() {
 
           {/* Location */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Your Location *</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Your Location *
+            </label>
             <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
               <MapPin className="text-[#244672] w-5 h-5" />
               <input
@@ -171,7 +199,9 @@ export default function NannyForm() {
 
           {/* ID Number */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">ID Number *</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              ID Number *
+            </label>
             <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
               <User className="text-[#244672] w-5 h-5" />
               <input
@@ -207,7 +237,9 @@ export default function NannyForm() {
 
           {/* Service Needed */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Service Needed *</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Service Needed *
+            </label>
             <div className="flex items-center border rounded-lg p-3 gap-3 bg-gray-50">
               <ClipboardList className="text-[#244672] w-5 h-5" />
               <select
@@ -218,18 +250,26 @@ export default function NannyForm() {
                 required
               >
                 <option value="">Select service</option>
-                <option value="emergency_under_6_hours">Emergency Nanny (Under 6 Hours)</option>
+                <option value="emergency_under_6_hours">
+                  Emergency Nanny (Under 6 Hours)
+                </option>
                 <option value="sunday_day_bug">Sunday / Day-Bug Nanny</option>
-                <option value="short_term_daily">Short-Term / Daily Nanny</option>
+                <option value="short_term_daily">
+                  Short-Term / Daily Nanny
+                </option>
                 <option value="short_term_daily">Monthly / Own Managed </option>
-                <option value="short_term_daily">Monthly / Company Managed </option>
+                <option value="short_term_daily">
+                  Monthly / Company Managed{" "}
+                </option>
               </select>
             </div>
           </div>
 
           {/* Date Range */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Service Duration *</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Service Duration <span className="text-gray-500">(click outside the calendar to proceed )</span>*
+            </label>
             <Popover>
               <PopoverTrigger asChild>
                 <button
@@ -240,7 +280,10 @@ export default function NannyForm() {
                     <CalendarIcon className="text-[#244672] w-5 h-5" />
                     <span className="text-gray-600">
                       {dateRange?.from && dateRange?.to
-                        ? `${format(dateRange.from, "PPP")} → ${format(dateRange.to, "PPP")}`
+                        ? `${format(dateRange.from, "PPP")} → ${format(
+                            dateRange.to,
+                            "PPP"
+                          )}`
                         : "Select date range"}
                     </span>
                   </div>
@@ -260,7 +303,9 @@ export default function NannyForm() {
 
         {/* Notes */}
         <div className="mt-6">
-          <label className="block text-gray-700 font-medium mb-2">Share your Preference (NB: We might not meet all of them )</label>
+          <label className="block text-gray-700 font-medium mb-2">
+            Share your Preference (NB: We might not meet all of them )
+          </label>
           <div className="flex items-start border rounded-lg p-3 gap-3 bg-gray-50">
             <FileText className="text-[#244672] w-5 h-5 mt-1" />
             <textarea

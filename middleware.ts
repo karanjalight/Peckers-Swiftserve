@@ -21,8 +21,8 @@ export async function middleware(req: NextRequest) {
   // Protected routes that require authentication
   if (
     pathname.startsWith("/admin") ||
-    pathname.startsWith("/dashboard") 
-    
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/account")
   ) {
     console.log("🔐 Protected route detected");
 
@@ -65,6 +65,7 @@ export const config = {
   matcher: [
     "/admin/:path*",
     "/dashboard/:path*",
+    "/account/:path*",
     "/login/:path*",
     "/signup/:path*",
   ],

@@ -18,10 +18,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function SecurityForm() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
 
   const [form, setForm] = useState({
     full_name: "",
@@ -71,6 +73,7 @@ export default function SecurityForm() {
         notes: "",
       });
       setDateRange(undefined);
+      router.push(`/services/success/${data.id}?type=security`);
     }
   };
 

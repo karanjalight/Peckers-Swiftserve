@@ -58,14 +58,14 @@ export default function TermsModal() {
             <div className="flex justify-end gap-4">
               <Button
                 variant="outline"
-                className="border-gray-300 py-6 w-40 text-gray-700 hover:bg-gray-100"
+                className="border-gray-300 py-6 lg:w-40  w-24 text-gray-700 hover:bg-gray-100"
                 onClick={handleAccept}
               >
                 Cancel
               </Button>
 
               <Button
-                className="bg-[#02273f] w-40 py-6 hover:bg-[#0d141a] text-white px-6"
+                className="bg-[#02273f] lg:w-40 w-44 py-6 hover:bg-[#0d141a] text-white px-6"
                 onClick={handleAccept}
               >
                 Accept & Continue
