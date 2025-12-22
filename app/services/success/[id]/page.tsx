@@ -32,6 +32,7 @@ interface HiredNannyApplication {
     email: string | null;
     years_of_experience: number | null;
     location: string | null;
+    active?: boolean | null;
   };
   jobs: {
     id: string;
@@ -102,12 +103,15 @@ export default function SuccessPage() {
 
           if (!secError && secData) {
             setRequest(secData);
-            // Fetch security payment
-            const { data: payData } = await supabase
+            // Fetch security payment - use maybeSingle to gracefully handle missing records
+            const { data: payData, error: secPayError } = await supabase
               .from("security_payments")
               .select("*")
               .eq("request_id", id)
-              .single();
+              .maybeSingle();
+            if (secPayError) {
+              console.error("Error fetching security payment in fallback:", secPayError);
+            }
             setPayment(payData || null);
             setLoading(false);
             return;
@@ -117,14 +121,21 @@ export default function SuccessPage() {
       }
       setRequest(reqData);
 
-      // Fetch payment
+      // Fetch payment - use maybeSingle to gracefully handle missing records
       const { data: payData, error: payError } = await supabase
         .from(paymentTable)
         .select("*")
         .eq("request_id", id)
-        .single();
+        .maybeSingle();
 
-      if (payError && (payError as any).code !== "PGRST116") throw payError; // ignore "no rows"
+      if (payError) {
+        console.error(`Error fetching payment from ${paymentTable}:`, payError);
+        // Don't throw for missing payment - it's okay if payment doesn't exist yet
+        // Only throw for actual query errors
+        if ((payError as any).code && (payError as any).code !== "PGRST116") {
+          throw payError;
+        }
+      }
       setPayment(payData || null);
 
       // For nanny requests, also fetch available hired nannies from ATS + any existing selection
@@ -158,7 +169,8 @@ export default function SuccessPage() {
                 phone,
                 email,
                 years_of_experience,
-                location
+                location,
+                active
               ),
               jobs:job_id (
                 id,
@@ -168,24 +180,52 @@ export default function SuccessPage() {
             `
           )
           .eq("status", "hired")
-          .ilike("jobs.title", "%nanny%")
+          // .ilike("jobs.title", "%nanny%")
           .order("applied_at", { ascending: false });
+         
 
+        console.log("Nanny applications:", nannyApps);
         if (nannyError) {
           console.error("Error loading hired nannies from ATS:", nannyError);
         } else {
-          setHiredNannies(
-            ((nannyApps || []) as unknown) as HiredNannyApplication[]
-          );
+          const allHiredNannies =
+            ((nannyApps || []) as unknown) as HiredNannyApplication[];
+
+          // Only keep applications where:
+          // - job title includes "nanny"
+          // - applicant is active (or active is true)
+          const nannyOnlyActive = allHiredNannies.filter((app) => {
+            const isNannyJob =
+              app.jobs?.title &&
+              app.jobs.title.toLowerCase().includes("nanny");
+            const isActiveApplicant =
+              app.applicants?.active === undefined ||
+              app.applicants?.active === null ||
+              app.applicants?.active === true;
+
+            return isNannyJob && isActiveApplicant;
+          });
+
+          setHiredNannies(nannyOnlyActive);
         }
       } else {
         setHiredNannies([]);
         setSelectedApplicantId(null);
         setSelectionSaved(false);
       }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load your payment details.");
+    } catch (err: any) {
+      console.error("Error in fetchData:", err);
+      // Provide more specific error message if possible
+      const errorMessage = err?.message || err?.code || "Unknown error";
+      console.error("Error details:", {
+        message: errorMessage,
+        code: err?.code,
+        details: err?.details,
+        hint: err?.hint,
+        requestType,
+        id,
+      });
+      setError("Failed to load your payment details. Please try refreshing the page or contact support if the issue persists.");
     } finally {
       if (!options?.silent) {
         setLoading(false);
@@ -273,6 +313,50 @@ export default function SuccessPage() {
         const verifyData = await verifyRes.json();
 
         if (verifyData.success) {
+          // If this is a nanny booking and a nanny has been selected,
+          // mark that applicant as inactive and flag the request as assigned
+          // to avoid double booking.
+          if (requestTableIsNanny(requestType) && selectedApplicantId) {
+            try {
+              const { error: applicantUpdateError } = await supabase
+                .from("applicants")
+                .update({ active: false })
+                .eq("id", selectedApplicantId);
+
+              if (applicantUpdateError) {
+                console.error(
+                  "Error marking applicant as inactive after payment:",
+                  applicantUpdateError
+                );
+              } else {
+                // Optimistically remove this nanny from the local list
+                setHiredNannies((prev) =>
+                  prev.filter(
+                    (app) => app.applicants.id !== selectedApplicantId
+                  )
+                );
+              }
+
+              // Mark the nanny request as assigned
+              const { error: requestUpdateError } = await supabase
+                .from("nanny_requests")
+                .update({ is_assigned: true })
+                .eq("id", id);
+
+              if (requestUpdateError) {
+                console.error(
+                  "Error marking nanny request as assigned after payment:",
+                  requestUpdateError
+                );
+              }
+            } catch (err) {
+              console.error(
+                "Unexpected error updating applicant/request status:",
+                err
+              );
+            }
+          }
+
           // Payment verified and updated by API route
           setPaymentSuccess(true);
           // Refresh payment data to get updated status
@@ -304,6 +388,178 @@ export default function SuccessPage() {
       onSuccess,
       onClose
     );
+  };
+
+  const handleDownloadReceipt = async () => {
+    if (!payment || !request) return;
+
+    try {
+      const jsPDFModule = await import("jspdf");
+      // Support both ESM named export and default export shapes
+      const JsPDFConstructor: any =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (jsPDFModule as any).jsPDF || (jsPDFModule as any).default;
+
+      if (!JsPDFConstructor) {
+        throw new Error("jsPDF library could not be loaded");
+      }
+
+      const doc = new JsPDFConstructor();
+
+      const primaryColor = "#0f172a"; // slate-900
+      const accentColor = "#1d4ed8"; // blue-700
+      const mutedColor = "#6b7280"; // gray-500
+
+      // Header
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pageWidthHeader = (doc as any).internal?.pageSize?.getWidth?.() || 210;
+      const centerX = pageWidthHeader / 2;
+
+      // Premium gradient-style bar
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, pageWidthHeader, 36, "F");
+
+      // Brand name (top left)
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      // doc.text("Peckers SwiftServe", 14, 14);
+
+      // Premium title + subtitle, centered (stacked, no overlap)
+      doc.setFontSize(14);
+      doc.setTextColor(226, 232, 240);
+      doc.text("Peckers SwiftServe Booking Receipt", centerX, 16, {
+        align: "center",
+      });
+
+      doc.setFontSize(9);
+      doc.setTextColor(148, 163, 184);
+      doc.text(
+        "Securely generated by Peckers SwiftServe for your records",
+        centerX,
+        22,
+        { align: "center" }
+      );
+
+      // Common layout measurements
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pageWidth = (doc as any).internal?.pageSize?.getWidth?.() || 210;
+      const marginX = 14;
+      const tableWidth = pageWidth - marginX * 2;
+      const labelX = marginX + 4;
+      const valueX = marginX + tableWidth / 2;
+
+      let y = 40;
+
+      const drawSectionTitle = (title: string) => {
+        doc.setFontSize(13);
+        doc.setTextColor(primaryColor);
+        doc.text(title, marginX, y);
+        y += 4;
+        doc.setDrawColor(229, 231, 235);
+        doc.line(marginX, y, marginX + tableWidth, y);
+        y += 4;
+      };
+
+      const drawRow = (label: string, value: string | string[]) => {
+        const rowHeight = 8;
+        doc.setDrawColor(226, 232, 240); // light border
+        doc.rect(marginX, y - 5, tableWidth, rowHeight, "S");
+
+        doc.setFontSize(10);
+        doc.setTextColor(mutedColor);
+        doc.text(label, labelX, y);
+
+        doc.setTextColor(primaryColor);
+        if (Array.isArray(value)) {
+          doc.text(value, valueX, y);
+        } else {
+          doc.text(String(value || "-"), valueX, y);
+        }
+
+        y += rowHeight;
+      };
+
+      // Receipt meta as table
+      drawSectionTitle("Receipt Summary");
+
+      const paidDate = payment.paid_at
+        ? new Date(payment.paid_at).toLocaleString()
+        : new Date().toLocaleString();
+
+      const statusText =
+        payment.status === "paid"
+          ? "Paid"
+          : payment.status === "pending"
+          ? "Pending"
+          : "Failed";
+
+      drawRow("Receipt No.", String(payment.id || payment.reference || "-"));
+      drawRow("Date", paidDate);
+      drawRow("Status", statusText);
+
+      y += 6;
+
+      // Customer details table
+      drawSectionTitle("Customer Details");
+      drawRow("Name", String(request.full_name || "-"));
+      drawRow("Email", String(request.email || "-"));
+      drawRow("Phone", String(request.phone || "-"));
+      drawRow("Location", String(request.location || "-"));
+
+      y += 6;
+
+      // Service details table
+      drawSectionTitle("Service Details");
+      drawRow(
+        "Service Type",
+        String(request.service_needed || requestType || "-")
+      );
+
+      if (request.reason) {
+        const splitReason = doc.splitTextToSize(
+          String(request.reason),
+          tableWidth / 2 - 8
+        );
+        drawRow("Reason", splitReason);
+      }
+
+      y += 6;
+
+      // Payment breakdown table
+      drawSectionTitle("Payment Summary");
+
+      const amountNumber = parseFloat(payment.amount);
+      const amountText = isNaN(amountNumber)
+        ? "-"
+        : `KES ${amountNumber.toLocaleString()}`;
+
+      drawRow("Amount Paid", amountText);
+
+      if (payment.reference) {
+        drawRow("Gateway Ref", String(payment.reference));
+      }
+
+      y += 10;
+
+      // Footer note
+      doc.setDrawColor(229, 231, 235);
+      doc.line(14, y, 196, y);
+      y += 8;
+      doc.setFontSize(9);
+      doc.setTextColor(mutedColor);
+      doc.text(
+        "Thank you for choosing Peckers SwiftServe. For any queries about this receipt, contact our support team.",
+        14,
+        y
+      );
+
+      doc.save(
+        `peckers-receipt-${requestType}-${id || ""}-${Date.now()}.pdf`
+      );
+    } catch (err) {
+      console.error("Error generating receipt PDF:", err);
+      alert("Failed to generate receipt. Please try again.");
+    }
   };
 
   const handleSaveNannySelection = async () => {
@@ -490,8 +746,8 @@ export default function SuccessPage() {
               </dl>
             </div>
 
-            {/* Nanny Selection (for nanny requests) */}
-            {requestTableIsNanny(requestType) && (
+            {/* Nanny Selection (for nanny requests, before payment is completed) */}
+            {requestTableIsNanny(requestType) && payment?.status !== "paid" && (
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-1">
                   <Baby className="w-5 h-5 text-pink-600" />
@@ -874,10 +1130,19 @@ export default function SuccessPage() {
                   )}
 
                   {payment.status === "paid" && (
-                    <p className="mt-4 text-xs text-emerald-200">
-                      Your payment is complete. A confirmation has been sent to
-                      your email, and our team is finalizing your booking.
-                    </p>
+                    <div className="mt-4 space-y-2">
+                      <p className="text-xs text-emerald-200">
+                        Your payment is complete. A confirmation has been sent
+                        to your email, and our team is finalizing your booking.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleDownloadReceipt}
+                        className="w-full py-2.5 rounded-xl bg-white text-slate-900 text-sm font-medium hover:bg-slate-100 transition border border-slate-300 flex items-center justify-center gap-2"
+                      >
+                        <span>Download Receipt (PDF)</span>
+                      </button>
+                    </div>
                   )}
 
                   {payment.status !== "paid" && isAutoRefreshing && (
