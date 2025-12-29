@@ -109,6 +109,7 @@ function SignupContent() {
           full_name: fullName,
           email,
           phone: phone || null,
+          role: "customer", // Default role for new signups
         },
       ]);
 
@@ -118,6 +119,21 @@ function SignupContent() {
       }
 
       console.log("✅ User account created successfully");
+
+      // Fetch user record to get role
+      const { data: userData, error: userFetchError } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", authData.user.id)
+        .single();
+
+      if (userFetchError) {
+        console.error("Error fetching user role:", userFetchError);
+      }
+
+      // Determine redirect URL based on user role
+      const userRole = userData?.role || "customer";
+      const redirectUrl = userRole === "admin" ? "/admin/dashboard" : "/account";
 
       // Link existing requests to this user account
       try {
@@ -141,9 +157,6 @@ function SignupContent() {
       }
 
       setSuccess(true);
-
-      // Get redirect URL or default to account page
-      const redirectUrl = searchParams?.get("redirect") || "/account";
 
       // Set session cookies and redirect
       const { data: sessionData, error: sessionError } = await supabase.auth.signInWithPassword({
