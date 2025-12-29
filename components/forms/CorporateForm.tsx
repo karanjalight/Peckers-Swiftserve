@@ -55,6 +55,10 @@ export default function CorporateForm() {
       start_date: dateRange.from.toISOString().split("T")[0],
       end_date: dateRange.to.toISOString().split("T")[0],
       notes: form.notes,
+      first_aid: false,
+      driving: false,
+      cooking: false,
+      cleaning: false,
     });
 
     if (error) {

@@ -37,6 +37,10 @@ export default function NannyForm() {
     children: "",
     service_needed: "",
     notes: "",
+    first_aid: false,
+    driving: false,
+    cooking: false,
+    cleaning: false,
   });
 
   const handleChange = (
@@ -44,7 +48,9 @@ export default function NannyForm() {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const target = e.target;
+    const value = target.type === "checkbox" ? (target as HTMLInputElement).checked : target.value;
+    setForm({ ...form, [target.name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,6 +73,10 @@ export default function NannyForm() {
         start_date: dateRange.from.toISOString().split("T")[0],
         end_date: dateRange.to.toISOString().split("T")[0],
         notes: form.notes,
+        first_aid: form.first_aid,
+        driving: form.driving,
+        cooking: form.cooking,
+        cleaning: form.cleaning,
       })
       .select()
       .single();
@@ -85,6 +95,10 @@ export default function NannyForm() {
         children: "",
         service_needed: "",
         notes: "",
+        first_aid: false,
+        driving: false,
+        cooking: false,
+        cleaning: false,
       });
       setDateRange(undefined);
       router.push(`/services/success/${data.id}`);
@@ -298,6 +312,67 @@ export default function NannyForm() {
                 />
               </PopoverContent>
             </Popover>
+          </div>
+        </div>
+
+        {/* Extra Skills */}
+        <div className="mt-6">
+          <label className="block text-gray-700 font-medium mb-3">
+            Extra Skills (Select all that apply)
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center space-x-3 border rounded-lg p-3 bg-gray-50 hover:bg-gray-100 transition">
+              <input
+                type="checkbox"
+                name="first_aid"
+                id="first_aid"
+                checked={form.first_aid}
+                onChange={handleChange}
+                className="w-5 h-5 text-[#244672] border-gray-300 rounded focus:ring-[#244672] cursor-pointer"
+              />
+              <label htmlFor="first_aid" className="text-gray-700 font-medium cursor-pointer">
+                First Aid
+              </label>
+            </div>
+            <div className="flex items-center space-x-3 border rounded-lg p-3 bg-gray-50 hover:bg-gray-100 transition">
+              <input
+                type="checkbox"
+                name="driving"
+                id="driving"
+                checked={form.driving}
+                onChange={handleChange}
+                className="w-5 h-5 text-[#244672] border-gray-300 rounded focus:ring-[#244672] cursor-pointer"
+              />
+              <label htmlFor="driving" className="text-gray-700 font-medium cursor-pointer">
+                Driving
+              </label>
+            </div>
+            <div className="flex items-center space-x-3 border rounded-lg p-3 bg-gray-50 hover:bg-gray-100 transition">
+              <input
+                type="checkbox"
+                name="cooking"
+                id="cooking"
+                checked={form.cooking}
+                onChange={handleChange}
+                className="w-5 h-5 text-[#244672] border-gray-300 rounded focus:ring-[#244672] cursor-pointer"
+              />
+              <label htmlFor="cooking" className="text-gray-700 font-medium cursor-pointer">
+                ECD Trained
+              </label>
+            </div>
+            <div className="flex hidden items-center space-x-3 border rounded-lg p-3 bg-gray-50 hover:bg-gray-100 transition">
+              <input
+                type="checkbox"
+                name="cleaning"
+                id="cleaning"
+                checked={form.cleaning}
+                onChange={handleChange}
+                className="w-5 h-5 text-[#244672] border-gray-300 rounded focus:ring-[#244672] cursor-pointer"
+              />
+              <label htmlFor="cleaning" className="text-gray-700 font-medium cursor-pointer">
+                Cleaning
+              </label>
+            </div>
           </div>
         </div>
 

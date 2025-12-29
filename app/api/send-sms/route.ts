@@ -27,6 +27,28 @@ function formatPhoneNumber(phone: string): string {
   return formatted;
 }
 
+/**
+ * Get human-readable meaning of Africa's Talking status codes
+ */
+function getStatusCodeMeaning(statusCode: number): string {
+  const statusMeanings: Record<number, string> = {
+    100: 'Processed - Message is being processed',
+    101: 'Sent - Message sent successfully',
+    102: 'Queued - Message queued for delivery',
+    401: 'Invalid credentials - Check API username and key',
+    403: 'Invalid sender ID or insufficient balance',
+    404: 'Invalid phone number format',
+    405: 'Invalid message content or length',
+    500: 'Internal server error at Africa\'s Talking',
+    501: 'Delivery failure - Phone unreachable or number invalid',
+    502: 'Delivery failure - Phone off or out of coverage',
+    503: 'Delivery failure - Message rejected by carrier',
+    504: 'Delivery failure - Unknown delivery error',
+  };
+  
+  return statusMeanings[statusCode] || `Unknown status code: ${statusCode}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -124,25 +146,56 @@ export async function POST(request: NextRequest) {
     });
     
     // Validate phone number formats (Kenya: +254XXXXXXXXX = 13 characters total)
+    const invalidPhones: Array<{original: string, formatted: string, reason: string}> = [];
     formattedPhones.forEach((formattedPhone, index) => {
-      if (formattedPhone.startsWith('+254') && formattedPhone.length !== 13) {
-        console.warn('⚠️ Phone number format warning:', {
-          original: phoneNumbers[index],
-          formatted: formattedPhone,
-          length: formattedPhone.length,
-          expected: '13 characters for Kenya (+254XXXXXXXXX)'
-        });
+      if (formattedPhone.startsWith('+254')) {
+        if (formattedPhone.length !== 13) {
+          invalidPhones.push({
+            original: phoneNumbers[index],
+            formatted: formattedPhone,
+            reason: `Invalid length: ${formattedPhone.length} (expected 13 for Kenya)`
+          });
+        } else {
+          // Validate Kenyan mobile prefix (should start with 2547)
+          const mobilePrefix = formattedPhone.substring(4, 5);
+          if (mobilePrefix !== '7' && mobilePrefix !== '1') {
+            invalidPhones.push({
+              original: phoneNumbers[index],
+              formatted: formattedPhone,
+              reason: `Invalid Kenyan mobile prefix: ${mobilePrefix} (should be 7 or 1)`
+            });
+          }
+        }
       }
     });
+    
+    // Log warnings for invalid phone numbers
+    if (invalidPhones.length > 0) {
+      console.warn('⚠️ Invalid phone number(s) detected:', invalidPhones);
+    }
 
     const isBulkSMS = formattedPhones.length > 1;
+    
+    // Calculate message parts (SMS are 160 chars per part, or 70 for Unicode)
+    const isUnicode = /[^\x00-\x7F]/.test(message);
+    const charsPerPart = isUnicode ? 70 : 160;
+    const messageParts = Math.ceil(message.length / charsPerPart);
+    
     console.log(`📤 Sending ${isBulkSMS ? 'BULK' : ''} SMS via Africa's Talking SDK:`, {
       recipients: formattedPhones.length,
       to: isBulkSMS ? `${formattedPhones.length} recipients` : formattedPhones[0],
-      from: from,
+      from: from || '(sandbox - no sender ID)',
       messageLength: message.length,
+      messageParts: messageParts,
+      isUnicode: isUnicode,
       username: username,
+      invalidPhones: invalidPhones.length > 0 ? invalidPhones.length : undefined,
     });
+    
+    // Warn if message is long (more likely to fail)
+    if (messageParts > 1) {
+      console.warn(`⚠️ Long message detected: ${messageParts} parts. Multi-part messages have higher failure rates.`);
+    }
 
     // Initialize the SDK with credentials
     const credentials = {
@@ -304,6 +357,26 @@ Current configuration:
         r.statusCode !== 101 && r.status !== 'Success'
       );
       
+      // Log detailed status for all recipients
+      recipients.forEach((r: any) => {
+        if (r.statusCode === 101 || r.status === 'Success') {
+          console.log(`✅ SMS delivered to ${r.number}:`, {
+            statusCode: r.statusCode,
+            status: r.status,
+            messageId: r.messageId,
+            cost: r.cost,
+          });
+        } else {
+          console.error(`❌ SMS delivery FAILED for ${r.number}:`, {
+            statusCode: r.statusCode,
+            status: r.status,
+            messageId: r.messageId,
+            cost: r.cost,
+            errorInfo: getStatusCodeMeaning(r.statusCode),
+          });
+        }
+      });
+      
       if (successfulRecipients.length > 0) {
         const totalCost = recipients.reduce((sum: number, r: any) => sum + parseFloat(r.cost || '0'), 0);
         
@@ -312,6 +385,16 @@ Current configuration:
           successful: successfulRecipients.length,
           failed: failedRecipients.length,
         });
+        
+        // If there are failures, log them separately
+        if (failedRecipients.length > 0) {
+          console.warn('⚠️ Some SMS failed to deliver:', failedRecipients.map((r: any) => ({
+            phone: r.number,
+            statusCode: r.statusCode,
+            status: r.status,
+            reason: getStatusCodeMeaning(r.statusCode),
+          })));
+        }
         
         return NextResponse.json({
           success: true,
@@ -329,16 +412,27 @@ Current configuration:
               statusCode: r.statusCode,
               messageId: r.messageId,
               cost: r.cost,
+              failureReason: r.statusCode !== 101 ? getStatusCodeMeaning(r.statusCode) : undefined,
             })),
             totalCost: totalCost.toFixed(4),
           },
         });
       } else {
-        console.error('❌ SMS sending failed for all recipients:', recipients);
+        console.error('❌ SMS sending failed for all recipients:', recipients.map((r: any) => ({
+          phone: r.number,
+          statusCode: r.statusCode,
+          status: r.status,
+          reason: getStatusCodeMeaning(r.statusCode),
+        })));
         return NextResponse.json(
           { 
             error: `Failed to send SMS to all recipients`,
-            details: recipients 
+            details: recipients.map((r: any) => ({
+              phoneNumber: r.number,
+              status: r.status,
+              statusCode: r.statusCode,
+              failureReason: getStatusCodeMeaning(r.statusCode),
+            }))
           },
           { status: 400 }
         );

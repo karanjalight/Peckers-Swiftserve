@@ -19,6 +19,7 @@ import Navbar from "@/components/Navbar";
 import AboutHero from "@/components/hero/AboutHero";
 import Footer from "@/components/landing/Footer";
 import usePaystack from "@/app/hooks/usePaystack";
+import StepIndicator, { NANNY_BOOKING_STEPS, SECURITY_BOOKING_STEPS } from "@/components/StepIndicator";
 
 interface HiredNannyApplication {
   id: string;
@@ -32,6 +33,7 @@ interface HiredNannyApplication {
     email: string | null;
     years_of_experience: number | null;
     location: string | null;
+    passport_photo_url: string | null;
     active?: boolean | null;
   };
   jobs: {
@@ -65,6 +67,10 @@ export default function SuccessPage() {
   const [savingSelection, setSavingSelection] = useState(false);
   const [selectionSaved, setSelectionSaved] = useState(false);
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+  const [selectedNannyDetails, setSelectedNannyDetails] = useState<{
+    first_name: string;
+    last_name: string;
+  } | null>(null);
 
   const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY as string;
   const { initializePayment } = usePaystack(publicKey);
@@ -150,8 +156,23 @@ export default function SuccessPage() {
         if (existingSelection?.applicant_id) {
           setSelectedApplicantId(existingSelection.applicant_id);
           setSelectionSaved(true);
+          
+          // Fetch selected nanny details
+          const { data: nannyData } = await supabase
+            .from("applicants")
+            .select("first_name, last_name")
+            .eq("id", existingSelection.applicant_id)
+            .single();
+          
+          if (nannyData) {
+            setSelectedNannyDetails({
+              first_name: nannyData.first_name,
+              last_name: nannyData.last_name,
+            });
+          }
         } else {
           setSelectionSaved(false);
+          setSelectedNannyDetails(null);
         }
 
         // Hired nanny applications whose job title is Nanny
@@ -170,6 +191,7 @@ export default function SuccessPage() {
                 email,
                 years_of_experience,
                 location,
+                passport_photo_url,
                 active
               ),
               jobs:job_id (
@@ -354,6 +376,179 @@ export default function SuccessPage() {
                 "Unexpected error updating applicant/request status:",
                 err
               );
+            }
+          }
+
+          // Send SMS notifications to nanny and employer after successful payment
+          if (requestTableIsNanny(requestType) && selectedApplicantId) {
+            try {
+              // Fetch nanny details directly from database to ensure we have the data
+              const { data: nannyData, error: nannyError } = await supabase
+                .from("applicants")
+                .select("*")
+                .eq("id", selectedApplicantId)
+                .single();
+
+              if (nannyError || !nannyData) {
+                console.error("Error fetching nanny details for SMS:", nannyError);
+              } else {
+                const nanny = nannyData;
+                const nannyPhone = nanny.phone;
+                const employerPhone = request.phone;
+
+                // Validate phone numbers are Kenyan (start with 254, +254, or 0)
+                const isValidKenyanPhone = (phone: string): boolean => {
+                  if (!phone) return false;
+                  
+                  // Remove all spaces and special characters except +
+                  const cleaned = phone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+                  
+                  // Check for obviously invalid patterns
+                  if (cleaned.length < 9) return false;
+                  
+                  // Check if it's a Kenyan number format
+                  let digits: string;
+                  if (cleaned.startsWith('+254')) {
+                    if (cleaned.length !== 13) return false; // +254XXXXXXXXX
+                    digits = cleaned.substring(4); // Get the 9 digits after +254
+                  } else if (cleaned.startsWith('254')) {
+                    if (cleaned.length !== 12) return false; // 254XXXXXXXXX
+                    digits = cleaned.substring(3); // Get the 9 digits after 254
+                  } else if (cleaned.startsWith('0')) {
+                    if (cleaned.length !== 10) return false; // 0XXXXXXXXX
+                    digits = cleaned.substring(1); // Get the 9 digits after 0
+                  } else {
+                    return false;
+                  }
+                  
+                  // Validate Kenyan mobile prefixes (70X, 71X, 72X, 73X, 74X, 75X, 76X, 77X, 78X, 79X)
+                  const prefix = digits.substring(0, 2);
+                  const validPrefixes = ['70', '71', '72', '73', '74', '75', '76', '77', '78', '79'];
+                  if (!validPrefixes.includes(prefix)) {
+                    console.warn(`⚠️ Invalid Kenyan mobile prefix: ${prefix} for phone ${phone}`);
+                    return false;
+                  }
+                  
+                  // Check for test/dummy numbers (all same digits, sequential, etc.)
+                  if (/^(\d)\1{8}$/.test(digits)) {
+                    console.warn(`⚠️ Suspicious phone number pattern (all same digits): ${phone}`);
+                    return false;
+                  }
+                  
+                  return true;
+                };
+
+                // Only send SMS if both phone numbers are valid Kenyan numbers
+                const canSendSMS = isValidKenyanPhone(nannyPhone) && isValidKenyanPhone(employerPhone);
+                
+                if (!isValidKenyanPhone(nannyPhone)) {
+                  console.error("❌ Skipping SMS - Invalid Kenyan phone number for nanny:", nannyPhone);
+                }
+                if (!isValidKenyanPhone(employerPhone)) {
+                  console.error("❌ Skipping SMS - Invalid Kenyan phone number for employer:", employerPhone);
+                }
+
+                if (!canSendSMS) {
+                  console.warn("⚠️ Skipping SMS notifications due to invalid phone numbers");
+                } else {
+
+                // Calculate days from start_date to end_date
+                const startDate = request.start_date
+                  ? new Date(request.start_date)
+                  : null;
+                const endDate = request.end_date
+                  ? new Date(request.end_date)
+                  : null;
+                let daysText = "N/A";
+                if (startDate && endDate) {
+                  const diffTime = endDate.getTime() - startDate.getTime();
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                  daysText = `${diffDays} day${diffDays !== 1 ? "s" : ""}`;
+                }
+
+                const startDateFormatted = startDate
+                  ? startDate.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  : "TBD";
+                const endDateFormatted = endDate
+                  ? endDate.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  : "TBD";
+
+                // SMS to Nanny: Very basic message
+                const nannyMessage = `Hello ${nanny.first_name}, New booking assigned! Thank you!`;
+
+                // SMS to Employer: Very basic message
+                const employerMessage = `Hello ${request.full_name}, Thank you for booking! Your nanny has been assigned. Thank you!`;
+
+                // Send SMS to nanny
+                try {
+                  const nannySmsRes = await fetch("/api/send-sms", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      to: nannyPhone,
+                      message: nannyMessage,
+                    }),
+                  });
+
+                  const nannySmsData = await nannySmsRes.json();
+                  if (nannySmsData.success) {
+                    console.log("✅ SMS sent to nanny successfully:", {
+                      phone: nannyPhone,
+                      messageId: nannySmsData.data?.recipients?.[0]?.messageId,
+                      status: nannySmsData.data?.recipients?.[0]?.status,
+                    });
+                  } else {
+                    console.error("❌ Failed to send SMS to nanny:", {
+                      phone: nannyPhone,
+                      error: nannySmsData.error,
+                      details: nannySmsData.details,
+                    });
+                  }
+                } catch (smsError) {
+                  console.error("Error sending SMS to nanny:", smsError);
+                }
+
+                // Send SMS to employer
+                try {
+                  const employerSmsRes = await fetch("/api/send-sms", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      to: employerPhone,
+                      message: employerMessage,
+                    }),
+                  });
+
+                  const employerSmsData = await employerSmsRes.json();
+                  if (employerSmsData.success) {
+                    console.log("✅ SMS sent to employer successfully:", {
+                      phone: employerPhone,
+                      messageId: employerSmsData.data?.recipients?.[0]?.messageId,
+                      status: employerSmsData.data?.recipients?.[0]?.status,
+                    });
+                  } else {
+                    console.error("❌ Failed to send SMS to employer:", {
+                      phone: employerPhone,
+                      error: employerSmsData.error,
+                      details: employerSmsData.details,
+                    });
+                  }
+                } catch (smsError) {
+                  console.error("Error sending SMS to employer:", smsError);
+                }
+                }
+              }
+            } catch (smsError) {
+              console.error("Error sending SMS notifications:", smsError);
+              // Don't fail the payment process if SMS fails
             }
           }
 
@@ -628,11 +823,53 @@ export default function SuccessPage() {
       <Navbar />
       <AboutHero
         title="Success"
-        highlight="Booking Confirmed"
+        highlight={
+          payment && payment.status === "paid"
+            ? "Booking Confirmed"
+            : "Form Submitted"
+        }
         background="/planding3.jpeg"
       />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className="lg:px-20 mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* Step Indicator */}
+        <section className="mb-8">
+          {(() => {
+            // Determine current step based on payment status and request type
+            const isNannyRequest = requestTableIsNanny(requestType);
+            let currentStep = 0; // Start at Request Submitted
+            
+            if (isNannyRequest) {
+              // For nanny requests: Request (0) -> Selection (1) -> Payment (2) -> Confirmed (3)
+              if (payment?.status === "paid") {
+                currentStep = 3; // Booking Confirmed
+              } else if (payment && payment.status === "pending") {
+                currentStep = 2; // Payment (selection already done or skipped)
+              } else if (request) {
+                // Request exists but no payment yet - show selection step
+                currentStep = 1; // Nanny Selection
+              }
+              // else currentStep = 0 (Request Submitted)
+            } else {
+              // For security requests: Request (0) -> Payment (1) -> Confirmed (2)
+              if (payment?.status === "paid") {
+                currentStep = 2; // Booking Confirmed
+              } else if (payment && payment.status === "pending") {
+                currentStep = 1; // Payment
+              }
+              // else currentStep = 0 (Request Submitted)
+            }
+
+            return (
+              <StepIndicator
+                currentStep={currentStep}
+                steps={isNannyRequest ? NANNY_BOOKING_STEPS : SECURITY_BOOKING_STEPS}
+                showDescriptions={true}
+              />
+            );
+          })()}
+        </section>
+
         {/* Top success header */}
         <section className="mb-8">
           <div className="bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
@@ -640,15 +877,18 @@ export default function SuccessPage() {
               <div className="mt-1">
                 <CheckCircle className="w-10 h-10 text-emerald-500" />
               </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">
-                  Booking Successful
-                </h1>
-                <p className="text-slate-600 mt-1">
-                  Thank you for making a booking. Your request has been received and
-                  our team is reviewing the details.
-                </p>
-              </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">
+                {payment && payment.status === "paid"
+                  ? "Booking Successful"
+                  : "Form Submitted Successfully"}
+              </h1>
+              <p className="text-slate-600 mt-1">
+                {payment && payment.status === "paid"
+                  ? "Thank you for making a booking. Your payment has been confirmed and our team is finalizing your booking."
+                  : "Thank you for submitting your request. Our team is reviewing your details and will prepare a quote shortly."}
+              </p>
+            </div>
             </div>
             {payment && (
               <div className="flex flex-col items-start sm:items-end gap-1">
@@ -758,6 +998,41 @@ export default function SuccessPage() {
                 <p className="text-xs uppercase tracking-wide text-slate-400 mb-3">
                   Curated from our ATS-approved, hired nannies
                 </p>
+
+                {/* Selected Nanny Confirmation */}
+                {selectedApplicantId && (() => {
+                  // Try to find in current list first
+                  const selectedNanny = hiredNannies.find(
+                    (app) => app.applicants.id === selectedApplicantId
+                  );
+                  
+                  // Use details from list or from fetched details
+                  const fullName = selectedNanny
+                    ? `${selectedNanny.applicants.first_name} ${selectedNanny.applicants.last_name}`
+                    : selectedNannyDetails
+                    ? `${selectedNannyDetails.first_name} ${selectedNannyDetails.last_name}`
+                    : "Selected Nanny";
+                  
+                  return (
+                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle className="w-5 h-5 text-blue-600" />
+                        <span className="font-semibold text-blue-900">
+                          You have selected:
+                        </span>
+                      </div>
+                      <p className="text-sm text-blue-800 font-medium">
+                        {fullName}
+                      </p>
+                      {selectionSaved && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          Selection saved. Our team will confirm availability and prepare your quote.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 <p className="text-sm text-slate-600">
                   Browse through our vetted{" "}
                   <span className="font-semibold">
@@ -774,7 +1049,7 @@ export default function SuccessPage() {
                     options and a confirmed quote.
                   </p>
                 ) : (
-                  <div className="mt-4 space-y-3 max-h-80 overflow-y-auto pr-1">
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {hiredNannies.map((app) => {
                       const applicant = app.applicants;
                       const fullName = `${applicant.first_name} ${applicant.last_name}`;
@@ -783,55 +1058,74 @@ export default function SuccessPage() {
                         applicant.location ||
                         "Location on file";
                       const jobTitle = app.jobs?.title || "Nanny";
+                      const isSelected = selectedApplicantId === applicant.id;
                       return (
-                        <button
+                        <div
                           key={app.id}
-                          type="button"
-                          onClick={() => setSelectedApplicantId(applicant.id)}
-                          className={`w-full text-left border rounded-xl px-4 py-3 flex items-start gap-3 transition ${
-                            selectedApplicantId === applicant.id
-                              ? "border-blue-600 bg-blue-50"
-                              : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
+                          className={`relative border rounded-xl overflow-hidden bg-white transition-all hover:shadow-lg ${
+                            isSelected
+                              ? "border-blue-600 ring-2 ring-blue-200 bg-blue-50/50"
+                              : "border-slate-200 hover:border-blue-300"
                           }`}
                         >
-                          <div className="mt-1">
-                            <input
-                              type="radio"
-                              className="h-4 w-4 text-blue-600"
-                              checked={selectedApplicantId === applicant.id}
-                              onChange={() =>
-                                setSelectedApplicantId(applicant.id)
-                              }
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <User className="w-4 h-4 text-slate-500" />
-                              <p className="font-semibold text-slate-900">
-                                {fullName}
-                              </p>
-                            </div>
-                            <p className="text-xs text-slate-600 mt-1">
-                              {jobLocation}{" "}
-                              •{" "}
-                              {applicant.years_of_experience != null
-                                ? `${applicant.years_of_experience} yrs experience`
-                                : "Experience on file"}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-1">
-                              Phone: {applicant.phone}
-                              {applicant.email && (
-                                <> • Email: {applicant.email}</>
+                          <div className="flex flex-col h-full">
+                            {/* Large photo section */}
+                            <div className="w-full h-48 bg-slate-100 relative overflow-hidden">
+                              {applicant.passport_photo_url ? (
+                                <img
+                                  src={applicant.passport_photo_url}
+                                  alt={fullName}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                                  <User className="w-16 h-16 text-blue-600" />
+                                </div>
                               )}
-                            </p>
-                            <div className="flex items-center gap-1 mt-2 text-xs text-emerald-700 bg-emerald-50 inline-flex px-2 py-1 rounded-full">
-                              <Star className="w-3 h-3 text-emerald-600" />
-                              <span>
-                                ATS Status: Hired ({jobTitle})
-                              </span>
                             </div>
+                            
+                            {/* Content section */}
+                            <div className="p-4 text-center flex-1 flex flex-col">
+                            <div className="mb-3 flex-1">
+                              <h3 className="font-semibold text-slate-900 text-sm mb-1">
+                                {fullName}
+                              </h3>
+                              <p className="text-xs text-slate-600 mb-2">
+                                {jobLocation}
+                              </p>
+                              {applicant.years_of_experience != null && (
+                                <div className="flex items-center justify-center gap-1 mb-2">
+                                  <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                  <span className="text-xs text-slate-600">
+                                    {applicant.years_of_experience} yrs experience
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex items-center justify-center gap-1 text-xs text-emerald-700 bg-emerald-50 inline-flex px-2 py-1 rounded-full">
+                                <Star className="w-3 h-3 text-emerald-600" />
+                                <span>ATS: Hired</span>
+                              </div>
+                            </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedApplicantId(applicant.id);
+                                setSelectedNannyDetails({
+                                  first_name: applicant.first_name,
+                                  last_name: applicant.last_name,
+                                });
+                              }}
+                              className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition ${
+                                isSelected
+                                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                                  : "bg-slate-100 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200"
+                              }`}
+                            >
+                              {isSelected ? "Selected" : "Select"}
+                            </button>
                           </div>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -870,53 +1164,7 @@ export default function SuccessPage() {
             {/* Account & booking guidance blocks */}
             <div className="space-y-4">
               {/* Account Creation Prompt - Show if not authenticated */}
-              {!checkingAuth && !isAuthenticated && (
-                <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 border border-blue-200/60 rounded-2xl p-6 shadow-sm">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                        Create Your Account
-                      </h3>
-                      <p className="text-sm text-gray-700 mb-4 leading-relaxed">
-                        Track all your bookings, view payment history, and
-                        manage your services in one place. We&apos;ll
-                        automatically link this request to your account.
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-3">
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/signup?email=${encodeURIComponent(
-                                request?.email || ""
-                              )}&phone=${encodeURIComponent(
-                                request?.phone || ""
-                              )}&redirect=/services/success/${id}?type=${requestType}`
-                            )
-                          }
-                          className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-md font-medium"
-                        >
-                          <UserPlus className="w-5 h-5" />
-                          Create Free Account
-                        </button>
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/login?redirect=/services/success/${id}?type=${requestType}`
-                            )
-                          }
-                          className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-all font-medium"
-                        >
-                          <LogIn className="w-5 h-5" />
-                          Already have an account?
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              
 
               {/* If authenticated, show account link */}
               {!checkingAuth && isAuthenticated && (
@@ -944,16 +1192,25 @@ export default function SuccessPage() {
                 !paymentSuccess &&
                 !isAuthenticated && (
                   <div className="space-y-4">
-                    <div className="bg-green-50 border border-green-200 rounded-2xl p-6">
-                      <div className="flex items-start gap-3">
-                        <CheckCircle className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div className="bg-green-50 border-2 border-green-400 rounded-2xl p-6 shadow-lg">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                          <CheckCircle className="w-7 h-7 text-white" />
+                        </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-green-900 mb-2">
-                            Payment Completed
-                          </h3>
-                          <p className="text-sm text-green-800 mb-4">
-                            Your payment has been received. Create an account to
-                            track your order and manage all your bookings.
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-xl font-bold text-green-900">
+                              Payment Completed - Next Step: Create Account
+                            </h3>
+                            <span className="px-2 py-1 bg-green-600 text-white text-xs font-semibold rounded-full">
+                              Required
+                            </span>
+                          </div>
+                          <p className="text-base text-green-800 mb-1 font-medium">
+                            Your payment has been successfully processed! 
+                          </p>
+                          <p className="text-sm text-green-700 mb-5">
+                            Create an account or log in to track your booking, download receipts, and manage all your services in one place.
                           </p>
                           <div className="flex flex-col sm:flex-row gap-3">
                             <button
@@ -966,19 +1223,19 @@ export default function SuccessPage() {
                                   )}&redirect=/account`
                                 )
                               }
-                              className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                              className="flex items-center justify-center gap-2 px-6 py-3.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md font-semibold text-base"
                             >
-                              <UserPlus className="w-4 h-4" />
-                              Create Account
+                              <UserPlus className="w-5 h-5" />
+                              Create Account Now
                             </button>
                             <button
                               onClick={() =>
                                 router.push(`/login?redirect=/account`)
                               }
-                              className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-green-600 border border-green-600 rounded-lg hover:bg-green-50 transition"
+                              className="flex items-center justify-center gap-2 px-6 py-3.5 bg-white text-green-600 border-2 border-green-600 rounded-lg hover:bg-green-50 transition font-semibold text-base shadow-sm"
                             >
-                              <LogIn className="w-4 h-4" />
-                              Login
+                              <LogIn className="w-5 h-5" />
+                              Log In Instead
                             </button>
                           </div>
                         </div>
@@ -1017,9 +1274,12 @@ export default function SuccessPage() {
                 )}
 
               {/* If no payment yet, show home + account CTA */}
-              {!payment && (
-                <div className="space-y-3">
-                  {!isAuthenticated && (
+              {!payment && !isAuthenticated && (
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-2xl p-5">
+                  <p className="text-sm font-semibold text-blue-900 mb-3 text-center">
+                    Next Step: Create an account to track your request
+                  </p>
+                  <div className="flex flex-col gap-2">
                     <button
                       onClick={() =>
                         router.push(
@@ -1030,17 +1290,23 @@ export default function SuccessPage() {
                           )}&redirect=/services/success/${id}?type=${requestType}`
                         )
                       }
-                      className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition shadow-md font-medium"
+                      className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition shadow-md font-semibold text-base flex items-center justify-center gap-2"
                     >
-                      Create Account to Track This Request
+                      <UserPlus className="w-5 h-5" />
+                      Create Account
                     </button>
-                  )}
-                  <button
-                    onClick={() => router.push("/")}
-                    className="w-full py-3 bg-gray-100 text-gray-800 rounded-xl hover:bg-gray-200 transition"
-                  >
-                    Go Home
-                  </button>
+                    <button
+                      onClick={() =>
+                        router.push(
+                          `/login?redirect=/services/success/${id}?type=${requestType}`
+                        )
+                      }
+                      className="w-full py-2.5 bg-white text-blue-600 border-2 border-blue-600 rounded-xl hover:bg-blue-50 transition font-medium flex items-center justify-center gap-2"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Or Log In
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

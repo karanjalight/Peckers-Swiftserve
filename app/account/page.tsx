@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { 
   Loader, 
   User, 
@@ -95,6 +94,7 @@ export default function AccountPage() {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [redemptions, setRedemptions] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"overview" | "requests" | "payments" | "subscriptions" | "redemptions">("overview");
+  const [completingRequest, setCompletingRequest] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthAndFetchData();
@@ -102,126 +102,34 @@ export default function AccountPage() {
 
   const checkAuthAndFetchData = async () => {
     try {
-      // Check if user is authenticated
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        router.push("/login?redirect=/account");
-        return;
+      // Fetch all account data from API route
+      const response = await fetch("/api/account/data", {
+        method: "GET",
+        credentials: "include", // Include cookies in the request
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Not authenticated, redirect to login
+          router.push("/login?redirect=/account");
+          return;
+        }
+        throw new Error("Failed to fetch account data");
       }
 
-      // Fetch user data
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
+      const data = await response.json();
 
-      if (userError) {
-        console.error("Error fetching user:", userError);
-        return;
-      }
-
-      setUser(userData);
-
-      // Fetch nanny requests (by user_id, email, or phone)
-      const { data: nannyData, error: nannyError } = await supabase
-        .from("nanny_requests")
-        .select("*")
-        .or(`user_id.eq.${session.user.id},email.eq.${userData.email},phone.eq.${userData.phone || 'null'}`)
-        .order("created_at", { ascending: false });
-
-      if (nannyError) {
-        console.error("Error fetching nanny requests:", nannyError);
-      } else if (nannyData) {
-        setNannyRequests(nannyData);
-      }
-
-      // Fetch security requests (by user_id, email, or phone)
-      const { data: securityData, error: securityError } = await supabase
-        .from("security_requests")
-        .select("*")
-        .or(`user_id.eq.${session.user.id},email.eq.${userData.email},phone.eq.${userData.phone || 'null'}`)
-        .order("created_at", { ascending: false });
-
-      if (securityError) {
-        console.error("Error fetching security requests:", securityError);
-      } else if (securityData) {
-        setSecurityRequests(securityData);
-      }
-
-      // Fetch nanny payments (by user_id or by matching request)
-      const { data: nannyPayments, error: nannyPayError } = await supabase
-        .from("nanny_payments")
-        .select("*")
-        .or(`user_id.eq.${session.user.id}${nannyData?.map(r => `,request_id.eq.${r.id}`).join('') || ''}`)
-        .order("created_at", { ascending: false });
-
-      if (nannyPayError) {
-        console.error("Error fetching nanny payments:", nannyPayError);
-      }
-
-      // Fetch security payments (by user_id or by matching request)
-      const { data: securityPayments, error: securityPayError } = await supabase
-        .from("security_payments")
-        .select("*")
-        .or(`user_id.eq.${session.user.id}${securityData?.map(r => `,request_id.eq.${r.id}`).join('') || ''}`)
-        .order("created_at", { ascending: false });
-
-      if (securityPayError) {
-        console.error("Error fetching security payments:", securityPayError);
-      }
-
-      const allPayments: Payment[] = [
-        ...(nannyPayments || []).map((p: any) => ({ ...p, type: "nanny" as const })),
-        ...(securityPayments || []).map((p: any) => ({ ...p, type: "security" as const })),
-      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-      setPayments(allPayments);
-
-      // Fetch user subscriptions
-      const { data: subscriptionsData, error: subscriptionsError } = await supabase
-        .from("user_subscriptions")
-        .select(`
-          *,
-          subscription_packages (
-            name,
-            service_type,
-            service_days,
-            validity_days
-          )
-        `)
-        .eq("user_id", session.user.id)
-        .order("created_at", { ascending: false });
-
-      if (subscriptionsError) {
-        console.error("Error fetching subscriptions:", subscriptionsError);
-      } else {
-        setSubscriptions(subscriptionsData || []);
-      }
-
-      // Fetch subscription redemptions
-      const { data: redemptionsData, error: redemptionsError } = await supabase
-        .from("subscription_redemptions")
-        .select(`
-          *,
-          user_subscriptions (
-            subscription_packages (
-              name,
-              service_type
-            )
-          )
-        `)
-        .eq("user_id", session.user.id)
-        .order("created_at", { ascending: false });
-
-      if (redemptionsError) {
-        console.error("Error fetching redemptions:", redemptionsError);
-      } else {
-        setRedemptions(redemptionsData || []);
-      }
+      // Set all the data
+      setUser(data.user);
+      setNannyRequests(data.nannyRequests || []);
+      setSecurityRequests(data.securityRequests || []);
+      setPayments(data.payments || []);
+      setSubscriptions(data.subscriptions || []);
+      setRedemptions(data.redemptions || []);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error fetching account data:", error);
+      // If there's an error, try to redirect to login
+      router.push("/login?redirect=/account");
     } finally {
       setLoading(false);
     }
@@ -233,6 +141,38 @@ export default function AccountPage() {
       month: "short",
       day: "numeric",
     });
+  };
+
+  const handleMarkAsComplete = async (requestId: string, type: "nanny" | "security", e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the card click from firing
+    
+    if (!confirm("Are you sure you want to mark this request as complete? This will make the nanny/applicant available for booking again.")) {
+      return;
+    }
+
+    setCompletingRequest(requestId);
+    try {
+      const response = await fetch("/api/requests/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ requestId, type }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to mark request as complete");
+      }
+
+      // Refresh the data
+      await checkAuthAndFetchData();
+      alert("Request marked as complete successfully!");
+    } catch (error: any) {
+      console.error("Error marking request as complete:", error);
+      alert(error.message || "Failed to mark request as complete");
+    } finally {
+      setCompletingRequest(null);
+    }
   };
 
   const getStatusBadge = (request: NannyRequest | SecurityRequest) => {
@@ -575,6 +515,32 @@ export default function AccountPage() {
                     {request.type === "security" && (request as SecurityRequest).dog_option && (
                       <div className="mt-3 text-sm text-gray-600">
                         <strong>Service:</strong> {DOG_OPTIONS[(request as SecurityRequest).dog_option] || "N/A"}
+                      </div>
+                    )}
+
+                    {/* Mark as Complete Button - Only show for nanny requests that are assigned but not completed */}
+                    {request.type === "nanny" && 
+                     (request as NannyRequest).is_assigned && 
+                     !(request as NannyRequest).is_completed && 
+                     !(request as NannyRequest).is_cancelled && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <button
+                          onClick={(e) => handleMarkAsComplete(request.id, "nanny", e)}
+                          disabled={completingRequest === request.id}
+                          className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {completingRequest === request.id ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              Marking as Complete...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-4 h-4" />
+                              Mark as Complete
+                            </>
+                          )}
+                        </button>
                       </div>
                     )}
                   </div>

@@ -68,6 +68,9 @@ create table applicants (
   extra_skills text,
   years_of_experience int,
 
+  -- Documents
+  passport_photo_url text,
+
   -- Status flags
   shortlisted boolean default false,
   verified boolean default false,

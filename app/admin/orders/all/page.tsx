@@ -38,6 +38,10 @@ interface NannyRequest extends BaseRequest {
   type: "nanny";
   household_description: string | null;
   service_needed: ServiceType;
+  first_aid: boolean | null;
+  driving: boolean | null;
+  cooking: boolean | null;
+  cleaning: boolean | null;
 }
 
 interface SecurityRequest extends BaseRequest {
@@ -226,6 +230,47 @@ export default function AllRequestsPage() {
       setRequests(
         requests.map((r) => (r.id === req.id ? { ...r, [field]: value } : r))
       );
+
+      // If marking nanny request as completed, activate the applicant
+      if (req.type === "nanny" && field === "is_completed" && value === true) {
+        // Find the applicant linked to this request
+        const { data: selection } = await supabase
+          .from("nanny_customer_selections")
+          .select("applicant_id")
+          .eq("nanny_request_id", req.id)
+          .maybeSingle();
+
+        if (selection?.applicant_id) {
+          // Set applicant active = true
+          const { error: applicantError } = await supabase
+            .from("applicants")
+            .update({ active: true })
+            .eq("id", selection.applicant_id);
+
+          if (applicantError) {
+            console.error("Error updating applicant:", applicantError);
+          }
+        }
+
+        // Also update nanny status if assigned
+        const { data: assignment } = await supabase
+          .from("nanny_assignments")
+          .select("nanny_id")
+          .eq("request_id", req.id)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (assignment?.nanny_id) {
+          const { error: nannyError } = await supabase
+            .from("nannies")
+            .update({ status: "available" })
+            .eq("id", assignment.nanny_id);
+
+          if (nannyError) {
+            console.error("Error updating nanny status:", nannyError);
+          }
+        }
+      }
     } catch (err) {
       console.error("Error updating request:", err);
       alert("Failed to update request");
@@ -467,6 +512,32 @@ export default function AllRequestsPage() {
                           <p className="text-xs text-slate-500">
                             {request.location}
                           </p>
+                          {request.type === "nanny" && (
+                            (request.first_aid || request.driving || request.cooking || request.cleaning) && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {request.first_aid && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                                    First Aid
+                                  </span>
+                                )}
+                                {request.driving && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                                    Driving
+                                  </span>
+                                )}
+                                {request.cooking && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">
+                                    Cooking
+                                  </span>
+                                )}
+                                {request.cleaning && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700">
+                                    Cleaning
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-slate-600">
