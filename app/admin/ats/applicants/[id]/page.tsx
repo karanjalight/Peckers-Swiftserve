@@ -23,6 +23,8 @@ import {
   Save,
   Trash2,
   ExternalLink,
+  Upload,
+  Loader2,
 } from "lucide-react";
 
 interface Applicant {
@@ -40,6 +42,7 @@ interface Applicant {
   has_laptop: boolean;
   extra_skills: string | null;
   years_of_experience: number | null;
+  passport_photo_url: string | null;
   shortlisted: boolean;
   verified: boolean;
   created_at: string;
@@ -99,6 +102,7 @@ export default function ApplicationDetailsPage({
   const [selectedStatus, setSelectedStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -218,6 +222,72 @@ export default function ApplicationDetailsPage({
     } catch (err: any) {
       console.error("Error deleting application:", err);
       alert(err.message || "Failed to delete application");
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!applicant) return;
+
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size must be less than 5MB");
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const applicantId = applicant.id;
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${applicantId}/passport_photo_${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("applicant_documents")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("applicant_documents")
+        .getPublicUrl(fileName);
+
+      const photoUrl = urlData.publicUrl;
+
+      // Update applicant record with new photo URL
+      const { error: updateError } = await supabase
+        .from("applicants")
+        .update({ passport_photo_url: photoUrl })
+        .eq("id", applicantId);
+
+      if (updateError) throw updateError;
+
+      // Refresh applicant data
+      await fetchApplicationDetails();
+      alert("Passport photo updated successfully!");
+    } catch (err: any) {
+      console.error("Error uploading photo:", err);
+      alert(err.message || "Failed to upload photo. Please try again.");
+    } finally {
+      setUploadingPhoto(false);
+      // Reset file input
+      if (e.target) {
+        e.target.value = "";
+      }
     }
   };
 
@@ -570,6 +640,63 @@ export default function ApplicationDetailsPage({
 
           {/* Right Column - Applicant Info */}
           <div className="space-y-6">
+            {/* Passport Photo */}
+            <div className="bg-white rounded-2xl  border border-slate-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-slate-900">Passport Photo</h2>
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    disabled={uploadingPhoto}
+                    className="hidden"
+                  />
+                  <span className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    {uploadingPhoto ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        {applicant.passport_photo_url ? "Update Photo" : "Upload Photo"}
+                      </>
+                    )}
+                  </span>
+                </label>
+              </div>
+              {applicant.passport_photo_url ? (
+                <>
+                  <div className="flex justify-center">
+                    <img
+                      src={applicant.passport_photo_url}
+                      alt={`${applicant.first_name} ${applicant.last_name} passport photo`}
+                      className="w-48 h-48 object-cover rounded-xl border-2 border-slate-200 shadow-md"
+                    />
+                  </div>
+                  <div className="mt-4 text-center">
+                    <a
+                      href={applicant.passport_photo_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      View Full Size
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-slate-300 rounded-xl">
+                  <Upload className="w-12 h-12 text-slate-400 mb-3" />
+                  <p className="text-sm text-slate-600">No passport photo uploaded</p>
+                  <p className="text-xs text-slate-500 mt-1">Click "Upload Photo" to add one</p>
+                </div>
+              )}
+            </div>
+
             {/* Contact Information */}
             <div className="bg-white rounded-2xl  border border-slate-200 p-6">
               <h2 className="text-xl font-bold text-slate-900 mb-4">Contact</h2>

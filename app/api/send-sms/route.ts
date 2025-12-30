@@ -1,383 +1,299 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+const AfricasTalking = require('africastalking');
 
 /**
- * SMS API Integration - Supports multiple providers
- * 
- * Set SMS_PROVIDER in .env.local to switch providers:
- * - "termii" (recommended - cheaper, easier)
- * - "africastalking" (default)
- * 
- * Termii Setup:
- * - TERMII_API_KEY: Your Termii API key
- * - TERMII_SENDER_ID: Your registered sender ID
- * 
- * Africa's Talking Setup:
- * - AFRICAS_TALKING_API_USERNAME: Your API username
- * - AFRICAS_TALKING_API_KEY: Your API key
- * - AFRICAS_TALKING_SENDER_ID: Your sender ID
+ * Format phone number to international format for Africa's Talking
+ * Supports formats: +254XXXXXXXXX, 254XXXXXXXXX, 0XXXXXXXXX
  */
-
-const SMS_PROVIDER = process.env.SMS_PROVIDER?.trim() || "africastalking";
-
-// Trim whitespace from environment variables
-const API_USERNAME = process.env.AFRICAS_TALKING_API_USERNAME?.trim();
-const API_KEY = process.env.AFRICAS_TALKING_API_KEY?.trim();
-const SENDER_ID = process.env.AFRICAS_TALKING_SENDER_ID?.trim() || "PECKERS";
-
-// Termii credentials
-const TERMII_API_KEY = process.env.TERMII_API_KEY?.trim();
-const TERMII_SENDER_ID = process.env.TERMII_SENDER_ID?.trim() || "PECKERS";
-
-// Log active SMS provider on module load (for debugging)
-if (typeof window === "undefined") {
-  // Server-side only
-  const activeProvider = SMS_PROVIDER?.toLowerCase() === "termii" ? "Termii" : "Africa's Talking";
-  console.log(`📱 SMS Service: ${activeProvider} is configured`);
-  if (SMS_PROVIDER?.toLowerCase() === "termii") {
-    console.log(`   ✓ TERMII_API_KEY: ${TERMII_API_KEY ? "Set (" + TERMII_API_KEY.length + " chars)" : "Missing"}`);
-    console.log(`   ✓ TERMII_SENDER_ID: ${TERMII_SENDER_ID || "Not set"}`);
-  } else {
-    console.log(`   ✓ AFRICAS_TALKING_API_USERNAME: ${API_USERNAME || "Missing"}`);
-    console.log(`   ✓ AFRICAS_TALKING_API_KEY: ${API_KEY ? "Set (" + API_KEY.length + " chars)" : "Missing"}`);
+function formatPhoneNumber(phone: string): string {
+  // Remove all spaces and special characters except +
+  let formatted = phone.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+  
+  // Remove leading + if present
+  if (formatted.startsWith('+')) {
+    formatted = formatted.substring(1);
   }
+  
+  // If starts with 0, replace with 254 (Kenya country code)
+  if (formatted.startsWith('0')) {
+    formatted = '254' + formatted.substring(1);
+  }
+  
+  // If doesn't start with country code, assume Kenya (254)
+  if (!formatted.startsWith('254')) {
+    formatted = '254' + formatted;
+  }
+  
+  return formatted;
 }
 
-export async function POST(req: Request) {
-  try {
-    const { phone, message } = await req.json();
+/**
+ * Get human-readable meaning of Africa's Talking status codes
+ */
+function getStatusCodeMeaning(statusCode: number): string {
+  const statusMeanings: Record<number, string> = {
+    100: 'Processed - Message is being processed',
+    101: 'Sent - Message sent successfully',
+    102: 'Queued - Message queued for delivery',
+    401: 'Invalid credentials - Check API username and key',
+    403: 'Invalid sender ID or insufficient balance',
+    404: 'Invalid phone number format',
+    405: 'Invalid message content or length',
+    500: 'Internal server error at Africa\'s Talking',
+    501: 'Delivery failure - Phone unreachable or number invalid',
+    502: 'Delivery failure - Phone off or out of coverage',
+    503: 'Delivery failure - Message rejected by carrier',
+    504: 'Delivery failure - Unknown delivery error',
+  };
+  
+  return statusMeanings[statusCode] || `Unknown status code: ${statusCode}`;
+}
 
-    if (!phone || !message) {
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    // Support both 'to' and 'phone' parameter names for compatibility
+    // Accept single phone number (string) or multiple (array/comma-separated string) for bulk SMS
+    const phoneNumber = body.to || body.phone;
+    const message = body.message;
+
+    // Validate input
+    if (!phoneNumber || !message) {
       return NextResponse.json(
-        { success: false, error: "Phone number and message are required" },
+        { error: 'Phone number and message are required' },
         { status: 400 }
       );
     }
 
-    // Log which provider is being used
-    console.log("📱 SMS Provider:", SMS_PROVIDER || "africastalking (default)");
-
-    // Route to appropriate provider
-    if (SMS_PROVIDER?.toLowerCase() === "termii") {
-      console.log("✅ Routing to Termii SMS service");
-      return await sendViaTermii(phone, message);
+    // Handle bulk SMS: convert to array if needed
+    let phoneNumbers: string[];
+    if (Array.isArray(phoneNumber)) {
+      phoneNumbers = phoneNumber;
+    } else if (typeof phoneNumber === 'string' && phoneNumber.includes(',')) {
+      // Comma-separated string
+      phoneNumbers = phoneNumber.split(',').map(p => p.trim()).filter(p => p);
     } else {
-      console.log("✅ Routing to Africa's Talking SMS service");
-      return await sendViaAfricasTalking(phone, message);
+      // Single phone number
+      phoneNumbers = [phoneNumber];
     }
-  } catch (error: any) {
-    console.error("❌ SMS sending error:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
 
-// Termii SMS sending function
-async function sendViaTermii(phone: string, message: string) {
-  if (!TERMII_API_KEY) {
-    console.error("❌ Termii API key not configured");
-    console.error("TERMII_API_KEY:", TERMII_API_KEY ? "✓ Set" : "✗ Missing");
-    console.error("TERMII_SENDER_ID:", TERMII_SENDER_ID ? "✓ Set (" + TERMII_SENDER_ID + ")" : "✗ Missing");
-    return NextResponse.json(
-      { success: false, error: "Termii SMS service not configured. Please add TERMII_API_KEY to .env.local" },
-      { status: 500 }
-    );
-  }
-
-  console.log("🔑 Termii credentials loaded:", {
-    apiKeyLength: TERMII_API_KEY.length,
-    apiKeyPreview: TERMII_API_KEY.substring(0, 8) + "..." + TERMII_API_KEY.substring(TERMII_API_KEY.length - 4),
-    senderId: TERMII_SENDER_ID,
-  });
-
-  // Format phone number
-  let formattedPhone = phone.replace(/\s+/g, "").replace(/\+/g, "");
-  if (formattedPhone.startsWith("0")) {
-    formattedPhone = "254" + formattedPhone.substring(1);
-  } else if (!formattedPhone.startsWith("254")) {
-    formattedPhone = "254" + formattedPhone;
-  }
-
-  const url = "https://api.termii.com/api/sms/send";
-  
-  // Termii requires sender ID to be registered and approved
-  // If sender ID is not set or invalid, we'll try without it (some Termii accounts allow this)
-  const requestBody: any = {
-    to: formattedPhone,
-    sms: message,
-    type: "plain",
-    channel: "generic",
-    api_key: TERMII_API_KEY,
-  };
-  
-  // Only add 'from' if sender ID is provided and not empty
-  // Note: Sender ID must be registered in Termii dashboard
-  if (TERMII_SENDER_ID && TERMII_SENDER_ID.trim() !== "") {
-    requestBody.from = TERMII_SENDER_ID;
-  }
-
-  console.log("📤 Sending SMS via Termii:", {
-    url,
-    phone: formattedPhone,
-    senderId: TERMII_SENDER_ID,
-    messageLength: message.length,
-  });
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  const responseText = await response.text();
-  let data: any;
-
-  try {
-    data = JSON.parse(responseText);
-  } catch (parseError) {
-    console.error("❌ Non-JSON response from Termii API:", responseText.substring(0, 200));
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: `API returned non-JSON response. Status: ${response.status}. Response: ${responseText.substring(0, 100)}` 
-      },
-      { status: response.status || 500 }
-    );
-  }
-
-  console.log("Termii API Response:", JSON.stringify(data, null, 2));
-
-  // Check for success - Termii returns different formats
-  const isSuccess = 
-    response.ok && (
-      data.message === "Successfully Sent" || 
-      data.message === "Successfully sent" ||
-      data.code === "ok" ||
-      data.code === "200" ||
-      (data.message_id && response.status === 200)
-    );
-
-  if (isSuccess) {
-    console.log("✅ SMS sent successfully via Termii:", formattedPhone);
-    return NextResponse.json({
-      success: true,
-      message: "SMS sent successfully",
-      data: data,
-    });
-  } else {
-    // Handle specific Termii errors
-    let errorMessage = data.message || data.error || data.errorMessage || "Failed to send SMS";
-    
-    // Check for sender ID registration error - try without sender ID as fallback
-    if ((errorMessage.includes("ApplicationSenderId not found") || errorMessage.includes("SenderId")) && TERMII_SENDER_ID && TERMII_SENDER_ID.trim() !== "") {
-      console.warn("⚠️ Sender ID not registered, attempting to send without sender ID...");
-      
-      // Retry without sender ID
-      const retryBody: any = {
-        to: formattedPhone,
-        sms: message,
-        type: "plain",
-        channel: "generic",
-        api_key: TERMII_API_KEY,
-        // Explicitly omit 'from' field
-      };
-      
-      console.log("🔄 Retrying SMS without sender ID...");
-      
-      const retryResponse = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify(retryBody),
-      });
-      
-      const retryText = await retryResponse.text();
-      let retryData: any;
-      
-      try {
-        retryData = JSON.parse(retryText);
-      } catch (parseError) {
-        // If retry also fails, return original error with instructions
-        errorMessage = `Sender ID "${TERMII_SENDER_ID}" is not registered. To fix this:\n\n1. Go to https://dashboard.termii.com\n2. Navigate to "Sender ID" section\n3. Register a new sender ID (e.g., "PECKERS")\n4. Wait for approval (usually instant)\n5. Update TERMII_SENDER_ID in .env.local with your approved sender ID\n\nOr check your dashboard for existing approved sender IDs and use one of those.`;
-        console.error("❌ Termii Sender ID Error:", errorMessage);
-        return NextResponse.json(
-          { success: false, error: errorMessage },
-          { status: response.status || 500 }
-        );
-      }
-      
-      const retrySuccess = 
-        retryResponse.ok && (
-          retryData.message === "Successfully Sent" || 
-          retryData.message === "Successfully sent" ||
-          retryData.code === "ok" ||
-          retryData.code === "200" ||
-          (retryData.message_id && retryResponse.status === 200)
-        );
-      
-      if (retrySuccess) {
-        console.log("✅ SMS sent successfully via Termii (without sender ID):", formattedPhone);
-        return NextResponse.json({
-          success: true,
-          message: "SMS sent successfully (without sender ID)",
-          data: retryData,
-        });
-      } else {
-        // Both attempts failed
-        errorMessage = `Sender ID "${TERMII_SENDER_ID}" is not registered. To fix this:\n\n1. Go to https://dashboard.termii.com\n2. Navigate to "Sender ID" section\n3. Register a new sender ID (e.g., "PECKERS")\n4. Wait for approval (usually instant)\n5. Update TERMII_SENDER_ID in .env.local with your approved sender ID\n\nOr check your dashboard for existing approved sender IDs and use one of those.`;
-        console.error("❌ Termii Sender ID Error (both attempts failed):", errorMessage);
-        return NextResponse.json(
-          { success: false, error: errorMessage },
-          { status: response.status || 500 }
-        );
-      }
-    } else {
-      console.error("❌ Termii API error:", errorMessage, data);
+    if (phoneNumbers.length === 0) {
       return NextResponse.json(
-        { success: false, error: errorMessage },
-        { status: response.status || 500 }
+        { error: 'At least one phone number is required' },
+        { status: 400 }
       );
     }
-  }
-}
 
-// Africa's Talking SMS sending function
-async function sendViaAfricasTalking(phone: string, message: string) {
-  // Validate environment variables
-  if (!API_USERNAME || !API_KEY) {
-    console.error("❌ Africa's Talking credentials not configured");
-    console.error("API_USERNAME:", API_USERNAME ? "✓ Set" : "✗ Missing");
-    console.error("API_KEY:", API_KEY ? "✓ Set (length: " + API_KEY.length + ")" : "✗ Missing");
-    return NextResponse.json(
-      { success: false, error: "SMS service not configured. Please check your .env.local file." },
-      { status: 500 }
-    );
-  }
+    // Get credentials from environment variables (support both naming conventions)
+    const username = (process.env.AFRICAS_TALKING_API_USERNAME || process.env.AFRICASTALKING_API_USERNAME)?.trim();
+    const apiKey = (process.env.AFRICAS_TALKING_API_KEY || process.env.AFRICASTALKING_API_KEY)?.trim();
+    const isSandboxMode = username?.toLowerCase() === 'sandbox';
+    
+    // In sandbox mode, sender ID is usually not allowed or must be omitted
+    // In production, use the configured sender ID or default
+    const senderIdFromEnv = (process.env.AFRICAS_TALKING_SENDER_ID || process.env.AFRICASTALKING_SENDER_ID)?.trim();
+    const from = isSandboxMode 
+      ? undefined // Omit sender ID in sandbox mode
+      : (senderIdFromEnv || undefined); // Only use sender ID in production if provided
 
-    // Debug: Check if API key looks valid (should be a long string)
-    if (API_KEY.length < 10) {
-      console.warn("⚠️ API_KEY seems too short. Expected a longer key from Africa's Talking.");
+    if (!username || !apiKey) {
+      console.error('❌ Africa\'s Talking credentials not configured');
+      return NextResponse.json(
+        { error: 'Africa\'s Talking credentials not configured. Please set AFRICAS_TALKING_API_USERNAME and AFRICAS_TALKING_API_KEY in .env.local' },
+        { status: 500 }
+      );
     }
 
-    // Format phone number (remove + and ensure it starts with country code)
-    // Kenya format: +254XXXXXXXXX -> 254XXXXXXXXX
-    let formattedPhone = phone.replace(/\s+/g, "").replace(/\+/g, "");
-    if (formattedPhone.startsWith("0")) {
-      // Convert 07XXXXXXXX to 2547XXXXXXXX
-      formattedPhone = "254" + formattedPhone.substring(1);
-    } else if (!formattedPhone.startsWith("254")) {
-      // If it doesn't start with 254, add it
-      formattedPhone = "254" + formattedPhone;
+    // Validate credentials format
+    if (username.length === 0 || apiKey.length === 0) {
+      console.error('❌ Africa\'s Talking credentials are empty');
+      return NextResponse.json(
+        { error: 'Africa\'s Talking credentials are empty. Please check your .env.local file' },
+        { status: 500 }
+      );
     }
 
-    // Africa's Talking SMS API endpoint
-    // Use sandbox endpoint for sandbox credentials, production for production
-    const isSandbox = API_USERNAME?.toLowerCase() === "sandbox";
-    const url = isSandbox 
-      ? "https://api.sandbox.africastalking.com/version1/messaging"
-      : "https://api.africastalking.com/version1/messaging";
+    // Validate API key format
+    // Sandbox keys typically start with different prefixes than production
+    const apiKeyPrefix = apiKey.substring(0, 10);
     
-    console.log("🌐 Using API endpoint:", url, isSandbox ? "(Sandbox)" : "(Production)");
-
-    // Create Basic Auth header - verify the format
-    const credentials = `${API_USERNAME}:${API_KEY}`;
-    const auth = Buffer.from(credentials).toString("base64");
-    
-    // Debug: Show first/last chars of API key (masked for security)
-    const apiKeyPreview = API_KEY.length > 10 
-      ? `${API_KEY.substring(0, 4)}...${API_KEY.substring(API_KEY.length - 4)}`
-      : "***";
-    
-    // Verify the Basic Auth encoding (decode to check)
-    const decodedAuth = Buffer.from(auth, "base64").toString("utf-8");
-    console.log("🔍 Auth verification:", {
-      credentialsFormat: `${API_USERNAME}:${apiKeyPreview}`,
-      decodedMatches: decodedAuth === credentials ? "✓" : "✗",
-      decodedAuth: decodedAuth.substring(0, 20) + "...",
+    // Log credential info (without exposing full API key)
+    console.log('🔑 Using credentials:', {
+      username: username,
+      apiKeyPrefix: apiKeyPrefix + '...',
+      apiKeyLength: apiKey.length,
+      senderId: from || '(omitted - sandbox mode)',
+      isSandbox: isSandboxMode,
+      apiKeyFormat: apiKey.startsWith('atsk_') ? 'Production format (atsk_...)' : 
+                    apiKey.length > 20 ? 'Valid length' : 'Suspicious length',
     });
-
-    // Prepare request body
-    const formData = new URLSearchParams();
-    formData.append("username", API_USERNAME);
-    formData.append("to", formattedPhone);
-    formData.append("message", message);
     
-    // For sandbox, sender ID should be "AFRICASTKNG" or omitted
-    // For production, use your registered sender ID
-    if (isSandbox) {
-      // Sandbox requires "AFRICASTKNG" or can be omitted
-      if (SENDER_ID && SENDER_ID.trim() !== "" && SENDER_ID.trim().toUpperCase() !== "AFRICASTKNG") {
-        console.log("⚠️ Sandbox detected: Using 'AFRICASTKNG' as sender ID instead of", SENDER_ID);
-        formData.append("from", "AFRICASTKNG");
-      } else if (SENDER_ID && SENDER_ID.trim().toUpperCase() === "AFRICASTKNG") {
-        formData.append("from", "AFRICASTKNG");
-      }
-      // If SENDER_ID is empty or not set, omit 'from' parameter for sandbox
-    } else {
-      // Production: use the provided sender ID
-      if (SENDER_ID && SENDER_ID.trim() !== "") {
-        formData.append("from", SENDER_ID);
-      }
+    // Warn if sandbox username but production-looking API key
+    if (isSandboxMode && apiKey.startsWith('atsk_')) {
+      console.warn('⚠️ WARNING: Using "sandbox" username with production-format API key. This will fail!');
+      console.warn('   Sandbox API keys have a different format. Get your sandbox key from the dashboard.');
+    }
+    
+    // Warn if production username but short API key (might be sandbox key)
+    if (!isSandboxMode && !apiKey.startsWith('atsk_') && apiKey.length < 50) {
+      console.warn('⚠️ WARNING: Production username with short API key. Make sure this is a production key.');
     }
 
-    // Debug logging (remove in production or make conditional)
-    console.log("📤 Sending SMS request:", {
-      url,
-      username: API_USERNAME,
-      phone: formattedPhone,
-      senderId: SENDER_ID,
+    // Format all phone numbers to international format with + prefix for SDK
+    const formattedPhones = phoneNumbers.map(phone => {
+      const formatted = formatPhoneNumber(phone);
+      return '+' + formatted; // SDK expects international format with +
+    });
+    
+    // Validate phone number formats (Kenya: +254XXXXXXXXX = 13 characters total)
+    const invalidPhones: Array<{original: string, formatted: string, reason: string}> = [];
+    formattedPhones.forEach((formattedPhone, index) => {
+      if (formattedPhone.startsWith('+254')) {
+        if (formattedPhone.length !== 13) {
+          invalidPhones.push({
+            original: phoneNumbers[index],
+            formatted: formattedPhone,
+            reason: `Invalid length: ${formattedPhone.length} (expected 13 for Kenya)`
+          });
+        } else {
+          // Validate Kenyan mobile prefix (should start with 2547)
+          const mobilePrefix = formattedPhone.substring(4, 5);
+          if (mobilePrefix !== '7' && mobilePrefix !== '1') {
+            invalidPhones.push({
+              original: phoneNumbers[index],
+              formatted: formattedPhone,
+              reason: `Invalid Kenyan mobile prefix: ${mobilePrefix} (should be 7 or 1)`
+            });
+          }
+        }
+      }
+    });
+    
+    // Log warnings for invalid phone numbers
+    if (invalidPhones.length > 0) {
+      console.warn('⚠️ Invalid phone number(s) detected:', invalidPhones);
+    }
+
+    const isBulkSMS = formattedPhones.length > 1;
+    
+    // Calculate message parts (SMS are 160 chars per part, or 70 for Unicode)
+    const isUnicode = /[^\x00-\x7F]/.test(message);
+    const charsPerPart = isUnicode ? 70 : 160;
+    const messageParts = Math.ceil(message.length / charsPerPart);
+    
+    console.log(`📤 Sending ${isBulkSMS ? 'BULK' : ''} SMS via Africa's Talking SDK:`, {
+      recipients: formattedPhones.length,
+      to: isBulkSMS ? `${formattedPhones.length} recipients` : formattedPhones[0],
+      from: from || '(sandbox - no sender ID)',
       messageLength: message.length,
-      apiKeyLength: API_KEY.length,
-      apiKeyPreview: apiKeyPreview,
-      authHeaderLength: auth.length,
-      authHeaderPreview: auth.substring(0, 20) + "...",
+      messageParts: messageParts,
+      isUnicode: isUnicode,
+      username: username,
+      invalidPhones: invalidPhones.length > 0 ? invalidPhones.length : undefined,
     });
     
-    // Log the actual request body being sent
-    console.log("📋 Request body:", formData.toString());
+    // Warn if message is long (more likely to fail)
+    if (messageParts > 1) {
+      console.warn(`⚠️ Long message detected: ${messageParts} parts. Multi-part messages have higher failure rates.`);
+    }
 
-    // Send SMS
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Authorization": `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Accept": "application/json",
-      },
-      body: formData.toString(),
-    });
+    // Initialize the SDK with credentials
+    const credentials = {
+      apiKey: apiKey,
+      username: username,
+    };
 
-    // Get response text first to handle both JSON and non-JSON responses
-    const responseText = await response.text();
+    const africastalking = AfricasTalking(credentials);
+
+    // Get the SMS service
+    const sms = africastalking.SMS;
+
+    // Prepare options for sending SMS
+    const options: any = {
+      // Set the numbers you want to send to in international format
+      to: formattedPhones,
+      // Set your message
+      message: message.trim(),
+    };
+    
+    // Only include 'from' field if we have a sender ID (not in sandbox mode typically)
+    if (from) {
+      options.from = from;
+    }
+
+    // Send SMS using the SDK
     let data: any;
-
     try {
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      // If response is not JSON, log the actual response
-      console.error("❌ Non-JSON response from Africa's Talking API:", responseText.substring(0, 200));
-      console.error("Response status:", response.status);
-      console.error("Response headers:", Object.fromEntries(response.headers.entries()));
+      data = await sms.send(options);
+      console.log('📥 Africa\'s Talking SDK Response:', JSON.stringify(data, null, 2));
+    } catch (sdkError: any) {
+      console.error('❌ Africa\'s Talking SDK error:', sdkError);
       
-      // Provide helpful error message for 401
-      if (response.status === 401) {
-        console.error("🔐 Authentication Failed - Possible issues:");
-        console.error("  1. API key might be incorrect or expired");
-        console.error("  2. Username might be wrong (should be 'sandbox' for sandbox)");
-        console.error("  3. API key might have extra spaces or special characters");
-        console.error("  4. You might be using production key instead of sandbox key");
-        console.error("  5. API key might need to be regenerated in dashboard");
+      // Handle SDK errors
+      const errorMessage = sdkError.message || sdkError.toString() || 'Failed to send SMS';
+      const errorString = JSON.stringify(sdkError).toLowerCase();
+      
+      // Check if it's an InvalidSenderId error
+      if (errorMessage.includes('InvalidSenderId') || errorString.includes('invalidsenderid')) {
+        const helpfulMessage = `Invalid Sender ID error. Solutions:
+1. In Sandbox mode: The sender ID field should be omitted (left empty)
+   - Sandbox typically doesn't allow custom sender IDs
+   - Remove AFRICAS_TALKING_SENDER_ID from .env.local when using sandbox
+
+2. In Production mode: Ensure your sender ID is:
+   - Registered and approved in your Africa's Talking dashboard
+   - Maximum 11 characters (alphanumeric, no spaces)
+   - Matches exactly what's registered in your account
+
+3. Check your dashboard:
+   - Go to https://account.africastalking.com
+   - Navigate to Settings → Sender IDs
+   - Verify your sender ID is approved and active
+
+Current configuration:
+- Username: "${username}"
+- Is Sandbox: ${isSandboxMode}
+- Sender ID: ${from || '(not set)'}`;
         
         return NextResponse.json(
           { 
-            success: false, 
-            error: `Authentication failed (401). Please verify your API credentials in .env.local. Check: 1) API key is correct, 2) Username is 'sandbox' for sandbox, 3) No extra spaces in credentials, 4) Using sandbox key (not production). See server logs for details.` 
+            error: 'Invalid Sender ID',
+            message: helpfulMessage,
+            details: {
+              isSandbox: isSandboxMode,
+              senderId: from || '(not set)',
+              sdkError: errorMessage,
+            }
+          },
+          { status: 400 }
+        );
+      }
+      
+      // Check if it's an authentication error
+      if (errorMessage.includes('Authentication') || errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+        const helpfulMessage = `Authentication failed. Common causes:
+1. Username and API key don't match (sandbox key requires username "sandbox")
+2. API key is incorrect or has extra spaces
+3. API key has expired (regenerate in dashboard)
+4. Wrong environment (mixing sandbox and production credentials)
+
+Current username: "${username}"
+Check your .env.local file and verify:
+- Username matches your dashboard exactly
+- API key is correct and matches the username type
+- No extra spaces or quotes around values
+- Restart your dev server after changing .env.local`;
+        
+        return NextResponse.json(
+          { 
+            error: 'Authentication failed - Invalid credentials',
+            message: helpfulMessage,
+            details: {
+              username: username,
+              apiKeyLength: apiKey.length,
+              isSandbox: isSandboxMode,
+              sdkError: errorMessage,
+            }
           },
           { status: 401 }
         );
@@ -385,42 +301,193 @@ async function sendViaAfricasTalking(phone: string, message: string) {
       
       return NextResponse.json(
         { 
-          success: false, 
-          error: `API returned non-JSON response. Status: ${response.status}. Check server logs for details.` 
+          error: errorMessage,
+          details: sdkError 
         },
-        { status: response.status || 500 }
+        { status: 500 }
       );
     }
 
-    // Log the full response for debugging
-    console.log("Africa's Talking API Response:", JSON.stringify(data, null, 2));
+    // Check for InvalidSenderId error in the response
+    if (data?.SMSMessageData?.Message === 'InvalidSenderId' || data?.errorMessage?.includes('InvalidSenderId')) {
+      const helpfulMessage = `Invalid Sender ID error. Solutions:
+1. In Sandbox mode: The sender ID field should be omitted (left empty)
+   - Sandbox typically doesn't allow custom sender IDs
+   - Remove AFRICAS_TALKING_SENDER_ID from .env.local when using sandbox
 
-    if (response.ok && data.SMSMessageData) {
-      const recipients = data.SMSMessageData.Recipients || [];
-      const success = recipients.some((r: any) => r.statusCode === 101);
+2. In Production mode: Ensure your sender ID is:
+   - Registered and approved in your Africa's Talking dashboard
+   - Maximum 11 characters (alphanumeric, no spaces)
+   - Matches exactly what's registered in your account
 
-      if (success) {
-        console.log("✅ SMS sent successfully:", formattedPhone);
+3. Check your dashboard:
+   - Go to https://account.africastalking.com
+   - Navigate to Settings → Sender IDs
+   - Verify your sender ID is approved and active
+
+Current configuration:
+- Username: "${username}"
+- Is Sandbox: ${isSandboxMode}
+- Sender ID: ${from || '(not set)'}`;
+      
+      return NextResponse.json(
+        { 
+          error: 'Invalid Sender ID',
+          message: helpfulMessage,
+          details: {
+            isSandbox: isSandboxMode,
+            senderId: from || '(not set)',
+            rawResponse: data,
+          }
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check if the request was successful
+    if (data && data.SMSMessageData?.Recipients?.length > 0) {
+      const recipients = data.SMSMessageData.Recipients;
+      const isBulkSMS = recipients.length > 1;
+      
+      // Check all recipients' status
+      const successfulRecipients = recipients.filter((r: any) => 
+        r.statusCode === 101 || r.status === 'Success'
+      );
+      const failedRecipients = recipients.filter((r: any) => 
+        r.statusCode !== 101 && r.status !== 'Success'
+      );
+      
+      // Log detailed status for all recipients
+      recipients.forEach((r: any) => {
+        if (r.statusCode === 101 || r.status === 'Success') {
+          console.log(`✅ SMS delivered to ${r.number}:`, {
+            statusCode: r.statusCode,
+            status: r.status,
+            messageId: r.messageId,
+            cost: r.cost,
+          });
+        } else {
+          console.error(`❌ SMS delivery FAILED for ${r.number}:`, {
+            statusCode: r.statusCode,
+            status: r.status,
+            messageId: r.messageId,
+            cost: r.cost,
+            errorInfo: getStatusCodeMeaning(r.statusCode),
+          });
+        }
+      });
+      
+      if (successfulRecipients.length > 0) {
+        const totalCost = recipients.reduce((sum: number, r: any) => sum + parseFloat(r.cost || '0'), 0);
+        
+        console.log(`✅ ${isBulkSMS ? 'BULK ' : ''}SMS sent successfully:`, {
+          total: recipients.length,
+          successful: successfulRecipients.length,
+          failed: failedRecipients.length,
+        });
+        
+        // If there are failures, log them separately
+        if (failedRecipients.length > 0) {
+          console.warn('⚠️ Some SMS failed to deliver:', failedRecipients.map((r: any) => ({
+            phone: r.number,
+            statusCode: r.statusCode,
+            status: r.status,
+            reason: getStatusCodeMeaning(r.statusCode),
+          })));
+        }
+        
         return NextResponse.json({
           success: true,
-          message: "SMS sent successfully",
-          data: data.SMSMessageData,
+          message: isBulkSMS 
+            ? `SMS sent to ${successfulRecipients.length} of ${recipients.length} recipients`
+            : 'SMS sent successfully',
+          data: {
+            isBulk: isBulkSMS,
+            totalRecipients: recipients.length,
+            successful: successfulRecipients.length,
+            failed: failedRecipients.length,
+            recipients: recipients.map((r: any) => ({
+              phoneNumber: r.number,
+              status: r.status,
+              statusCode: r.statusCode,
+              messageId: r.messageId,
+              cost: r.cost,
+              failureReason: r.statusCode !== 101 ? getStatusCodeMeaning(r.statusCode) : undefined,
+            })),
+            totalCost: totalCost.toFixed(4),
+          },
         });
       } else {
-        const error = recipients[0]?.status || recipients[0]?.statusMessage || "Unknown error";
-        console.error("❌ SMS failed:", error, recipients);
+        console.error('❌ SMS sending failed for all recipients:', recipients.map((r: any) => ({
+          phone: r.number,
+          statusCode: r.statusCode,
+          status: r.status,
+          reason: getStatusCodeMeaning(r.statusCode),
+        })));
         return NextResponse.json(
-          { success: false, error: `SMS failed: ${error}` },
+          { 
+            error: `Failed to send SMS to all recipients`,
+            details: recipients.map((r: any) => ({
+              phoneNumber: r.number,
+              status: r.status,
+              statusCode: r.statusCode,
+              failureReason: getStatusCodeMeaning(r.statusCode),
+            }))
+          },
           { status: 400 }
         );
       }
     } else {
-      console.error("❌ Africa's Talking API error:", data);
-      const errorMessage = data.errorMessage || data.message || data.error || "Failed to send SMS";
+      // Handle API errors
+      const errorMessage = data?.errorMessage || data?.error || 'Failed to send SMS';
+      console.error('❌ Africa\'s Talking SDK error:', errorMessage, data);
+      
+      // Provide helpful error messages for authentication issues
+      if (data?.errorMessage && (data.errorMessage.includes('Invalid') || data.errorMessage.includes('Authentication'))) {
+        const helpfulMessage = `Authentication failed. Common causes:
+1. Username and API key don't match (sandbox key requires username "sandbox")
+2. API key is incorrect or has extra spaces
+3. API key has expired (regenerate in dashboard)
+4. Wrong environment (mixing sandbox and production credentials)
+
+Current username: "${username}"
+Check your .env.local file and verify:
+- Username matches your dashboard exactly
+- API key is correct and matches the username type
+- No extra spaces or quotes around values
+- Restart your dev server after changing .env.local`;
+        
+        return NextResponse.json(
+          { 
+            error: 'Authentication failed - Invalid credentials',
+            message: helpfulMessage,
+            details: {
+              username: username,
+              apiKeyLength: apiKey.length,
+              isSandbox: username.toLowerCase() === 'sandbox',
+              rawError: data,
+            }
+          },
+          { status: 401 }
+        );
+      }
+      
       return NextResponse.json(
-        { success: false, error: errorMessage },
-        { status: response.status || 500 }
+        { 
+          error: errorMessage,
+          details: data 
+        },
+        { status: 400 }
       );
     }
+  } catch (error: any) {
+    console.error('❌ Error sending SMS:', error);
+    return NextResponse.json(
+      { 
+        error: 'Internal server error',
+        message: error.message || 'An unexpected error occurred'
+      },
+      { status: 500 }
+    );
+  }
 }
-

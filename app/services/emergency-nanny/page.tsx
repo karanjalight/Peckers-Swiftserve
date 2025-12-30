@@ -21,6 +21,7 @@ import {
   Clock,
 } from "lucide-react";
 import NannyForm from "@/components/forms/NannyForm";
+import StepIndicator, { NANNY_BOOKING_STEPS } from "@/components/StepIndicator";
 
 export default function EmergencyNanny() {
   const [expandedProcess, setExpandedProcess] = useState<number | null>(null);
@@ -110,8 +111,16 @@ export default function EmergencyNanny() {
       <div className="mx-auto flex lg:flex-row gap-6 flex-col px-2 sm:px-6 lg:px-8 py-4">
         {/* FORM */}
         {showForm && (
-          <section className="lg:w-2/3 bg-white p-8 lg:p-12 border  ">
-            <h2 className="text-4xl font-bold text-[#244672] mb-4">
+          <section className="lg:w-2/3 space-y-6">
+            {/* Step Indicator */}
+            <StepIndicator
+              currentStep={0}
+              steps={NANNY_BOOKING_STEPS}
+              showDescriptions={true}
+            />
+
+            <div className="bg-white p-8 lg:p-12 border">
+              <h2 className="text-4xl font-bold text-[#244672] mb-4">
                Nanny Request
             </h2>
 
@@ -125,6 +134,7 @@ export default function EmergencyNanny() {
             </p>
 
             <NannyForm />
+            </div>
           </section>
         )}
 

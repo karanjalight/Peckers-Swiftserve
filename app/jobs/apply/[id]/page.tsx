@@ -62,12 +62,14 @@ export default function ApplyJobPage({
     good_conduct: File | null;
     form_4: File | null;
     id_photo: File | null;
+    passport_photo: File | null;
     other: File[];
   }>({
     cv: null,
     good_conduct: null,
     form_4: null,
     id_photo: null,
+    passport_photo: null,
     other: [],
   });
 
@@ -159,6 +161,9 @@ export default function ApplyJobPage({
       if (!documents.cv) {
         throw new Error("CV is required");
       }
+      if (!documents.passport_photo) {
+        throw new Error("Passport photo is required");
+      }
 
       // 1. Insert applicant
       const { data: applicant, error: applicantError } = await supabase
@@ -191,7 +196,25 @@ export default function ApplyJobPage({
 
       const applicantId = applicant.id;
 
-      // 2. Insert job_application
+      // 2. Upload passport photo if provided
+      let passportPhotoUrl: string | null = null;
+      if (documents.passport_photo) {
+        passportPhotoUrl = await uploadDocument(
+          documents.passport_photo,
+          applicantId,
+          "passport_photo"
+        );
+        
+        // Update applicant with passport photo URL
+        if (passportPhotoUrl) {
+          await supabase
+            .from("applicants")
+            .update({ passport_photo_url: passportPhotoUrl })
+            .eq("id", applicantId);
+        }
+      }
+
+      // 3. Insert job_application
       const { error: jobAppError } = await supabase
         .from("job_applications")
         .insert({
@@ -204,7 +227,7 @@ export default function ApplyJobPage({
         throw new Error(jobAppError.message);
       }
 
-      // 3. Upload documents
+      // 4. Upload documents
       const documentUploads = [];
 
       // Upload CV (required)
@@ -575,9 +598,9 @@ export default function ApplyJobPage({
                 <div className="space-y-4">
                   <div className="p-4 bg-blue-50 border border-blue-200 ">
                     <p className="text-sm text-blue-800">
-                      <span className="font-semibold">Required PDF:</span>{" "}
-                      CV/Resume, Good Conduct Certificate, Form 4 Certificate,
-                      ID 
+                      <span className="font-semibold">Required:</span>{" "}
+                      CV/Resume (PDF), Passport Photo (JPEG/PNG).{" "}
+                      <span className="font-semibold">Optional:</span> Good Conduct Certificate, Form 4 Certificate, National ID
                     </p>
                   </div>
 
@@ -629,6 +652,22 @@ export default function ApplyJobPage({
                         onChange={(e) => handleFileChange(e, "id_photo")}
                         className="w-full px-4 py-3 border-2 border-gray-200  focus:ring-2 focus:ring-blue-800 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-semibold hover:file:bg-blue-100"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Passport Photo <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange(e, "passport_photo")}
+                        className="w-full px-4 py-3 border-2 border-gray-200  focus:ring-2 focus:ring-blue-800 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-semibold hover:file:bg-blue-100"
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Please upload a clear passport-sized photo (JPEG/PNG)
+                      </p>
                     </div>
                   </div>
 

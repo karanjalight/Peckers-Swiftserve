@@ -83,9 +83,13 @@ export function LoginForm({
         console.error("Error fetching user data:", userError);
       }
 
+      // Determine redirect URL based on user role
+      const userRole = userData?.role || "customer";
+      const redirectUrl = userRole === "admin" ? "/dashboard" : "/account";
+
       // Redirect after successful login
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(redirectUrl);
       }, 500);
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred");
