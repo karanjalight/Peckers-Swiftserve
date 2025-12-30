@@ -12,3 +12,5 @@ ADD COLUMN IF NOT EXISTS passport_photo_url TEXT;
 -- Add comment for documentation
 COMMENT ON COLUMN applicants.passport_photo_url IS 'URL of the passport photo stored in Supabase storage bucket';
 
+
+
