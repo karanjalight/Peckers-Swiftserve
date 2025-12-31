@@ -14,6 +14,10 @@ import {
   Baby,
   Star,
   User,
+  Eye,
+  X,
+  MapPin,
+  Briefcase,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import AboutHero from "@/components/hero/AboutHero";
@@ -25,6 +29,7 @@ interface HiredNannyApplication {
   id: string;
   status: string;
   applicant_id: string;
+  notes: string | null;
   applicants: {
     id: string;
     first_name: string;
@@ -71,6 +76,7 @@ export default function SuccessPage() {
     first_name: string;
     last_name: string;
   } | null>(null);
+  const [viewingNanny, setViewingNanny] = useState<HiredNannyApplication | null>(null);
 
   const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY as string;
   const { initializePayment } = usePaystack(publicKey);
@@ -183,6 +189,7 @@ export default function SuccessPage() {
               id,
               status,
               applicant_id,
+              notes,
               applicants:applicant_id (
                 id,
                 first_name,
@@ -1036,7 +1043,7 @@ export default function SuccessPage() {
                 <p className="text-sm text-slate-600">
                   Browse through our vetted{" "}
                   <span className="font-semibold">
-                    ATS-approved nannies (status: hired)
+                    Nannies
                   </span>{" "}
                   and pick who you feel is the best fit. We&apos;ll confirm
                   availability and finalize your quote on our side.
@@ -1086,7 +1093,7 @@ export default function SuccessPage() {
                             
                             {/* Content section */}
                             <div className="p-4 text-center flex-1 flex flex-col">
-                            <div className="mb-3 flex-1">
+                            <div className="mb-1 flex-1">
                               <h3 className="font-semibold text-slate-900 text-sm mb-1">
                                 {fullName}
                               </h3>
@@ -1103,27 +1110,37 @@ export default function SuccessPage() {
                               )}
                               <div className="flex items-center justify-center gap-1 text-xs text-emerald-700 bg-emerald-50 inline-flex px-2 py-1 rounded-full">
                                 <Star className="w-3 h-3 text-emerald-600" />
-                                <span>ATS: Hired</span>
+                                <span>Available</span>
                               </div>
                             </div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedApplicantId(applicant.id);
-                                setSelectedNannyDetails({
-                                  first_name: applicant.first_name,
-                                  last_name: applicant.last_name,
-                                });
-                              }}
-                              className={`w-full py-2 px-3 rounded-lg text-sm font-medium transition ${
-                                isSelected
-                                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                                  : "bg-slate-100 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200"
-                              }`}
-                            >
-                              {isSelected ? "Selected" : "Select"}
-                            </button>
+                            <div className="flex gap-2 p-2">
+                              <button
+                                type="button"
+                                onClick={() => setViewingNanny(app)}
+                                className="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 flex items-center justify-center gap-1.5"
+                              >
+                                <Eye className="w-4 h-4" />
+                                View
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedApplicantId(applicant.id);
+                                  setSelectedNannyDetails({
+                                    first_name: applicant.first_name,
+                                    last_name: applicant.last_name,
+                                  });
+                                }}
+                                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition ${
+                                  isSelected
+                                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                                    : "bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 border border-blue-200"
+                                }`}
+                              >
+                                {isSelected ? "Selected" : "Select"}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1290,7 +1307,7 @@ export default function SuccessPage() {
                           )}&redirect=/services/success/${id}?type=${requestType}`
                         )
                       }
-                      className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition shadow-md font-semibold text-base flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-gradient-to-r from-blue-800 to-blue-800 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition shadow-md font-semibold text-base flex items-center justify-center gap-2"
                     >
                       <UserPlus className="w-5 h-5" />
                       Create Account
@@ -1471,6 +1488,186 @@ export default function SuccessPage() {
           </aside>
         </section>
       </main>
+
+      {/* Premium Nanny Details Modal */}
+      {viewingNanny && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+          onClick={() => setViewingNanny(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 scale-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setViewingNanny(null)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-110"
+            >
+              <X className="w-5 h-5 text-slate-700" />
+            </button>
+
+            {/* Modal Content */}
+            <div className="overflow-y-auto max-h-[90vh]">
+              {/* Header with Photo */}
+              <div className="relative bg-slate-50 border-b border-slate-200 p-8 pb-10">
+                <div className="flex flex-col sm:flex-row gap-6 items-start">
+                  <div className="relative flex-shrink-0">
+                    {viewingNanny.applicants.passport_photo_url ? (
+                      <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden border-4 border-white shadow-xl ring-2 ring-slate-200">
+                        <img
+                          src={viewingNanny.applicants.passport_photo_url}
+                          alt={`${viewingNanny.applicants.first_name} ${viewingNanny.applicants.last_name}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl bg-slate-200 border-4 border-white shadow-xl ring-2 ring-slate-200 flex items-center justify-center">
+                        <User className="w-16 h-16 sm:w-20 sm:h-20 text-slate-400" />
+                      </div>
+                    )}
+                    <div className="absolute -bottom-2 -right-2 bg-emerald-500 rounded-full p-2 shadow-lg border-2 border-white">
+                      <Star className="w-4 h-4 text-white fill-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-3xl sm:text-4xl font-bold mb-2 text-slate-900">
+                      {viewingNanny.applicants.first_name}{" "}
+                      {viewingNanny.applicants.last_name}
+                    </h2>
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                      {viewingNanny.jobs?.title && (
+                        <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-full text-sm font-medium text-slate-700 border border-slate-200">
+                          <Briefcase className="w-4 h-4" />
+                          <span>{viewingNanny.jobs.title}</span>
+                        </div>
+                      )}
+                      {viewingNanny.applicants.years_of_experience != null && (
+                        <div className="flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-full text-sm font-medium text-amber-700 border border-amber-200">
+                          <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+                          <span>
+                            {viewingNanny.applicants.years_of_experience} years
+                            experience
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-full text-sm font-medium text-emerald-700 border border-emerald-200">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Available</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Details Section */}
+              <div className="p-6 sm:p-8 space-y-6">
+                {/* Location Information */}
+                <div className="space-y-4">
+                  {viewingNanny.applicants.location && (
+                    <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                          Location
+                        </p>
+                        <p className="text-sm font-medium text-slate-900">
+                          {viewingNanny.applicants.location}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {viewingNanny.jobs?.location && (
+                    <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                      <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                          Job Location
+                        </p>
+                        <p className="text-sm font-medium text-slate-900">
+                          {viewingNanny.jobs.location}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Status */}
+                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    <p className="text-xs uppercase tracking-wide text-emerald-700 font-medium">
+                      Status
+                    </p>
+                  </div>
+                  <p className="text-2xl font-bold text-emerald-900">
+                    Available
+                  </p>
+                  <p className="text-sm text-emerald-700">
+                    {viewingNanny.applicants.active !== false
+                      ? "Active & Ready to Work"
+                      : "Currently Unavailable"}
+                  </p>
+                </div>
+
+                {/* Notes Section */}
+                {viewingNanny.notes && (
+                  <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-white" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-blue-900">
+                        Internal Notes
+                      </h3>
+                    </div>
+                    <div className="prose prose-sm max-w-none">
+                      <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+                        {viewingNanny.notes}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedApplicantId(viewingNanny.applicants.id);
+                      setSelectedNannyDetails({
+                        first_name: viewingNanny.applicants.first_name,
+                        last_name: viewingNanny.applicants.last_name,
+                      });
+                      setViewingNanny(null);
+                    }}
+                    className={`flex-1 py-3 px-6 rounded-xl text-sm font-semibold transition-all ${
+                      selectedApplicantId === viewingNanny.applicants.id
+                        ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg"
+                        : "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
+                    }`}
+                  >
+                    {selectedApplicantId === viewingNanny.applicants.id
+                      ? "✓ Selected"
+                      : "Select This Nanny"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewingNanny(null)}
+                    className="flex-1 py-3 px-6 rounded-xl text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all border border-slate-200"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
