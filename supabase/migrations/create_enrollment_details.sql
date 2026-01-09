@@ -174,4 +174,3 @@ LEFT JOIN training_programs p ON e.program_id = p.id;
 -- GRANT SELECT ON enrollment_detail_view TO authenticated;
 -- GRANT SELECT, INSERT, UPDATE ON training_attendance TO authenticated;
 -- GRANT SELECT, INSERT, UPDATE, DELETE ON training_enrollment_notes TO authenticated;
-

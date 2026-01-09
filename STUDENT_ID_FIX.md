@@ -70,3 +70,5 @@ The improved trigger function and API fallback ensure:
 3. No more "Student ID not yet generated" errors
 
 
+
+

@@ -72,3 +72,5 @@ The migration:
 - The dropdown is required, so users must select an account type during signup
 
 
+
+

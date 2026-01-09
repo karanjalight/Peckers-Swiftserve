@@ -29,7 +29,9 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addMonths, startOfDay } from "date-fns";
+import StudentIDCard from "@/components/training/StudentIDCard";
+import { IdCard } from "lucide-react";
 
 interface TrainingProgram {
   id: string;
@@ -48,6 +50,13 @@ interface Enrollment {
   balance_paid_at: string | null;
   created_at: string;
   training_programs: TrainingProgram;
+  users: {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+    avatar_url: string | null;
+  };
 }
 
 interface AttendanceRecord {
@@ -102,6 +111,9 @@ export default function EnrollmentDetailPage({
   const [noteType, setNoteType] = useState<string>("general");
   const [savingNote, setSavingNote] = useState(false);
 
+  // ID Card state
+  const [showIDCard, setShowIDCard] = useState(false);
+
   // Attendance summary
   const [attendanceSummary, setAttendanceSummary] = useState({
     total_days: 0,
@@ -148,7 +160,8 @@ export default function EnrollmentDetailPage({
         .from("training_enrollments")
         .select(`
           *,
-          training_programs(*)
+          training_programs(*),
+          users(id, full_name, email, phone, avatar_url)
         `)
         .eq("id", id)
         .eq("user_id", currentUser.id)
@@ -244,6 +257,20 @@ export default function EnrollmentDetailPage({
   const handleMarkAttendance = async () => {
     if (!selectedDate || !user) {
       alert("Please select a date and ensure you're logged in");
+      return;
+    }
+
+    // Only allow saving for today's date
+    const today = startOfDay(new Date());
+    const selectedDay = startOfDay(selectedDate);
+    
+    if (selectedDay < today) {
+      alert("You cannot mark attendance for past dates. Please select today's date.");
+      return;
+    }
+    
+    if (selectedDay > today) {
+      alert("You cannot mark attendance for future dates. Please select today's date.");
       return;
     }
 
@@ -503,9 +530,20 @@ export default function EnrollmentDetailPage({
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                {enrollment.enrollment_status.replace("_", " ").toUpperCase()}
+            <div className="flex items-center gap-3">
+              {(enrollment.enrollment_status === "deposit_paid" || enrollment.enrollment_status === "fully_paid") && (
+                <button
+                  onClick={() => setShowIDCard(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#244672] text-white rounded-lg hover:bg-[#1a3554] transition-colors"
+                >
+                  <IdCard className="w-4 h-4" />
+                  Download ID Card
+                </button>
+              )}
+              <div className="text-right">
+                <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                  {enrollment.enrollment_status.replace("_", " ").toUpperCase()}
+                </div>
               </div>
             </div>
           </div>
@@ -580,6 +618,12 @@ export default function EnrollmentDetailPage({
                   month={selectedMonth}
                   onMonthChange={setSelectedMonth}
                   className="border border-gray-200 rounded-lg p-4"
+                  disabled={(date) => {
+                    // Only allow today's date, disable past and future dates
+                    const today = startOfDay(new Date());
+                    const checkDate = startOfDay(date);
+                    return checkDate.getTime() !== today.getTime();
+                  }}
                   modifiers={{
                     hasAttendance: (date) => {
                       const dateStr = format(date, "yyyy-MM-dd");
@@ -931,6 +975,20 @@ export default function EnrollmentDetailPage({
       </div>
 
       <Footer />
+
+      {/* Student ID Card Modal */}
+      {showIDCard && (enrollment.enrollment_status === "deposit_paid" || enrollment.enrollment_status === "fully_paid") && enrollment.users && (
+        <StudentIDCard
+          studentName={enrollment.users.full_name || enrollment.users.email || "Unknown Student"}
+          studentId={enrollment.student_id || "TBD"}
+          course={program.name || "Training Program"}
+          cohort={`Cohort ${program.cohort_number} ${new Date(program.start_date || Date.now()).getFullYear()}`}
+          validTill={enrollment.deposit_paid_at 
+            ? format(addMonths(parseISO(enrollment.deposit_paid_at), 1), "MMM yyyy")
+            : format(addMonths(new Date(), 1), "MMM yyyy")}
+          onClose={() => setShowIDCard(false)}
+        />
+      )}
     </div>
   );
 }
