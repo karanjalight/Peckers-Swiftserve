@@ -7,7 +7,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function POST(req: Request) {
-  const { reference, orderId, requestId, type } = await req.json();
+  const { reference, orderId, requestId, type, paymentId } = await req.json();
 
   try {
     // Verify with Paystack
@@ -86,6 +86,26 @@ export async function POST(req: Request) {
         }
       }
 
+      // Handle training payment
+      if (type === "training" && paymentId) {
+        const { error: updateError } = await supabase
+          .from("training_payments")
+          .update({
+            status: "paid",
+            paystack_reference: reference,
+            paid_at: new Date().toISOString(),
+          })
+          .eq("id", paymentId);
+
+        if (updateError) {
+          console.error("Error updating training payment:", updateError);
+          return NextResponse.json(
+            { success: false, message: "Failed to update payment status", error: updateError },
+            { status: 500 }
+          );
+        }
+      }
+
       // Handle order payment (existing functionality)
       if (orderId) {
         // Update order status to confirmed
@@ -111,7 +131,8 @@ export async function POST(req: Request) {
         success: true, 
         data: data.data,
         orderId: orderId,
-        requestId: requestId
+        requestId: requestId,
+        paymentId: paymentId
       });
     } else {
       console.error("❌ Payment verification failed:", data);

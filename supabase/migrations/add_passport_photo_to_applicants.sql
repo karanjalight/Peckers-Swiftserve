@@ -16,3 +16,5 @@ COMMENT ON COLUMN applicants.passport_photo_url IS 'URL of the passport photo st
 
 
 
+
+
