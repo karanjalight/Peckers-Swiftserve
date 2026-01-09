@@ -178,7 +178,7 @@ export default function SuccessPage() {
           }
         } else {
           setSelectionSaved(false);
-          segittSelectedNannyDetails(null);
+          setSelectedNannyDetails(null);
         }
 
         // Hired nanny applications whose job title is Nanny
