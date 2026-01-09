@@ -26,8 +26,10 @@ import {
   TrendingUp,
   Users,
   Loader2,
+  IdCard,
 } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, parseISO, addMonths } from "date-fns";
+import StudentIDCard from "@/components/training/StudentIDCard";
 
 interface TrainingProgram {
   id: string;
@@ -51,6 +53,7 @@ interface Enrollment {
     full_name: string | null;
     email: string | null;
     phone: string | null;
+    avatar_url: string | null;
   };
 }
 
@@ -112,6 +115,9 @@ export default function EnrollmentDetailPage({
   const [noteType, setNoteType] = useState<string>("general");
   const [savingNote, setSavingNote] = useState(false);
 
+  // ID Card state
+  const [showIDCard, setShowIDCard] = useState(false);
+
   // Attendance summary
   const [attendanceSummary, setAttendanceSummary] = useState({
     total_days: 0,
@@ -153,7 +159,7 @@ export default function EnrollmentDetailPage({
         .select(`
           *,
           training_programs(*),
-          users(id, full_name, email, phone)
+          users(id, full_name, email, phone, avatar_url)
         `)
         .eq("id", id)
         .single();
@@ -486,9 +492,20 @@ export default function EnrollmentDetailPage({
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                {enrollment.enrollment_status.replace("_", " ").toUpperCase()}
+            <div className="flex items-center gap-3">
+              {enrollment.student_id && enrollment.deposit_paid_at && (
+                <button
+                  onClick={() => setShowIDCard(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#244672] text-white rounded-lg hover:bg-[#1a3554] transition-colors"
+                >
+                  <IdCard className="w-4 h-4" />
+                  Generate ID Card
+                </button>
+              )}
+              <div className="text-right">
+                <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                  {enrollment.enrollment_status.replace("_", " ").toUpperCase()}
+                </div>
               </div>
             </div>
           </div>
@@ -881,6 +898,18 @@ export default function EnrollmentDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Student ID Card Modal */}
+      {showIDCard && enrollment.student_id && enrollment.deposit_paid_at && (
+        <StudentIDCard
+          studentName={student?.full_name || "Unknown Student"}
+          studentId={enrollment.student_id}
+          course={program.name || "Training Program"}
+          cohort={`Cohort ${program.cohort_number} ${new Date(program.start_date || Date.now()).getFullYear()}`}
+          validTill={format(addMonths(parseISO(enrollment.deposit_paid_at), 1), "MMM yyyy")}
+          onClose={() => setShowIDCard(false)}
+        />
+      )}
     </SidebarLayout>
   );
 }

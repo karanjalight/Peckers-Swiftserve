@@ -23,6 +23,8 @@ import Footer from "@/components/landing/Footer";
 import AboutHero from "@/components/hero/AboutHero";
 import usePaystack from "@/app/hooks/usePaystack";
 import { supabase } from "@/lib/supabase";
+import StudentIDCard from "@/components/training/StudentIDCard";
+import { format, addMonths, parseISO } from "date-fns";
 
 interface TrainingProgram {
   id: string;
@@ -44,6 +46,7 @@ interface TrainingProgram {
 interface Enrollment {
   id: string;
   enrollment_status: "pending" | "deposit_paid" | "fully_paid" | "completed" | "cancelled";
+  student_id: string | null;
   deposit_paid_at: string | null;
   balance_due_date: string | null;
   balance_paid_at: string | null;
@@ -70,6 +73,8 @@ export default function TrainingPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [enrollingProgramId, setEnrollingProgramId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"programs" | "my-enrollments">("programs");
+  const [showIDCard, setShowIDCard] = useState(false);
+  const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null);
 
   const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY as string;
   const { initializePayment } = usePaystack(publicKey);
@@ -239,33 +244,73 @@ export default function TrainingPage() {
     }
   };
 
-  const handleDownloadID = async (enrollmentId: string) => {
-    try {
-      const response = await fetch(`/api/training/download-id?enrollmentId=${enrollmentId}`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        alert(error.error || "Failed to download ID card. Please ensure deposit is paid.");
-        return;
-      }
-
-      // Create blob and download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Peckers-ID-Card.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error: any) {
-      console.error("Error downloading ID card:", error);
-      alert("Failed to download ID card. Please try again.");
+  const handleDownloadID = async (enrollment: Enrollment) => {
+    // Check if deposit is paid
+    if (enrollment.enrollment_status !== "deposit_paid" && enrollment.enrollment_status !== "fully_paid") {
+      alert("ID card is only available after deposit payment.");
+      return;
     }
+
+    // If student_id is not available, try to fetch updated enrollment data
+    if (!enrollment.student_id) {
+      try {
+        const response = await fetch("/api/training/my-enrollments", {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            const updatedEnrollment = data.enrollments.find((e: Enrollment) => e.id === enrollment.id);
+            if (updatedEnrollment) {
+              // Update the enrollment in state
+              setEnrollments((prev) =>
+                prev.map((e) => (e.id === enrollment.id ? updatedEnrollment : e))
+              );
+              enrollment = updatedEnrollment;
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching updated enrollment:", error);
+      }
+    }
+
+    // If student_id is still missing, try to trigger generation via the download API endpoint
+    if (!enrollment.student_id && enrollment.deposit_paid_at) {
+      try {
+        // The download-id API will generate student_id if missing
+        const testResponse = await fetch(`/api/training/download-id?enrollmentId=${enrollment.id}`, {
+          credentials: "include",
+        });
+        if (testResponse.ok) {
+          // Refresh enrollments to get the generated student_id
+          await fetchEnrollments();
+          // Fetch updated enrollment again
+          const refreshResponse = await fetch("/api/training/my-enrollments", {
+            credentials: "include",
+          });
+          if (refreshResponse.ok) {
+            const refreshData = await refreshResponse.json();
+            if (refreshData.success) {
+              const refreshedEnrollment = refreshData.enrollments.find(
+                (e: Enrollment) => e.id === enrollment.id
+              );
+              if (refreshedEnrollment) {
+                setEnrollments((prev) =>
+                  prev.map((e) => (e.id === enrollment.id ? refreshedEnrollment : e))
+                );
+                enrollment = refreshedEnrollment;
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error generating student ID:", error);
+      }
+    }
+
+    setSelectedEnrollment(enrollment);
+    setShowIDCard(true);
   };
 
   const startBalancePayment = (paymentId: string, amount: number, enrollmentId: string) => {
@@ -600,7 +645,7 @@ export default function TrainingPage() {
                           {/* Download ID Card Button - Available after deposit is paid */}
                           {(enrollment.enrollment_status === "deposit_paid" || enrollment.enrollment_status === "fully_paid") && (
                             <button
-                              onClick={() => handleDownloadID(enrollment.id)}
+                              onClick={() => handleDownloadID(enrollment)}
                               className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
                             >
                               <Download className="w-4 h-4" />
@@ -640,6 +685,23 @@ export default function TrainingPage() {
       </div>
 
       <Footer />
+
+      {/* Student ID Card Modal */}
+      {showIDCard && selectedEnrollment && (selectedEnrollment.enrollment_status === "deposit_paid" || selectedEnrollment.enrollment_status === "fully_paid") && user && (
+        <StudentIDCard
+          studentName={user.full_name || user.email || "Unknown Student"}
+          studentId={selectedEnrollment.student_id || "TBD"}
+          course={selectedEnrollment.training_programs.name || "Training Program"}
+          cohort={`Cohort ${selectedEnrollment.training_programs.cohort_number} ${new Date(selectedEnrollment.training_programs.start_date || Date.now()).getFullYear()}`}
+          validTill={selectedEnrollment.deposit_paid_at 
+            ? format(addMonths(parseISO(selectedEnrollment.deposit_paid_at), 1), "MMM yyyy")
+            : format(addMonths(new Date(), 1), "MMM yyyy")}
+          onClose={() => {
+            setShowIDCard(false);
+            setSelectedEnrollment(null);
+          }}
+        />
+      )}
     </div>
   );
 }
