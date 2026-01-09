@@ -24,6 +24,7 @@ function SignupContent() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [userType, setUserType] = useState<"nanny" | "medical_training">("nanny");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -110,6 +111,7 @@ function SignupContent() {
           email,
           phone: phone || null,
           role: "customer", // Default role for new signups
+          user_type: userType,
         },
       ]);
 
@@ -120,20 +122,28 @@ function SignupContent() {
 
       console.log("✅ User account created successfully");
 
-      // Fetch user record to get role
+      // Fetch user record to get role and user_type
       const { data: userData, error: userFetchError } = await supabase
         .from("users")
-        .select("role")
+        .select("role, user_type")
         .eq("id", authData.user.id)
         .single();
 
       if (userFetchError) {
-        console.error("Error fetching user role:", userFetchError);
+        console.error("Error fetching user data:", userFetchError);
       }
 
-      // Determine redirect URL based on user role
+      // Determine redirect URL based on user role and user type
       const userRole = userData?.role || "customer";
-      const redirectUrl = userRole === "admin" ? "/admin/dashboard" : "/account";
+      let redirectUrl = "/account";
+      
+      if (userRole === "admin") {
+        redirectUrl = "/admin/dashboard";
+      } else if (userData?.user_type === "medical_training") {
+        redirectUrl = "/account/training";
+      } else {
+        redirectUrl = "/account";
+      }
 
       // Link existing requests to this user account
       try {
@@ -252,6 +262,24 @@ function SignupContent() {
                   />
                 </Field>
               </div>
+
+              <Field>
+                <FieldLabel htmlFor="userType">Account Type</FieldLabel>
+                <select
+                  id="userType"
+                  value={userType}
+                  onChange={(e) => setUserType(e.target.value as "nanny" | "medical_training")}
+                  disabled={loading || success}
+                  required
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="nanny">Nanny Services</option>
+                  <option value="medical_training">Medical Training Program</option>
+                </select>
+                <FieldDescription className="text-xs text-slate-500 mt-1">
+                  Select whether you're signing up for nanny services or the medical training program
+                </FieldDescription>
+              </Field>
 
               <Field>
                 <FieldLabel htmlFor="password">Password</FieldLabel>

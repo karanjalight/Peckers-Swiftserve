@@ -15,6 +15,7 @@ import {
   PenTool, // you can change this icon
   CreditCard,
   LogOut,
+  GraduationCap,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -123,6 +124,26 @@ const navData = {
         {
           title: "Redemptions",
           url: "/admin/subscriptions/redemptions",
+        },
+      ],
+    },
+    {
+      title: "Trainings",
+      url: "/admin/training/programs",
+      icon: GraduationCap,
+      isActive: false,
+      items: [
+        {
+          title: "All Trainings",
+          url: "/admin/training/programs",
+        },
+        {
+          title: "Create Training",
+          url: "/admin/training/programs/create",
+        },
+        {
+          title: "Enrollments",
+          url: "/admin/training/enrollments",
         },
       ],
     },

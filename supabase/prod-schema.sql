@@ -49,6 +49,7 @@ CREATE TABLE public.users (
   phone TEXT,
   email TEXT,
   avatar_url TEXT,
+  user_type TEXT DEFAULT 'nanny' CHECK (user_type IN ('nanny', 'medical_training')),
 
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -56,6 +57,7 @@ CREATE TABLE public.users (
 
 CREATE INDEX idx_users_phone ON public.users(phone);
 CREATE INDEX idx_users_email ON public.users(email);
+CREATE INDEX idx_users_user_type ON public.users(user_type);
 
 
 -- Trigger to keep updated_at fresh

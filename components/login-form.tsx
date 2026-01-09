@@ -12,7 +12,7 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -27,6 +27,7 @@ export function LoginForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const isFormValid = isValidEmail && password.length >= 6;
@@ -72,10 +73,10 @@ export function LoginForm({
         console.warn("Failed to set cookies via API");
       }
 
-      // Fetch user data
+      // Fetch user data including user_type
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("id, full_name, email, role")
+        .select("id, full_name, email, role, user_type")
         .eq("id", data.user.id)
         .single();
 
@@ -83,9 +84,27 @@ export function LoginForm({
         console.error("Error fetching user data:", userError);
       }
 
-      // Determine redirect URL based on user role
-      const userRole = userData?.role || "customer";
-      const redirectUrl = userRole === "admin" ? "/dashboard" : "/account";
+      // Check if there's a redirect parameter in the URL
+      const redirectParam = searchParams?.get("redirect");
+
+      // Determine redirect URL based on user role and user_type
+      let redirectUrl = "/account";
+      
+      if (redirectParam) {
+        // If redirect parameter exists, use it (for protected routes)
+        redirectUrl = redirectParam;
+      } else {
+        const userRole = userData?.role || "customer";
+        const userType = userData?.user_type || "nanny";
+        
+        if (userRole === "admin") {
+          redirectUrl = "/admin/dashboard";
+        } else if (userType === "medical_training") {
+          redirectUrl = "/account/training";
+        } else {
+          redirectUrl = "/account";
+        }
+      }
 
       // Redirect after successful login
       setTimeout(() => {
