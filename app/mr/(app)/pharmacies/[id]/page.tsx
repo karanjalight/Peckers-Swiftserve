@@ -159,9 +159,10 @@ export default async function MrPharmacyDetailPage({
       .eq("pharmacy_id", id);
 
     const assignedReps = (assignments ?? [])
-      .map((a: { mr_profiles: { id: string; full_name: string } | null }) =>
-        a.mr_profiles ? { id: a.mr_profiles.id, full_name: a.mr_profiles.full_name } : null
-      )
+      .map((a: { mr_id: string; mr_profiles: { id: string; full_name: string } | { id: string; full_name: string }[] | null }) => {
+        const profile = Array.isArray(a.mr_profiles) ? a.mr_profiles[0] : a.mr_profiles;
+        return profile ? { id: profile.id, full_name: profile.full_name } : null;
+      })
       .filter(Boolean) as { id: string; full_name: string }[];
 
     const { data: allMrProfiles } = await supabase

@@ -495,7 +495,11 @@ export function MrAdvancedReports() {
                         cx="50%"
                         cy="50%"
                         outerRadius={80}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={(props) => {
+                          const name = "name" in props ? String(props.name) : "";
+                          const percent = "percent" in props ? Number(props.percent) : 0;
+                          return `${name} ${(percent * 100).toFixed(0)}%`;
+                        }}
                       >
                         {data.supplyChainAttribution.map((_, i) => (
                           <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />

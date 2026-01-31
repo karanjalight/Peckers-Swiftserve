@@ -169,16 +169,23 @@ export async function MrVisitReadOnly({
                   reason_for_oos?: string | null;
                   days_oos?: number | null;
                   price_per_pack?: number | null;
-                  mr_products: { name: string } | null;
+                  mr_products: { name: string } | { name: string }[] | null;
                   mr_competitor_audits: Array<{
                     competitor_name: string;
                     competitor_stock: number | null;
                     substitution_reason: string | null;
                     price_per_pack?: number | null;
                   }>;
-                }) => (
+                }) => {
+                  const productName = (() => {
+                    const mp = pa.mr_products;
+                    const p = Array.isArray(mp) ? mp[0] : mp;
+                    return p?.name ?? "—";
+                  })();
+                  const competitors = Array.isArray(pa.mr_competitor_audits) ? pa.mr_competitor_audits : [];
+                  return (
                   <tr key={pa.id} className="border-b border-slate-100 last:border-0">
-                    <td className="py-2 font-medium">{(pa.mr_products as { name: string } | null)?.name ?? "—"}</td>
+                    <td className="py-2 font-medium">{productName}</td>
                     <td className="py-2">{pa.quantity_in_stock}</td>
                     <td className="py-2">{pa.price_per_pack != null ? pa.price_per_pack : "—"}</td>
                     <td className="py-2">{pa.usp_understood ? "Yes" : "No"}</td>
@@ -189,9 +196,9 @@ export async function MrVisitReadOnly({
                     <td className="max-w-[140px] py-2 text-slate-600">{pa.reason_for_oos ?? "—"}</td>
                     <td className="py-2">{pa.days_oos != null ? pa.days_oos : "—"}</td>
                     <td className="py-2">
-                      {pa.mr_competitor_audits?.length ? (
+                      {competitors.length ? (
                         <ul className="space-y-1 text-slate-600">
-                          {pa.mr_competitor_audits.map((c: {
+                          {competitors.map((c: {
                             competitor_name: string;
                             competitor_stock: number | null;
                             substitution_reason: string | null;
@@ -208,7 +215,7 @@ export async function MrVisitReadOnly({
                       ) : "—"}
                     </td>
                   </tr>
-                ))}
+                );})}
               </tbody>
             </table>
           </div>
@@ -234,14 +241,16 @@ export async function MrVisitReadOnly({
                   product_name: string;
                   rx_per_month: number | null;
                   prescription_image_url?: string | null;
-                  mr_doctors: { name: string; location: string | null } | null;
-                }, i: number) => (
+                  mr_doctors: { name: string; location: string | null } | { name: string; location: string | null }[] | null;
+                }, i: number) => {
+                  const doc = Array.isArray(pa.mr_doctors) ? pa.mr_doctors[0] : pa.mr_doctors;
+                  return (
                   <tr key={i} className="border-b border-slate-100 last:border-0">
                     <td className="py-2">
-                      {(pa.mr_doctors as { name: string } | null)?.name ?? "—"}
+                      {doc?.name ?? "—"}
                     </td>
                     <td className="py-2">
-                      {(pa.mr_doctors as { location: string | null } | null)?.location ?? "—"}
+                      {doc?.location ?? "—"}
                     </td>
                     <td className="py-2 font-medium">{pa.product_name}</td>
                     <td className="py-2">{pa.rx_per_month ?? "—"}</td>
@@ -258,7 +267,7 @@ export async function MrVisitReadOnly({
                       ) : "—"}
                     </td>
                   </tr>
-                ))}
+                );})}
               </tbody>
             </table>
           </div>

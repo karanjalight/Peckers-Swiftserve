@@ -98,7 +98,7 @@ export default async function MrReportsPage() {
     };
 
     const recentVisits = visits.slice(0, 30).map((v: Record<string, unknown>) => ({
-      id: v.id,
+      id: String(v.id ?? ""),
       checkIn: v.check_in_time as string,
       pharmacy:
         ((v.mr_pharmacies as { name: string } | null) ?? {})?.name ?? "—",
@@ -170,7 +170,7 @@ export default async function MrReportsPage() {
   };
 
   const recentVisits = (visits ?? []).slice(0, 20).map((v: Record<string, unknown>) => ({
-    id: v.id,
+    id: String(v.id ?? ""),
     checkIn: v.check_in_time as string,
     pharmacy:
       ((v.mr_pharmacies as { name: string } | null) ?? {})?.name ?? "—",

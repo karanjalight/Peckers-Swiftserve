@@ -28,7 +28,7 @@ import {
 
 export type MrRole = "MR" | "MANAGER" | "ADMIN";
 
-interface MrSidebarProps {
+export interface MrSidebarProps {
   user: { name: string; email?: string; role: MrRole };
 }
 

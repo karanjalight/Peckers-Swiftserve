@@ -63,8 +63,8 @@ export default async function MrVisitPage({
     notFound();
   }
 
-  const pharmacyName =
-    (visit.mr_pharmacies as { name: string } | null)?.name ?? "Pharmacy";
+  const pharmacyRow = Array.isArray(visit.mr_pharmacies) ? visit.mr_pharmacies[0] : visit.mr_pharmacies;
+  const pharmacyName = (pharmacyRow as { name?: string } | null)?.name ?? "Pharmacy";
   const isOpen = visit.status === "OPEN";
 
   return (
