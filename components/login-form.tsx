@@ -73,6 +73,21 @@ export function LoginForm({
         console.warn("Failed to set cookies via API");
       }
 
+      // Check if user has MR profile (Medical Rep system)
+      const { data: mrProfile } = await supabase
+        .from("mr_profiles")
+        .select("id")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (mrProfile) {
+        // MR system user - redirect to MR app
+        const redirectParam = searchParams?.get("redirect");
+        const redirectUrl = redirectParam?.startsWith("/mr") ? redirectParam : "/mr";
+        setTimeout(() => router.push(redirectUrl), 500);
+        return;
+      }
+
       // Fetch user data including user_type
       const { data: userData, error: userError } = await supabase
         .from("users")
