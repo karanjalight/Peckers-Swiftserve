@@ -1,0 +1,47 @@
+/**
+ * MR Field Intelligence - Region & Product Constants (Client Spec)
+ */
+
+// Regions - dropdown options
+export const MR_REGIONS = [
+  "Mt Kenya West_meru",
+  "Mt.Kenya East",
+  "Nyeri",
+  "Mombasa",
+  "Nakuru-Naivasha",
+  "Kisii",
+  "Nyanza",
+  "Eldoret",
+  "Nairobi",
+] as const;
+
+// Nairobi sub-regions (shown when region = Nairobi)
+export const NAIROBI_SUB_REGIONS = [
+  "CBD",
+  "Upperhill",
+  "Eastlands",
+  "Thika",
+  "Kiambu",
+  "Ngong",
+  "Rongai",
+] as const;
+
+// Reason for Out of Stock - for Supply Chain Attribution Report
+export const REASON_FOR_OOS_OPTIONS = [
+  "Wholesaler delayed",
+  "Insufficient funds",
+  "Forgot to order",
+  "Import delay",
+  "Demand spike",
+  "Other",
+] as const;
+
+// Visit objectives (client labels)
+export const VISIT_OBJECTIVES = [
+  { value: "AUDIT", label: "Prescription Audit" },
+  { value: "SALES", label: "Sales" },
+  { value: "CAMPAIGN", label: "Campaign" },
+] as const;
+
+export type MrRegion = (typeof MR_REGIONS)[number];
+export type NairobiSubRegion = (typeof NAIROBI_SUB_REGIONS)[number];

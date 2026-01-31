@@ -1,0 +1,408 @@
+import { redirect } from "next/navigation";
+import { getMrAuth } from "@/lib/mr/supabase-server";
+import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { History } from "lucide-react";
+import { MrHistoryFilters } from "./MrHistoryFilters";
+import { Suspense } from "react";
+
+type VisitRow = {
+  id: string;
+  check_in_time: string;
+  check_out_time: string | null;
+  visit_duration_minutes: number | null;
+  objective: string;
+  status: string;
+  notes?: string | null;
+  patients_per_day?: number | null;
+  basket_value_per_patient?: number | null;
+  mr_pharmacies: { name: string; region?: string } | null;
+  mr_profiles?: { full_name: string } | null;
+};
+
+export default async function MrHistoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const auth = await getMrAuth();
+  if (auth.error) redirect("/mr/login");
+
+  const params = await searchParams;
+  const mrId = typeof params.mrId === "string" ? params.mrId : undefined;
+  const region = typeof params.region === "string" ? params.region : undefined;
+  const status = typeof params.status === "string" ? params.status : undefined;
+  const dateFrom = typeof params.dateFrom === "string" ? params.dateFrom : undefined;
+  const dateTo = typeof params.dateTo === "string" ? params.dateTo : undefined;
+
+  const { supabase } = auth;
+  const role = auth.profile.role as "MR" | "MANAGER" | "ADMIN";
+
+  if (role === "MR") {
+    // MR sees only their own visits, no filters
+    const { data: visits, error: visitsError } = await supabase
+      .from("mr_visits")
+      .select(`
+        id,
+        check_in_time,
+        check_out_time,
+        visit_duration_minutes,
+        objective,
+        status,
+        mr_pharmacies (name, region)
+      `)
+      .eq("mr_id", auth.user.id)
+      .order("check_in_time", { ascending: false })
+      .limit(50);
+
+    if (visitsError) {
+      console.error("MR visits fetch error:", visitsError);
+    }
+
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            Visit History
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Your submitted visits. Read-only. No edits allowed.
+          </p>
+        </div>
+
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle className="text-base">Recent Visits</CardTitle>
+            <CardDescription>Last 50 visits</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!visits || visits.length === 0 ? (
+              <EmptyState role="MR" />
+            ) : (
+              <VisitsTable visits={visits as unknown as VisitRow[]} showMrColumn={false} />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Manager / Admin: same robust experience – fetch all data (notes, audit metrics when columns exist)
+  const fullSelect = `
+    id,
+    check_in_time,
+    check_out_time,
+    visit_duration_minutes,
+    objective,
+    status,
+    notes,
+    patients_per_day,
+    basket_value_per_patient,
+    mr_pharmacies (name, region),
+    mr_profiles (full_name)
+  `;
+  const minimalSelect = `
+    id,
+    check_in_time,
+    check_out_time,
+    visit_duration_minutes,
+    objective,
+    status,
+    mr_pharmacies (name, region),
+    mr_profiles (full_name)
+  `;
+
+  let visitsQuery = supabase
+    .from("mr_visits")
+    .select(fullSelect)
+    .order("check_in_time", { ascending: false })
+    .limit(200);
+  if (mrId) visitsQuery = visitsQuery.eq("mr_id", mrId);
+  if (status) visitsQuery = visitsQuery.eq("status", status);
+  if (dateFrom) {
+    const from = new Date(dateFrom);
+    from.setHours(0, 0, 0, 0);
+    visitsQuery = visitsQuery.gte("check_in_time", from.toISOString());
+  }
+  if (dateTo) {
+    const to = new Date(dateTo);
+    to.setHours(23, 59, 59, 999);
+    visitsQuery = visitsQuery.lte("check_in_time", to.toISOString());
+  }
+
+  const visitsRes = await visitsQuery;
+
+  // If full select fails (e.g. notes/patients_per_day columns not yet migrated), fall back to minimal
+  let visitsData: VisitRow[] = (visitsRes.data ?? []) as unknown as VisitRow[];
+  if (visitsRes.error) {
+    let fallbackQuery = supabase
+      .from("mr_visits")
+      .select(minimalSelect)
+      .order("check_in_time", { ascending: false })
+      .limit(200);
+    if (mrId) fallbackQuery = fallbackQuery.eq("mr_id", mrId);
+    if (status) fallbackQuery = fallbackQuery.eq("status", status);
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      from.setHours(0, 0, 0, 0);
+      fallbackQuery = fallbackQuery.gte("check_in_time", from.toISOString());
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      fallbackQuery = fallbackQuery.lte("check_in_time", to.toISOString());
+    }
+    const fallbackRes = await fallbackQuery;
+    visitsData = (fallbackRes.data ?? []) as unknown as VisitRow[];
+  }
+
+  const [mrProfilesRes, regionsRes] = await Promise.all([
+    role === "ADMIN"
+      ? supabase
+          .from("mr_profiles")
+          .select("id, full_name")
+          .eq("role", "MR")
+          .order("full_name")
+      : supabase
+          .from("mr_profiles")
+          .select("id, full_name")
+          .eq("role", "MR")
+          .eq("manager_id", auth.user.id)
+          .order("full_name"),
+    supabase.from("mr_pharmacies").select("region"),
+  ]);
+
+  let visits = visitsData;
+
+  // Filter by region in JS (nested filter not always straightforward)
+  if (region && visits.length > 0) {
+    visits = visits.filter((v) => {
+      const ph = Array.isArray(v.mr_pharmacies) ? v.mr_pharmacies[0] : v.mr_pharmacies;
+      return (ph as { region?: string } | null)?.region === region;
+    });
+  }
+
+  const mrOptions = (mrProfilesRes.data ?? []).map((p: { id: string; full_name: string }) => ({
+    id: p.id,
+    full_name: p.full_name,
+  }));
+  const regionRows = regionsRes.data ?? [];
+  const regionSet = new Set(
+    regionRows.map((r: { region?: string }) => r.region).filter(Boolean)
+  );
+  const regionOptions = Array.from(regionSet).sort() as string[];
+
+  const filterInitial = {
+    mrId: mrId ?? undefined,
+    region: region ?? undefined,
+    status: status ?? undefined,
+    dateFrom: dateFrom ?? undefined,
+    dateTo: dateTo ?? undefined,
+  };
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+          Visit History
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">
+          All visits you can see, with full data (notes, audit metrics). Filter by MR, region, status, or date range.
+        </p>
+      </div>
+
+      <Suspense fallback={null}>
+        <MrHistoryFilters
+          mrOptions={mrOptions}
+          regionOptions={regionOptions}
+          role={role}
+          initial={filterInitial}
+        />
+      </Suspense>
+
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base">Visits</CardTitle>
+          <CardDescription>
+            {visits.length} visit{visits.length !== 1 ? "s" : ""} (max 200)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {visits.length === 0 ? (
+            <EmptyState role={role} />
+          ) : (
+            <VisitsTable visits={visits} showMrColumn={true} />
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function EmptyState({ role }: { role: string }) {
+  return (
+    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 py-12">
+      <div className="rounded-full bg-slate-100 p-4">
+        <History className="h-10 w-10 text-slate-400" />
+      </div>
+      <h3 className="mt-4 text-base font-medium text-slate-900">
+        No visits yet
+      </h3>
+      <p className="mt-1 max-w-sm text-center text-sm text-slate-500">
+        {role === "MR"
+          ? "Start a visit from a pharmacy to record audits and notes. Your submitted visits will appear here."
+          : "No visits match the current filters. Try changing or clearing filters."}
+      </p>
+      {role === "MR" && (
+        <Button variant="outline" className="mt-4" asChild>
+          <Link href="/mr/pharmacies">View pharmacies</Link>
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function VisitsTable({
+  visits,
+  showMrColumn,
+}: {
+  visits: VisitRow[];
+  showMrColumn: boolean;
+}) {
+  const pharmacy = (v: VisitRow) =>
+    Array.isArray(v.mr_pharmacies) ? v.mr_pharmacies[0] : v.mr_pharmacies;
+  const profile = (v: VisitRow) =>
+    Array.isArray(v.mr_profiles) ? v.mr_profiles[0] : v.mr_profiles;
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-slate-200">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur hover:bg-slate-50/95">
+              {showMrColumn && (
+                <TableHead className="text-slate-600">MR</TableHead>
+              )}
+              <TableHead className="text-slate-600">Pharmacy</TableHead>
+              {showMrColumn && (
+                <TableHead className="text-slate-600">Region</TableHead>
+              )}
+              <TableHead className="text-slate-600">Check-in</TableHead>
+              <TableHead className="text-slate-600">Check-out</TableHead>
+              <TableHead className="text-slate-600">Duration</TableHead>
+              <TableHead className="text-slate-600">Objective</TableHead>
+              <TableHead className="text-slate-600">Status</TableHead>
+              {showMrColumn && (
+                <>
+                  <TableHead className="text-slate-600 max-w-[160px]">Notes</TableHead>
+                  <TableHead className="text-slate-600 whitespace-nowrap">Patients/day</TableHead>
+                  <TableHead className="text-slate-600 whitespace-nowrap">Basket (KES)</TableHead>
+                </>
+              )}
+              <TableHead className="text-slate-600 text-right">
+                Action
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visits.map((v) => (
+              <TableRow
+                key={v.id}
+                className="transition-colors hover:bg-slate-50/50"
+              >
+                {showMrColumn && (
+                  <TableCell className="text-slate-600">
+                    {profile(v)?.full_name ?? "—"}
+                  </TableCell>
+                )}
+                <TableCell className="font-medium">
+                  <Link
+                    href={`/mr/visit/${v.id}`}
+                    className="text-primary hover:underline"
+                  >
+                    {pharmacy(v)?.name ?? "—"}
+                  </Link>
+                </TableCell>
+                {showMrColumn && (
+                  <TableCell className="text-slate-600">
+                    {(pharmacy(v) as { region?: string } | null)?.region ?? "—"}
+                  </TableCell>
+                )}
+                <TableCell className="text-slate-600 whitespace-nowrap">
+                  {new Date(v.check_in_time).toLocaleString()}
+                </TableCell>
+                <TableCell className="text-slate-600 whitespace-nowrap">
+                  {v.check_out_time
+                    ? new Date(v.check_out_time).toLocaleString()
+                    : "—"}
+                </TableCell>
+                <TableCell className="text-slate-600">
+                  {v.visit_duration_minutes != null
+                    ? `${Math.round(v.visit_duration_minutes)} min`
+                    : "—"}
+                </TableCell>
+                <TableCell className="text-slate-600">
+                  {v.objective}
+                </TableCell>
+                <TableCell>
+                  <span
+                    className={
+                      v.status === "SUBMITTED"
+                        ? "inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700"
+                        : "inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700"
+                    }
+                  >
+                    {v.status}
+                  </span>
+                </TableCell>
+                {showMrColumn && (
+                  <>
+                    <TableCell className="max-w-[160px] text-slate-600">
+                      <span
+                        title={v.notes ?? undefined}
+                        className="line-clamp-2 text-sm"
+                      >
+                        {v.notes?.trim()
+                          ? v.notes.trim().slice(0, 60) +
+                            (v.notes.length > 60 ? "…" : "")
+                          : "—"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-slate-600">
+                      {v.patients_per_day != null ? v.patients_per_day : "—"}
+                    </TableCell>
+                    <TableCell className="text-slate-600">
+                      {v.basket_value_per_patient != null
+                        ? v.basket_value_per_patient
+                        : "—"}
+                    </TableCell>
+                  </>
+                )}
+                <TableCell className="text-right">
+                  <Button variant="default" size="sm" asChild>
+                    <Link href={`/mr/visit/${v.id}`}>View full details</Link>
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}

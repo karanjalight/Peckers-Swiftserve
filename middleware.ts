@@ -18,6 +18,22 @@ export async function middleware(req: NextRequest) {
   console.log("Supabase session exists:", !!supabaseSession);
   console.log("Refresh token exists:", !!refreshToken);
 
+  // MR routes: /mr/login is public, rest require auth
+  if (pathname.startsWith("/mr") && !pathname.startsWith("/mr/login")) {
+    if (!supabaseSession) {
+      return NextResponse.redirect(new URL("/mr/login", req.url));
+    }
+    try {
+      const token = supabaseSession;
+      if (!token || token === "") {
+        return NextResponse.redirect(new URL("/mr/login", req.url));
+      }
+      return NextResponse.next();
+    } catch {
+      return NextResponse.redirect(new URL("/mr/login", req.url));
+    }
+  }
+
   // Protected routes that require authentication
   if (
     pathname.startsWith("/admin") ||
@@ -66,6 +82,7 @@ export const config = {
     "/admin/:path*",
     "/dashboard/:path*",
     "/account/:path*",
+    "/mr/:path*",
     "/login/:path*",
     "/signup/:path*",
   ],
