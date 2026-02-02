@@ -43,8 +43,15 @@ export async function MrVisitReadOnly({
         id,
         quantity_in_stock,
         usp_understood,
+        reason_why_stock,
+        supplier,
+        price_per_pack,
+        days_oos,
+        reason_for_oos,
+        do_substitute,
+        substitute_with_and_why,
         mr_products (name),
-        mr_competitor_audits (competitor_name, competitor_stock, substitution_reason)
+        mr_competitor_audits (competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock)
       `)
       .eq("visit_id", visitId),
     supabase
@@ -145,16 +152,18 @@ export async function MrVisitReadOnly({
         <div className="rounded-lg border bg-white p-4">
           <h3 className="mb-3 font-medium">Product audits</h3>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
+            <table className="w-full min-w-[800px] text-sm">
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="pb-2 text-left font-medium text-slate-600">Product</th>
                   <th className="pb-2 text-left font-medium text-slate-600">Stock</th>
                   <th className="pb-2 text-left font-medium text-slate-600">Price (KES)</th>
+                  <th className="pb-2 text-left font-medium text-slate-600">Reason stock</th>
+                  <th className="pb-2 text-left font-medium text-slate-600">Supplier</th>
                   <th className="pb-2 text-left font-medium text-slate-600">USP understood</th>
                   <th className="pb-2 text-left font-medium text-slate-600">Substitute?</th>
                   <th className="pb-2 text-left font-medium text-slate-600">Substitute with / why</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Reason for OOS</th>
+                  <th className="pb-2 text-left font-medium text-slate-600">Reason OOS</th>
                   <th className="pb-2 text-left font-medium text-slate-600">Days OOS</th>
                   <th className="pb-2 text-left font-medium text-slate-600">Competitors</th>
                 </tr>
@@ -164,6 +173,8 @@ export async function MrVisitReadOnly({
                   id: string;
                   quantity_in_stock: number;
                   usp_understood: boolean;
+                  reason_why_stock?: string | null;
+                  supplier?: string | null;
                   do_substitute?: boolean;
                   substitute_with_and_why?: string | null;
                   reason_for_oos?: string | null;
@@ -173,8 +184,11 @@ export async function MrVisitReadOnly({
                   mr_competitor_audits: Array<{
                     competitor_name: string;
                     competitor_stock: number | null;
+                    stock_sold_per_month?: number | null;
                     substitution_reason: string | null;
                     price_per_pack?: number | null;
+                    days_out?: number | null;
+                    reason_out_of_stock?: string | null;
                   }>;
                 }) => {
                   const productName = (() => {
@@ -188,27 +202,37 @@ export async function MrVisitReadOnly({
                     <td className="py-2 font-medium">{productName}</td>
                     <td className="py-2">{pa.quantity_in_stock}</td>
                     <td className="py-2">{pa.price_per_pack != null ? pa.price_per_pack : "—"}</td>
+                    <td className="max-w-[100px] py-2 text-slate-600">{pa.reason_why_stock ?? "—"}</td>
+                    <td className="max-w-[100px] py-2 text-slate-600">{pa.supplier ?? "—"}</td>
                     <td className="py-2">{pa.usp_understood ? "Yes" : "No"}</td>
                     <td className="py-2">{pa.do_substitute ? "Yes" : "No"}</td>
                     <td className="max-w-[160px] py-2 text-slate-600">
                       {pa.do_substitute ? (pa.substitute_with_and_why || "—") : "—"}
                     </td>
-                    <td className="max-w-[140px] py-2 text-slate-600">{pa.reason_for_oos ?? "—"}</td>
+                    <td className="max-w-[120px] py-2 text-slate-600">{pa.reason_for_oos ?? "—"}</td>
                     <td className="py-2">{pa.days_oos != null ? pa.days_oos : "—"}</td>
                     <td className="py-2">
                       {competitors.length ? (
                         <ul className="space-y-1 text-slate-600">
                           {competitors.map((c: {
                             competitor_name: string;
+                            supplier?: string | null;
                             competitor_stock: number | null;
+                            stock_sold_per_month?: number | null;
                             substitution_reason: string | null;
                             price_per_pack?: number | null;
+                            days_out?: number | null;
+                            reason_out_of_stock?: string | null;
                           }, i: number) => (
                             <li key={i} className="text-xs">
                               <span className="font-medium text-slate-700">{c.competitor_name}</span>
+                              {c.supplier && ` — Supplier: ${c.supplier}`}
                               {c.competitor_stock != null && ` — Stock: ${c.competitor_stock}`}
-                              {c.substitution_reason && ` — ${c.substitution_reason}`}
+                              {c.stock_sold_per_month != null && ` — Sold/mo: ${c.stock_sold_per_month}`}
                               {c.price_per_pack != null && ` — KES ${c.price_per_pack}`}
+                              {c.days_out != null && ` — Days OOS: ${c.days_out}`}
+                              {c.reason_out_of_stock && ` — OOS: ${c.reason_out_of_stock}`}
+                              {c.substitution_reason && ` — Sub: ${c.substitution_reason}`}
                             </li>
                           ))}
                         </ul>

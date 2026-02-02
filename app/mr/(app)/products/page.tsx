@@ -7,6 +7,8 @@ export type MrProductRow = {
   name: string;
   sku: string | null;
   is_company_product: boolean;
+  price: number | null;
+  owned_by: string | null;
   created_at: string;
 };
 
@@ -18,7 +20,7 @@ export default async function MrProductsPage() {
 
   const { data: products } = await supabase
     .from("mr_products")
-    .select("id, name, sku, is_company_product, created_at")
+    .select("id, name, sku, is_company_product, price, owned_by, created_at")
     .order("name");
 
   return (

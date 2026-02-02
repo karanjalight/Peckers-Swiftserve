@@ -25,11 +25,11 @@ export async function GET() {
         .limit(500),
       supabase
         .from("mr_product_audits")
-        .select("id, visit_id, quantity_in_stock, do_substitute, substitute_with_and_why, reason_for_oos, days_oos, price_per_pack, mr_products(name), mr_visits(patients_per_day, basket_value_per_patient, mr_pharmacies(name, region))")
+        .select("id, visit_id, quantity_in_stock, reason_why_stock, supplier, do_substitute, substitute_with_and_why, reason_for_oos, days_oos, price_per_pack, mr_products(name), mr_visits(patients_per_day, basket_value_per_patient, mr_pharmacies(name, region))")
         .limit(1000),
       supabase
         .from("mr_competitor_audits")
-        .select("competitor_name, competitor_stock, substitution_reason, price_per_pack, mr_product_audits(mr_products(name), mr_visits(mr_pharmacies(region)))")
+        .select("competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock, mr_product_audits(mr_products(name), mr_visits(mr_pharmacies(region)))")
         .limit(1000),
       supabase
         .from("mr_prescription_audits")

@@ -69,6 +69,11 @@ export function MrNewPharmacyCheckInForm() {
         const n = parseInt(v, 10);
         return Number.isNaN(n) ? null : n;
       })(),
+      avgOrderValue: (() => {
+        const v = formData.get("avgOrderValue") as string;
+        const n = parseFloat(v);
+        return Number.isNaN(n) ? null : n;
+      })(),
       objective: (formData.get("objective") as Objective) || "AUDIT",
       gpsLat,
       gpsLng,
@@ -177,13 +182,25 @@ export function MrNewPharmacyCheckInForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="avgAttendantsPerDay">Attendants per day (average)</Label>
+            <Label htmlFor="avgAttendantsPerDay">How many people attended per day (average)</Label>
             <Input
               id="avgAttendantsPerDay"
               name="avgAttendantsPerDay"
               type="number"
               min={0}
-              placeholder="How many attendants"
+              placeholder="e.g. 50"
+              className="border-slate-200"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="avgOrderValue">Average order value (KES)</Label>
+            <Input
+              id="avgOrderValue"
+              name="avgOrderValue"
+              type="number"
+              min={0}
+              step="0.01"
+              placeholder="e.g. 1200"
               className="border-slate-200"
             />
           </div>

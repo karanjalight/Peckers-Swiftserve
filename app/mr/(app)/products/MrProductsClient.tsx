@@ -69,11 +69,15 @@ export function MrProductsClient({
     name: "",
     sku: "",
     isCompanyProduct: true,
+    price: "" as string | number,
+    ownedBy: "",
   });
   const [editForm, setEditForm] = useState({
     name: "",
     sku: "",
     isCompanyProduct: true,
+    price: "" as string | number,
+    ownedBy: "",
   });
 
   const filtered = useMemo(() => {
@@ -102,11 +106,13 @@ export function MrProductsClient({
       name: createForm.name,
       sku: createForm.sku || null,
       isCompanyProduct: createForm.isCompanyProduct,
+      price: createForm.price ? parseFloat(String(createForm.price)) : null,
+      ownedBy: createForm.ownedBy || null,
     });
     setLoading(false);
     if (result.success) {
       setCreateOpen(false);
-      setCreateForm({ name: "", sku: "", isCompanyProduct: true });
+      setCreateForm({ name: "", sku: "", isCompanyProduct: true, price: "", ownedBy: "" });
       router.refresh();
       setMessage({ type: "success", text: "Product created." });
     } else {
@@ -120,6 +126,8 @@ export function MrProductsClient({
       name: p.name,
       sku: p.sku ?? "",
       isCompanyProduct: p.is_company_product,
+      price: p.price ?? "",
+      ownedBy: p.owned_by ?? "",
     });
     setEditOpen(true);
     setMessage(null);
@@ -134,6 +142,8 @@ export function MrProductsClient({
       name: editForm.name,
       sku: editForm.sku || null,
       isCompanyProduct: editForm.isCompanyProduct,
+      price: editForm.price ? parseFloat(String(editForm.price)) : null,
+      ownedBy: editForm.ownedBy || null,
     });
     setLoading(false);
     if (result.success) {
@@ -242,6 +252,8 @@ export function MrProductsClient({
                   <TableHead className="font-medium text-slate-600">Name</TableHead>
                   <TableHead className="font-medium text-slate-600">SKU</TableHead>
                   <TableHead className="font-medium text-slate-600">Type</TableHead>
+                  <TableHead className="font-medium text-slate-600">Price (KES)</TableHead>
+                  <TableHead className="font-medium text-slate-600">Owned by</TableHead>
                   <TableHead className="font-medium text-slate-600">Created</TableHead>
                   <TableHead className="w-[120px] text-right font-medium text-slate-600">
                     Actions
@@ -282,6 +294,12 @@ export function MrProductsClient({
                         >
                           {p.is_company_product ? "Company" : "Competitor"}
                         </span>
+                      </TableCell>
+                      <TableCell className="font-medium text-slate-700">
+                        {p.price != null ? `KES ${p.price}` : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-600">
+                        {p.owned_by ?? "—"}
                       </TableCell>
                       <TableCell className="text-sm text-slate-500">
                         {new Date(p.created_at).toLocaleDateString()}
@@ -429,6 +447,33 @@ export function MrProductsClient({
                 onChange={(e) =>
                   setEditForm((f) => ({ ...f, sku: e.target.value }))
                 }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-price">Price (KES)</Label>
+              <Input
+                id="edit-price"
+                type="number"
+                min={0}
+                step="0.01"
+                className={inputClass}
+                value={editForm.price}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, price: e.target.value }))
+                }
+                placeholder="e.g. 400"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-ownedBy">Owned by</Label>
+              <Input
+                id="edit-ownedBy"
+                className={inputClass}
+                value={editForm.ownedBy}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, ownedBy: e.target.value }))
+                }
+                placeholder="e.g. Company, Brand name"
               />
             </div>
             <div className="flex items-center gap-2">

@@ -15,6 +15,7 @@ export async function mrCreatePharmacyAndCheckIn(input: {
   procurementName?: string | null;
   procurementContact?: string | null;
   avgAttendantsPerDay?: number | null;
+  avgOrderValue?: number | null;
   objective: VisitObjective;
   gpsLat?: number;
   gpsLng?: number;
@@ -45,6 +46,7 @@ export async function mrCreatePharmacyAndCheckIn(input: {
       procurement_name: input.procurementName?.trim() ?? null,
       procurement_contact: input.procurementContact?.trim() ?? null,
       avg_attendants_per_day: input.avgAttendantsPerDay ?? null,
+      avg_order_value: input.avgOrderValue ?? null,
       created_by: null,
     })
     .select("id")
@@ -286,6 +288,8 @@ export async function createProductAudit(input: {
   productId: string;
   quantityInStock: number;
   uspUnderstood: boolean;
+  reasonWhyStock?: string | null;
+  supplier?: string | null;
   doSubstitute?: boolean;
   substituteWithAndWhy?: string | null;
   reasonForOos?: string | null;
@@ -293,9 +297,13 @@ export async function createProductAudit(input: {
   pricePerPack?: number | null;
   competitorAudits?: Array<{
     competitorName: string;
+    supplier?: string;
     competitorStock?: number;
+    stockSoldPerMonth?: number;
     substitutionReason?: string;
     pricePerPack?: number;
+    daysOut?: number;
+    reasonOutOfStock?: string;
   }>;
 }) {
   const auth = await requireMrRole();
@@ -323,6 +331,8 @@ export async function createProductAudit(input: {
       product_id: input.productId,
       quantity_in_stock: input.quantityInStock,
       usp_understood: input.uspUnderstood,
+      reason_why_stock: input.reasonWhyStock ?? null,
+      supplier: input.supplier ?? null,
       do_substitute: input.doSubstitute ?? false,
       substitute_with_and_why: input.substituteWithAndWhy ?? null,
       reason_for_oos: input.reasonForOos ?? null,
@@ -342,9 +352,13 @@ export async function createProductAudit(input: {
     const competitorRows = audits.map((c) => ({
       product_audit_id: productAudit.id,
       competitor_name: c.competitorName,
+      supplier: c.supplier ?? null,
       competitor_stock: c.competitorStock ?? null,
+      stock_sold_per_month: c.stockSoldPerMonth ?? null,
       substitution_reason: c.substitutionReason ?? null,
       price_per_pack: c.pricePerPack ?? null,
+      days_out: c.daysOut ?? null,
+      reason_out_of_stock: c.reasonOutOfStock ?? null,
     }));
 
     const { error: caError } = await supabase
@@ -494,6 +508,7 @@ export async function createPharmacy(input: {
   procurementName?: string | null;
   procurementContact?: string | null;
   avgAttendantsPerDay?: number | null;
+  avgOrderValue?: number | null;
 }) {
   const auth = await requireManagerOrAdmin();
   if (auth.error) {
@@ -513,6 +528,7 @@ export async function createPharmacy(input: {
       procurement_name: input.procurementName?.trim() ?? null,
       procurement_contact: input.procurementContact?.trim() ?? null,
       avg_attendants_per_day: input.avgAttendantsPerDay ?? null,
+      avg_order_value: input.avgOrderValue ?? null,
       created_by: isManager ? auth.user.id : null,
     })
     .select("id")
@@ -582,6 +598,8 @@ export async function createMrProduct(input: {
   name: string;
   sku?: string | null;
   isCompanyProduct: boolean;
+  price?: number | null;
+  ownedBy?: string | null;
 }) {
   const auth = await requireManagerOrAdmin();
   if (auth.error) return { success: false, error: auth.error, id: null };
@@ -594,6 +612,8 @@ export async function createMrProduct(input: {
       name: input.name.trim(),
       sku: input.sku?.trim() || null,
       is_company_product: input.isCompanyProduct,
+      price: input.price ?? null,
+      owned_by: input.ownedBy?.trim() || null,
     })
     .select("id")
     .single();
@@ -606,7 +626,7 @@ export async function createMrProduct(input: {
 
 export async function updateMrProduct(
   id: string,
-  input: { name: string; sku?: string | null; isCompanyProduct: boolean }
+  input: { name: string; sku?: string | null; isCompanyProduct: boolean; price?: number | null; ownedBy?: string | null }
 ) {
   const auth = await requireManagerOrAdmin();
   if (auth.error) return { success: false, error: auth.error };
@@ -619,6 +639,8 @@ export async function updateMrProduct(
       name: input.name.trim(),
       sku: input.sku?.trim() || null,
       is_company_product: input.isCompanyProduct,
+      price: input.price ?? null,
+      owned_by: input.ownedBy?.trim() || null,
     })
     .eq("id", id);
 

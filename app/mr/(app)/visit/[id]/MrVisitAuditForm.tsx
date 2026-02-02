@@ -11,13 +11,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Package, FileText, Megaphone } from "lucide-react";
-import { REASON_FOR_OOS_OPTIONS } from "@/lib/mr/constants";
+import { REASON_FOR_OOS_OPTIONS, REASON_WHY_STOCK_OPTIONS } from "@/lib/mr/constants";
 
 const EMPTY_COMPETITOR = {
   name: "",
+  supplier: "",
   stock: "",
+  stockSoldPerMonth: "",
   substitutionReason: "",
   pricePerPack: "",
+  daysOut: "",
+  reasonOutOfStock: "",
 };
 
 export function MrVisitAuditForm({
@@ -31,11 +35,13 @@ export function MrVisitAuditForm({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const [products, setProducts] = useState<{ id: string; name: string }[]>([]);
+  const [products, setProducts] = useState<{ id: string; name: string; price?: number | null; owned_by?: string | null }[]>([]);
   const [selectedProduct, setSelectedProduct] = useState("");
   const [qty, setQty] = useState(0);
   const [uspUnderstood, setUspUnderstood] = useState(false);
   const [pricePerPack, setPricePerPack] = useState("");
+  const [reasonWhyStock, setReasonWhyStock] = useState("");
+  const [supplier, setSupplier] = useState("");
   const [doSubstitute, setDoSubstitute] = useState(false);
   const [substituteWithAndWhy, setSubstituteWithAndWhy] = useState("");
   const [reasonForOos, setReasonForOos] = useState("");
@@ -70,6 +76,8 @@ export function MrVisitAuditForm({
     setQty(0);
     setUspUnderstood(false);
     setPricePerPack("");
+    setReasonWhyStock("");
+    setSupplier("");
     setDoSubstitute(false);
     setSubstituteWithAndWhy("");
     setReasonForOos("");
@@ -90,12 +98,16 @@ export function MrVisitAuditForm({
     setLoading(true);
     setMessage("");
     const competitorAudits = competitors
-      .filter((c) => c.name.trim())
+      .filter((c) => c.name.trim() || c.supplier.trim())
       .map((c) => ({
-        competitorName: c.name.trim(),
+        competitorName: c.name.trim() || c.supplier.trim() || "Competitor",
+        supplier: c.supplier.trim() || undefined,
         competitorStock: c.stock ? parseInt(c.stock, 10) : undefined,
+        stockSoldPerMonth: c.stockSoldPerMonth ? parseInt(c.stockSoldPerMonth, 10) : undefined,
         substitutionReason: c.substitutionReason.trim() || undefined,
         pricePerPack: c.pricePerPack ? parseFloat(c.pricePerPack) : undefined,
+        daysOut: c.daysOut ? parseInt(c.daysOut, 10) : undefined,
+        reasonOutOfStock: c.reasonOutOfStock.trim() || undefined,
       }));
 
     const result = await createProductAudit({
@@ -103,6 +115,8 @@ export function MrVisitAuditForm({
       productId: selectedProduct,
       quantityInStock: qty,
       uspUnderstood,
+      reasonWhyStock: reasonWhyStock.trim() || undefined,
+      supplier: supplier.trim() || undefined,
       doSubstitute,
       substituteWithAndWhy: substituteWithAndWhy.trim() || undefined,
       reasonForOos: reasonForOos.trim() || undefined,
@@ -229,6 +243,8 @@ export function MrVisitAuditForm({
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
+                  {p.price != null ? ` (KES ${p.price})` : ""}
+                  {p.owned_by ? ` — ${p.owned_by}` : ""}
                 </option>
               ))}
             </select>
@@ -240,6 +256,30 @@ export function MrVisitAuditForm({
               min={0}
               value={qty}
               onChange={(e) => setQty(parseInt(e.target.value, 10) || 0)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label>Reason why they stock this product</Label>
+            <select
+              value={reasonWhyStock}
+              onChange={(e) => setReasonWhyStock(e.target.value)}
+              className="mt-1 w-full rounded border border-slate-200 px-3 py-2"
+            >
+              <option value="">Select reason (optional)</option>
+              {REASON_WHY_STOCK_OPTIONS.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label>Supplier</Label>
+            <Input
+              value={supplier}
+              onChange={(e) => setSupplier(e.target.value)}
+              placeholder="e.g. DK Pharma, Mediplus"
               className="mt-1"
             />
           </div>
@@ -315,48 +355,91 @@ export function MrVisitAuditForm({
             <Label htmlFor="usp">Staff understand Product USP?</Label>
           </div>
           <div className="border-t pt-4">
-            <Label className="text-slate-600">Up to 3 main competitors (name, stock, reason, price)</Label>
+            <Label className="text-slate-600">
+              Up to 3 main competitors (name, supplier, stock, price, days out, reason OOS)
+            </Label>
             {competitors.map((c, i) => (
-              <div key={i} className="mt-2 grid gap-2 rounded border p-3 sm:grid-cols-2">
-                <Input
-                  placeholder="Competitor name"
-                  value={c.name}
-                  onChange={(e) => {
-                    const next = [...competitors];
-                    next[i] = { ...next[i], name: e.target.value };
-                    setCompetitors(next);
-                  }}
-                />
-                <Input
-                  placeholder="Stock (packs)"
-                  type="number"
-                  min={0}
-                  value={c.stock}
-                  onChange={(e) => {
-                    const next = [...competitors];
-                    next[i] = { ...next[i], stock: e.target.value };
-                    setCompetitors(next);
-                  }}
-                />
+              <div key={i} className="mt-2 space-y-2 rounded border p-3">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  <Input
+                    placeholder="Competitor name"
+                    value={c.name}
+                    onChange={(e) => {
+                      const next = [...competitors];
+                      next[i] = { ...next[i], name: e.target.value };
+                      setCompetitors(next);
+                    }}
+                  />
+                  <Input
+                    placeholder="Supplier"
+                    value={c.supplier}
+                    onChange={(e) => {
+                      const next = [...competitors];
+                      next[i] = { ...next[i], supplier: e.target.value };
+                      setCompetitors(next);
+                    }}
+                  />
+                  <Input
+                    placeholder="Stock (packs)"
+                    type="number"
+                    min={0}
+                    value={c.stock}
+                    onChange={(e) => {
+                      const next = [...competitors];
+                      next[i] = { ...next[i], stock: e.target.value };
+                      setCompetitors(next);
+                    }}
+                  />
+                  <Input
+                    placeholder="Stock sold/month (packs)"
+                    type="number"
+                    min={0}
+                    value={c.stockSoldPerMonth}
+                    onChange={(e) => {
+                      const next = [...competitors];
+                      next[i] = { ...next[i], stockSoldPerMonth: e.target.value };
+                      setCompetitors(next);
+                    }}
+                  />
+                  <Input
+                    placeholder="Price per pack (KES)"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={c.pricePerPack}
+                    onChange={(e) => {
+                      const next = [...competitors];
+                      next[i] = { ...next[i], pricePerPack: e.target.value };
+                      setCompetitors(next);
+                    }}
+                  />
+                  <Input
+                    placeholder="Days out of stock"
+                    type="number"
+                    min={0}
+                    value={c.daysOut}
+                    onChange={(e) => {
+                      const next = [...competitors];
+                      next[i] = { ...next[i], daysOut: e.target.value };
+                      setCompetitors(next);
+                    }}
+                  />
+                  <Input
+                    placeholder="Reason out of stock"
+                    value={c.reasonOutOfStock}
+                    onChange={(e) => {
+                      const next = [...competitors];
+                      next[i] = { ...next[i], reasonOutOfStock: e.target.value };
+                      setCompetitors(next);
+                    }}
+                  />
+                </div>
                 <Input
                   placeholder="Substitution reason"
                   value={c.substitutionReason}
                   onChange={(e) => {
                     const next = [...competitors];
                     next[i] = { ...next[i], substitutionReason: e.target.value };
-                    setCompetitors(next);
-                  }}
-                  className="sm:col-span-2"
-                />
-                <Input
-                  placeholder="Price per pack (KES)"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={c.pricePerPack}
-                  onChange={(e) => {
-                    const next = [...competitors];
-                    next[i] = { ...next[i], pricePerPack: e.target.value };
                     setCompetitors(next);
                   }}
                 />

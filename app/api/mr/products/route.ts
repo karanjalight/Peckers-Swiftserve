@@ -9,7 +9,7 @@ export async function GET() {
 
   const { data, error } = await auth.supabase
     .from("mr_products")
-    .select("id, name")
+    .select("id, name, price, owned_by")
     .order("name");
 
   if (error) {

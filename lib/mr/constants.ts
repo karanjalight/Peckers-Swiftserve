@@ -36,6 +36,18 @@ export const REASON_FOR_OOS_OPTIONS = [
   "Other",
 ] as const;
 
+// Reason why pharmacy stocks the product (common options)
+export const REASON_WHY_STOCK_OPTIONS = [
+  "Doctor recommendations",
+  "Patient demand",
+  "Competitive pricing",
+  "Margin / profitability",
+  "Reliable supplier",
+  "Marketing support",
+  "Product efficacy",
+  "Other",
+] as const;
+
 // Visit objectives (client labels)
 export const VISIT_OBJECTIVES = [
   { value: "AUDIT", label: "Prescription Audit" },

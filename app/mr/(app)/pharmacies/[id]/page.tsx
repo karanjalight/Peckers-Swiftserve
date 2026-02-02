@@ -39,7 +39,9 @@ export default async function MrPharmacyDetailPage({
           sub_region,
           location_text,
           procurement_name,
-          procurement_contact
+          procurement_contact,
+          avg_attendants_per_day,
+          avg_order_value
         )
       `)
       .eq("mr_id", auth.user.id)
@@ -59,6 +61,8 @@ export default async function MrPharmacyDetailPage({
       location_text?: string;
       procurement_name?: string;
       procurement_contact?: string;
+      avg_attendants_per_day?: number | null;
+      avg_order_value?: number | null;
     };
 
     const { data: openVisit } = await supabase
@@ -121,6 +125,26 @@ export default async function MrPharmacyDetailPage({
                   </dd>
                 </div>
               )}
+              {pharmacy.avg_attendants_per_day != null && (
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    People attended per day
+                  </dt>
+                  <dd className="mt-1 text-sm text-slate-900">
+                    {pharmacy.avg_attendants_per_day}
+                  </dd>
+                </div>
+              )}
+              {pharmacy.avg_order_value != null && (
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Average order value
+                  </dt>
+                  <dd className="mt-1 text-sm text-slate-900">
+                    KES {pharmacy.avg_order_value.toLocaleString()}
+                  </dd>
+                </div>
+              )}
             </dl>
           </CardContent>
         </Card>
@@ -147,7 +171,7 @@ export default async function MrPharmacyDetailPage({
   if (isManagerOrAdmin) {
     const { data: pharmacy } = await supabase
       .from("mr_pharmacies")
-      .select("id, name, region, sub_region, location_text, procurement_name, procurement_contact")
+      .select("id, name, region, sub_region, location_text, procurement_name, procurement_contact, avg_attendants_per_day, avg_order_value")
       .eq("id", id)
       .single();
 
@@ -225,6 +249,26 @@ export default async function MrPharmacyDetailPage({
                     {pharmacy.procurement_contact
                       ? ` • ${pharmacy.procurement_contact}`
                       : ""}
+                  </dd>
+                </div>
+              )}
+              {pharmacy.avg_attendants_per_day != null && (
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    People attended per day
+                  </dt>
+                  <dd className="mt-1 text-sm text-slate-900">
+                    {pharmacy.avg_attendants_per_day}
+                  </dd>
+                </div>
+              )}
+              {pharmacy.avg_order_value != null && (
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Average order value
+                  </dt>
+                  <dd className="mt-1 text-sm text-slate-900">
+                    KES {Number(pharmacy.avg_order_value).toLocaleString()}
                   </dd>
                 </div>
               )}
