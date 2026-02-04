@@ -30,10 +30,10 @@ export function MrVisitNotesForm({
   }
 
   return (
-    <div className="rounded-lg border bg-white p-4">
-      <h3 className="mb-2 font-medium">Visit Notes</h3>
-      <p className="mb-2 text-sm text-slate-500">
-        Products discussed, stock availability, competitor products, general notes.
+    <div className="rounded-xl border bg-white p-5">
+      <h3 className="text-lg font-semibold text-slate-900">Visit notes</h3>
+      <p className="mt-1 mb-4 text-sm text-slate-500">
+        Add or update notes from this visit: products discussed, stock availability, competitor products, or any other observations. These notes are visible to managers and admins.
       </p>
       <textarea
         value={notes}

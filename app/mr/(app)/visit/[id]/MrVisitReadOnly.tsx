@@ -1,4 +1,19 @@
 import { getMrAuth } from "@/lib/mr/supabase-server";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  FileText,
+  BarChart3,
+  Package,
+  Stethoscope,
+  Megaphone,
+  ExternalLink,
+} from "lucide-react";
 
 export async function MrVisitReadOnly({
   visitId,
@@ -71,276 +86,275 @@ export async function MrVisitReadOnly({
   const hasAuditMetrics = isAudit && (patientsPerDay != null || basketValuePerPatient != null);
 
   return (
-    <div className="space-y-6">
-      {/* Visit summary – all key visit data entered by MR */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-3 font-medium text-slate-900">Visit summary</h3>
-        <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
-          {pharmacyName != null && (
-            <>
-              <dt className="text-slate-500">Pharmacy</dt>
-              <dd className="font-medium text-slate-900 sm:col-span-2">{pharmacyName}</dd>
-            </>
-          )}
-          {pharmacyRegion != null && pharmacyRegion !== "" && (
-            <>
-              <dt className="text-slate-500">Region</dt>
-              <dd className="font-medium text-slate-900">{pharmacyRegion}</dd>
-            </>
-          )}
-          {objective != null && (
-            <>
-              <dt className="text-slate-500">Objective</dt>
-              <dd className="font-medium text-slate-900">{objective}</dd>
-            </>
-          )}
-          {checkInTime != null && (
-            <>
-              <dt className="text-slate-500">Check-in</dt>
-              <dd className="font-medium text-slate-900">{new Date(checkInTime).toLocaleString()}</dd>
-            </>
-          )}
-          {checkOutTime != null && (
-            <>
-              <dt className="text-slate-500">Check-out</dt>
-              <dd className="font-medium text-slate-900">{new Date(checkOutTime).toLocaleString()}</dd>
-            </>
-          )}
-          {visitDurationMinutes != null && (
-            <>
-              <dt className="text-slate-500">Duration</dt>
-              <dd className="font-medium text-slate-900">{Math.round(visitDurationMinutes)} min</dd>
-            </>
-          )}
-          {(gpsLat != null && gpsLng != null) && (
-            <>
-              <dt className="text-slate-500">GPS location</dt>
-              <dd className="font-medium text-slate-900 font-mono text-xs">
-                {gpsLat.toFixed(5)}, {gpsLng.toFixed(5)}
-              </dd>
-            </>
-          )}
-        </dl>
-      </div>
-
+    <div className="grid gap-6">
       {visitNotes && (
-        <div className="rounded-lg border bg-white p-4">
-          <h3 className="mb-2 font-medium">Visit notes</h3>
-          <p className="whitespace-pre-wrap text-sm text-slate-700">{visitNotes}</p>
-        </div>
+        <Card>
+          <CardHeader className="pb-1">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FileText className="h-5 w-5 text-slate-500" />
+              Visit notes
+            </CardTitle>
+            <CardDescription>
+              General notes from the rep: products discussed, stock, competitors, or other observations from the visit.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-wrap text-slate-700 leading-relaxed">
+              {visitNotes}
+            </p>
+          </CardContent>
+        </Card>
       )}
+
       {hasAuditMetrics && (
-        <div className="rounded-lg border bg-white p-4">
-          <h3 className="mb-2 font-medium">Audit Metrics</h3>
-          <dl className="grid gap-2 text-sm sm:grid-cols-2">
-            {patientsPerDay != null && (
-              <>
-                <dt className="text-slate-500">Patients per day</dt>
-                <dd className="font-medium">{patientsPerDay}</dd>
-              </>
-            )}
-            {basketValuePerPatient != null && (
-              <>
-                <dt className="text-slate-500">Basket value per patient (KES)</dt>
-                <dd className="font-medium">{basketValuePerPatient}</dd>
-              </>
-            )}
-          </dl>
-        </div>
+        <Card>
+          <CardHeader className="pb-1">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <BarChart3 className="h-5 w-5 text-slate-500" />
+              Audit metrics
+            </CardTitle>
+            <CardDescription>
+              Pharmacy volume and value: how many patients they serve per day and average basket value (KES) per patient.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-5 text-sm sm:grid-cols-2">
+              {patientsPerDay != null && (
+                <div>
+                  <dt className="text-slate-500">Patients per day</dt>
+                  <dd className="mt-1 font-semibold text-slate-900">{patientsPerDay}</dd>
+                </div>
+              )}
+              {basketValuePerPatient != null && (
+                <div>
+                  <dt className="text-slate-500">Basket value per patient (KES)</dt>
+                  <dd className="mt-1 font-semibold text-slate-900">{basketValuePerPatient}</dd>
+                </div>
+              )}
+            </dl>
+          </CardContent>
+        </Card>
       )}
+
       {productAudits.length > 0 && (
-        <div className="rounded-lg border bg-white p-4">
-          <h3 className="mb-3 font-medium">Product audits</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] text-sm">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="pb-2 text-left font-medium text-slate-600">Product</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Stock</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Price (KES)</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Reason stock</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Supplier</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">USP understood</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Substitute?</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Substitute with / why</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Reason OOS</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Days OOS</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Competitors</th>
-                </tr>
-              </thead>
-              <tbody>
-                {productAudits.map((pa: {
-                  id: string;
-                  quantity_in_stock: number;
-                  usp_understood: boolean;
-                  reason_why_stock?: string | null;
-                  supplier?: string | null;
-                  do_substitute?: boolean;
-                  substitute_with_and_why?: string | null;
-                  reason_for_oos?: string | null;
-                  days_oos?: number | null;
-                  price_per_pack?: number | null;
-                  mr_products: { name: string } | { name: string }[] | null;
-                  mr_competitor_audits: Array<{
-                    competitor_name: string;
-                    competitor_stock: number | null;
-                    stock_sold_per_month?: number | null;
-                    substitution_reason: string | null;
-                    price_per_pack?: number | null;
-                    days_out?: number | null;
-                    reason_out_of_stock?: string | null;
-                  }>;
-                }) => {
-                  const productName = (() => {
-                    const mp = pa.mr_products;
-                    const p = Array.isArray(mp) ? mp[0] : mp;
-                    return p?.name ?? "—";
-                  })();
-                  const competitors = Array.isArray(pa.mr_competitor_audits) ? pa.mr_competitor_audits : [];
-                  return (
-                  <tr key={pa.id} className="border-b border-slate-100 last:border-0">
-                    <td className="py-2 font-medium">{productName}</td>
-                    <td className="py-2">{pa.quantity_in_stock}</td>
-                    <td className="py-2">{pa.price_per_pack != null ? pa.price_per_pack : "—"}</td>
-                    <td className="max-w-[100px] py-2 text-slate-600">{pa.reason_why_stock ?? "—"}</td>
-                    <td className="max-w-[100px] py-2 text-slate-600">{pa.supplier ?? "—"}</td>
-                    <td className="py-2">{pa.usp_understood ? "Yes" : "No"}</td>
-                    <td className="py-2">{pa.do_substitute ? "Yes" : "No"}</td>
-                    <td className="max-w-[160px] py-2 text-slate-600">
-                      {pa.do_substitute ? (pa.substitute_with_and_why || "—") : "—"}
-                    </td>
-                    <td className="max-w-[120px] py-2 text-slate-600">{pa.reason_for_oos ?? "—"}</td>
-                    <td className="py-2">{pa.days_oos != null ? pa.days_oos : "—"}</td>
-                    <td className="py-2">
-                      {competitors.length ? (
-                        <ul className="space-y-1 text-slate-600">
-                          {competitors.map((c: {
-                            competitor_name: string;
-                            supplier?: string | null;
-                            competitor_stock: number | null;
-                            stock_sold_per_month?: number | null;
-                            substitution_reason: string | null;
-                            price_per_pack?: number | null;
-                            days_out?: number | null;
-                            reason_out_of_stock?: string | null;
-                          }, i: number) => (
-                            <li key={i} className="text-xs">
-                              <span className="font-medium text-slate-700">{c.competitor_name}</span>
-                              {c.supplier && ` — Supplier: ${c.supplier}`}
-                              {c.competitor_stock != null && ` — Stock: ${c.competitor_stock}`}
-                              {c.stock_sold_per_month != null && ` — Sold/mo: ${c.stock_sold_per_month}`}
-                              {c.price_per_pack != null && ` — KES ${c.price_per_pack}`}
-                              {c.days_out != null && ` — Days OOS: ${c.days_out}`}
-                              {c.reason_out_of_stock && ` — OOS: ${c.reason_out_of_stock}`}
-                              {c.substitution_reason && ` — Sub: ${c.substitution_reason}`}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : "—"}
-                    </td>
-                  </tr>
-                );})}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Card>
+          <CardHeader className="pb-1">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Package className="h-5 w-5 text-slate-500" />
+              Product audits
+              <span className="ml-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-normal text-slate-600">
+                {productAudits.length} product{productAudits.length !== 1 ? "s" : ""}
+              </span>
+            </CardTitle>
+            <CardDescription>
+              Products recorded at this pharmacy: stock levels, supplier, price (KES), and whether staff understand the product USP. Competitor products are listed where captured.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px] text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50/80">
+                      <th className="px-3 py-2.5 text-left font-medium text-slate-600">Product</th>
+                      <th className="px-3 py-2.5 text-left font-medium text-slate-600">Stock</th>
+                      <th className="px-3 py-2.5 text-left font-medium text-slate-600">Price</th>
+                      <th className="px-3 py-2.5 text-left font-medium text-slate-600">Supplier</th>
+                      <th className="px-3 py-2.5 text-left font-medium text-slate-600">USP</th>
+                      <th className="px-3 py-2.5 text-left font-medium text-slate-600">Competitors</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {productAudits.map((pa: {
+                      id: string;
+                      quantity_in_stock: number;
+                      usp_understood: boolean;
+                      reason_why_stock?: string | null;
+                      supplier?: string | null;
+                      do_substitute?: boolean;
+                      substitute_with_and_why?: string | null;
+                      reason_for_oos?: string | null;
+                      days_oos?: number | null;
+                      price_per_pack?: number | null;
+                      mr_products: { name: string } | { name: string }[] | null;
+                      mr_competitor_audits: Array<{
+                        competitor_name: string;
+                        competitor_stock: number | null;
+                        stock_sold_per_month?: number | null;
+                        substitution_reason: string | null;
+                        price_per_pack?: number | null;
+                        days_out?: number | null;
+                        reason_out_of_stock?: string | null;
+                      }>;
+                    }) => {
+                      const productName = (() => {
+                        const mp = pa.mr_products;
+                        const p = Array.isArray(mp) ? mp[0] : mp;
+                        return p?.name ?? "—";
+                      })();
+                      const competitors = Array.isArray(pa.mr_competitor_audits) ? pa.mr_competitor_audits : [];
+                      return (
+                        <tr key={pa.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50">
+                          <td className="px-3 py-2.5 font-medium text-slate-900">{productName}</td>
+                          <td className="px-3 py-2.5 text-slate-700">{pa.quantity_in_stock}</td>
+                          <td className="px-3 py-2.5 text-slate-700">
+                            {pa.price_per_pack != null ? `KES ${pa.price_per_pack}` : "—"}
+                          </td>
+                          <td className="max-w-[120px] px-3 py-2.5 text-slate-600">{pa.supplier ?? "—"}</td>
+                          <td className="px-3 py-2.5">{pa.usp_understood ? "Yes" : "No"}</td>
+                          <td className="max-w-[200px] px-3 py-2.5">
+                            {competitors.length ? (
+                              <ul className="space-y-1 text-xs text-slate-600">
+                                {competitors.map((c: {
+                                  competitor_name: string;
+                                  supplier?: string | null;
+                                  competitor_stock: number | null;
+                                  price_per_pack?: number | null;
+                                }, i: number) => (
+                                  <li key={i}>
+                                    <span className="font-medium text-slate-700">{c.competitor_name}</span>
+                                    {c.supplier && ` · ${c.supplier}`}
+                                    {c.competitor_stock != null && ` · Stock: ${c.competitor_stock}`}
+                                    {c.price_per_pack != null && ` · KES ${c.price_per_pack}`}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {prescriptionAudits.length > 0 && (
-        <div className="rounded-lg border bg-white p-4">
-          <h3 className="mb-3 font-medium">Prescription audits</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="pb-2 text-left font-medium text-slate-600">Doctor</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Location</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Product</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Rx/month</th>
-                  <th className="pb-2 text-left font-medium text-slate-600">Prescription image</th>
-                </tr>
-              </thead>
-              <tbody>
-                {prescriptionAudits.map((pa: {
-                  product_name: string;
-                  rx_per_month: number | null;
-                  prescription_image_url?: string | null;
-                  mr_doctors: { name: string; location: string | null } | { name: string; location: string | null }[] | null;
-                }, i: number) => {
-                  const doc = Array.isArray(pa.mr_doctors) ? pa.mr_doctors[0] : pa.mr_doctors;
-                  return (
-                  <tr key={i} className="border-b border-slate-100 last:border-0">
-                    <td className="py-2">
-                      {doc?.name ?? "—"}
-                    </td>
-                    <td className="py-2">
-                      {doc?.location ?? "—"}
-                    </td>
-                    <td className="py-2 font-medium">{pa.product_name}</td>
-                    <td className="py-2">{pa.rx_per_month ?? "—"}</td>
-                    <td className="py-2">
-                      {pa.prescription_image_url ? (
-                        <a
-                          href={pa.prescription_image_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          View image
-                        </a>
-                      ) : "—"}
-                    </td>
+        <Card>
+          <CardHeader className="pb-1">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Stethoscope className="h-5 w-5 text-slate-500" />
+              Prescription audits
+              <span className="ml-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-normal text-slate-600">
+                {prescriptionAudits.length} entr{prescriptionAudits.length !== 1 ? "ies" : "y"}
+              </span>
+            </CardTitle>
+            <CardDescription>
+              Top doctors at this pharmacy: who they are, where they practice, which products they prescribe, and prescriptions per month. Attached images are evidence when provided.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/80">
+                    <th className="px-3 py-2.5 text-left font-medium text-slate-600">Doctor</th>
+                    <th className="px-3 py-2.5 text-left font-medium text-slate-600">Location</th>
+                    <th className="px-3 py-2.5 text-left font-medium text-slate-600">Product</th>
+                    <th className="px-3 py-2.5 text-left font-medium text-slate-600">Rx/month</th>
+                    <th className="px-3 py-2.5 text-left font-medium text-slate-600">Image</th>
                   </tr>
-                );})}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                </thead>
+                <tbody>
+                  {prescriptionAudits.map((pa: {
+                    product_name: string;
+                    rx_per_month: number | null;
+                    prescription_image_url?: string | null;
+                    mr_doctors: { name: string; location: string | null } | { name: string; location: string | null }[] | null;
+                  }, i: number) => {
+                    const doc = Array.isArray(pa.mr_doctors) ? pa.mr_doctors[0] : pa.mr_doctors;
+                    return (
+                      <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50">
+                        <td className="px-3 py-2.5 font-medium text-slate-900">{doc?.name ?? "—"}</td>
+                        <td className="px-3 py-2.5 text-slate-600">{doc?.location ?? "—"}</td>
+                        <td className="px-3 py-2.5 font-medium text-slate-900">{pa.product_name}</td>
+                        <td className="px-3 py-2.5 text-slate-700">{pa.rx_per_month ?? "—"}</td>
+                        <td className="px-3 py-2.5">
+                          {pa.prescription_image_url ? (
+                            <a
+                              href={pa.prescription_image_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-slate-700 underline hover:text-slate-900"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              View
+                            </a>
+                          ) : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {competitorMarketing.length > 0 && (
-        <div className="rounded-lg border bg-white p-4">
-          <h3 className="mb-3 font-medium">Competitor marketing</h3>
-          <ul className="space-y-4 text-sm">
-            {competitorMarketing.map((cm: {
-              competitor_name: string;
-              activity_description: string | null;
-              reason_it_works: string | null;
-              activity_2_description?: string | null;
-              activity_2_reason?: string | null;
-            }, i: number) => (
-              <li key={i} className="rounded border border-slate-100 bg-slate-50/50 p-3">
-                <strong className="text-slate-900">{cm.competitor_name}</strong>
-                <div className="mt-2 space-y-2 text-slate-600">
-                  {(cm.activity_description || cm.reason_it_works) && (
-                    <div>
-                      <span className="font-medium text-slate-700">Activity 1:</span>
-                      {cm.activity_description && <span> {cm.activity_description}</span>}
-                      {cm.reason_it_works && (
-                        <span> — Reason: {cm.reason_it_works}</span>
-                      )}
-                    </div>
-                  )}
-                  {(cm.activity_2_description || cm.activity_2_reason) && (
-                    <div>
-                      <span className="font-medium text-slate-700">Activity 2:</span>
-                      {cm.activity_2_description && <span> {cm.activity_2_description}</span>}
-                      {cm.activity_2_reason && (
-                        <span> — Reason: {cm.activity_2_reason}</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <Card>
+          <CardHeader className="pb-1">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Megaphone className="h-5 w-5 text-slate-500" />
+              Competitor marketing
+              <span className="ml-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-normal text-slate-600">
+                {competitorMarketing.length} entr{competitorMarketing.length !== 1 ? "ies" : "y"}
+              </span>
+            </CardTitle>
+            <CardDescription>
+              What competitors are doing at this pharmacy: their activities (e.g. breakfast meetings, sampling) and why pharmacy staff say they dispense their products.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-4">
+              {competitorMarketing.map((cm: {
+                competitor_name: string;
+                activity_description: string | null;
+                reason_it_works: string | null;
+                activity_2_description?: string | null;
+                activity_2_reason?: string | null;
+              }, i: number) => (
+                <li
+                  key={i}
+                  className="rounded-lg border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-200"
+                >
+                  <p className="font-semibold text-slate-900">{cm.competitor_name}</p>
+                  <div className="mt-3 space-y-2 text-sm text-slate-600">
+                    {(cm.activity_description || cm.reason_it_works) && (
+                      <div>
+                        <span className="font-medium text-slate-700">Activity 1:</span>{" "}
+                        {cm.activity_description}
+                        {cm.reason_it_works && (
+                          <span className="block mt-0.5 text-slate-500">Reason: {cm.reason_it_works}</span>
+                        )}
+                      </div>
+                    )}
+                    {(cm.activity_2_description || cm.activity_2_reason) && (
+                      <div>
+                        <span className="font-medium text-slate-700">Activity 2:</span>{" "}
+                        {cm.activity_2_description}
+                        {cm.activity_2_reason && (
+                          <span className="block mt-0.5 text-slate-500">Reason: {cm.activity_2_reason}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       )}
 
-      {productAudits.length === 0 && prescriptionAudits.length === 0 && competitorMarketing.length === 0 && !hasAuditMetrics && (
-        <p className="text-sm text-slate-500">
-          {visitNotes ? "No audit data for this visit." : "No audit data or notes for this visit."}
-        </p>
+      {productAudits.length === 0 && prescriptionAudits.length === 0 && competitorMarketing.length === 0 && !hasAuditMetrics && !visitNotes && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-slate-500">No audit data or notes for this visit yet.</p>
+            <p className="mt-1 text-sm text-slate-400">Notes, product audits, prescription audits, and competitor marketing will appear here once added.</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export type MrRole = "MR" | "MANAGER" | "ADMIN";
+export type MrRole = "MR" | "MANAGER" | "ADMIN" | "CLIENT";
 
 export interface MrProfile {
   id: string;
@@ -99,6 +99,24 @@ export async function requireManagerOrAdmin() {
   if (auth.error) return auth;
   if (auth.profile.role !== "MANAGER" && auth.profile.role !== "ADMIN") {
     return { error: "Manager or Admin role required" as const };
+  }
+  return auth;
+}
+
+/**
+ * Require Manager, Admin, or Client - for analytics / products where
+ * client portal users should have similar read/management capabilities
+ * to Admins, but without any access to MR user provisioning.
+ */
+export async function requireManagerAdminOrClient() {
+  const auth = await getMrAuth();
+  if (auth.error) return auth;
+  if (
+    auth.profile.role !== "MANAGER" &&
+    auth.profile.role !== "ADMIN" &&
+    auth.profile.role !== "CLIENT"
+  ) {
+    return { error: "Manager, Admin or Client role required" as const };
   }
   return auth;
 }

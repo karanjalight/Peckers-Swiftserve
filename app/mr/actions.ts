@@ -1,7 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireMrRole, requireManagerOrAdmin } from "@/lib/mr/supabase-server";
+import {
+  getMrAuth,
+  requireMrRole,
+  requireManagerOrAdmin,
+} from "@/lib/mr/supabase-server";
 import type { VisitObjective } from "@/lib/mr/types";
 
 // =============================================================================
@@ -206,15 +210,15 @@ export async function mrCheckOut(visitId: string) {
 }
 
 // =============================================================================
-// UPDATE VISIT NOTES (MR only, OPEN visits only)
+// UPDATE VISIT NOTES (MR: own OPEN only; Manager/Admin: any visit)
 // =============================================================================
 export async function updateVisitNotes(visitId: string, notes: string) {
-  const auth = await requireMrRole();
+  const auth = await getMrAuth();
   if (auth.error) {
     return { success: false, error: auth.error };
   }
-
-  const { supabase } = auth;
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
 
   const { data: visit } = await supabase
     .from("mr_visits")
@@ -222,16 +226,21 @@ export async function updateVisitNotes(visitId: string, notes: string) {
     .eq("id", visitId)
     .single();
 
-  if (!visit || visit.mr_id !== auth.user.id || visit.status !== "OPEN") {
+  if (!visit) {
+    return { success: false, error: "Visit not found" };
+  }
+  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
-  const { error } = await supabase
+  let query = supabase
     .from("mr_visits")
     .update({ notes: notes.trim() || null })
-    .eq("id", visitId)
-    .eq("mr_id", auth.user.id)
-    .eq("status", "OPEN");
+    .eq("id", visitId);
+  if (profile.role === "MR") {
+    query = query.eq("mr_id", auth.user.id).eq("status", "OPEN");
+  }
+  const { error } = await query;
 
   if (error) {
     return { success: false, error: error.message };
@@ -242,17 +251,17 @@ export async function updateVisitNotes(visitId: string, notes: string) {
 }
 
 // =============================================================================
-// UPDATE VISIT AUDIT METRICS (AUDIT objective: patients/day, basket value)
+// UPDATE VISIT AUDIT METRICS (MR: own OPEN only; Manager/Admin: any visit)
 // =============================================================================
 export async function updateVisitAuditMetrics(
   visitId: string,
   patientsPerDay: number | null,
   basketValuePerPatient: number | null
 ) {
-  const auth = await requireMrRole();
+  const auth = await getMrAuth();
   if (auth.error) return { success: false, error: auth.error };
-
-  const { supabase } = auth;
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
 
   const { data: visit } = await supabase
     .from("mr_visits")
@@ -260,19 +269,24 @@ export async function updateVisitAuditMetrics(
     .eq("id", visitId)
     .single();
 
-  if (!visit || visit.mr_id !== auth.user.id || visit.status !== "OPEN") {
+  if (!visit) {
+    return { success: false, error: "Visit not found" };
+  }
+  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
-  const { error } = await supabase
+  let query = supabase
     .from("mr_visits")
     .update({
       patients_per_day: patientsPerDay ?? null,
       basket_value_per_patient: basketValuePerPatient ?? null,
     })
-    .eq("id", visitId)
-    .eq("mr_id", auth.user.id)
-    .eq("status", "OPEN");
+    .eq("id", visitId);
+  if (profile.role === "MR") {
+    query = query.eq("mr_id", auth.user.id).eq("status", "OPEN");
+  }
+  const { error } = await query;
 
   if (error) return { success: false, error: error.message };
 
@@ -306,21 +320,23 @@ export async function createProductAudit(input: {
     reasonOutOfStock?: string;
   }>;
 }) {
-  const auth = await requireMrRole();
+  const auth = await getMrAuth();
   if (auth.error) {
     return { success: false, error: auth.error };
   }
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
 
-  const { supabase } = auth;
-
-  // Verify visit is OPEN and belongs to MR
   const { data: visit } = await supabase
     .from("mr_visits")
     .select("id, status, mr_id")
     .eq("id", input.visitId)
     .single();
 
-  if (!visit || visit.mr_id !== auth.user.id || visit.status !== "OPEN") {
+  if (!visit) {
+    return { success: false, error: "Visit not found" };
+  }
+  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -375,6 +391,159 @@ export async function createProductAudit(input: {
 }
 
 // =============================================================================
+// GET VISIT AUDITS (for edit UI)
+// =============================================================================
+export async function getVisitAudits(visitId: string) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error, data: null };
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
+
+  const { data: visit } = await supabase
+    .from("mr_visits")
+    .select("id, status, mr_id")
+    .eq("id", visitId)
+    .single();
+
+  if (!visit) return { success: false, error: "Visit not found", data: null };
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
+    return { success: false, error: "Not allowed", data: null };
+  }
+
+  const [productRes, prescriptionRes, marketingRes] = await Promise.all([
+    supabase
+      .from("mr_product_audits")
+      .select(`
+        id, visit_id, product_id, quantity_in_stock, usp_understood,
+        reason_why_stock, supplier, price_per_pack, days_oos, reason_for_oos,
+        do_substitute, substitute_with_and_why,
+        mr_products (id, name),
+        mr_competitor_audits (id, competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock)
+      `)
+      .eq("visit_id", visitId),
+    supabase
+      .from("mr_prescription_audits")
+      .select("id, visit_id, doctor_id, product_name, rx_per_month, prescription_image_url, mr_doctors(id, name, location)")
+      .eq("visit_id", visitId),
+    supabase
+      .from("mr_competitor_marketing")
+      .select("id, visit_id, competitor_name, activity_description, reason_it_works, activity_2_description, activity_2_reason")
+      .eq("visit_id", visitId),
+  ]);
+
+  return {
+    success: true,
+    error: null,
+    data: {
+      productAudits: productRes.data ?? [],
+      prescriptionAudits: prescriptionRes.data ?? [],
+      competitorMarketing: marketingRes.data ?? [],
+    },
+  };
+}
+
+// =============================================================================
+// UPDATE PRODUCT AUDIT (and replace competitor audits)
+// =============================================================================
+export async function updateProductAudit(
+  productAuditId: string,
+  visitId: string,
+  input: {
+    productId: string;
+    quantityInStock: number;
+    uspUnderstood: boolean;
+    reasonWhyStock?: string | null;
+    supplier?: string | null;
+    doSubstitute?: boolean;
+    substituteWithAndWhy?: string | null;
+    reasonForOos?: string | null;
+    daysOos?: number | null;
+    pricePerPack?: number | null;
+    competitorAudits?: Array<{
+      competitorName: string;
+      supplier?: string;
+      competitorStock?: number;
+      stockSoldPerMonth?: number;
+      substitutionReason?: string;
+      pricePerPack?: number;
+      daysOut?: number;
+      reasonOutOfStock?: string;
+    }>;
+  }
+) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error };
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
+
+  const { data: visit } = await supabase
+    .from("mr_visits")
+    .select("id, status, mr_id")
+    .eq("id", visitId)
+    .single();
+
+  if (!visit) return { success: false, error: "Visit not found" };
+  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+    return { success: false, error: "Invalid or closed visit" };
+  }
+
+  const { data: existing } = await supabase
+    .from("mr_product_audits")
+    .select("id")
+    .eq("id", productAuditId)
+    .eq("visit_id", visitId)
+    .single();
+
+  if (!existing) return { success: false, error: "Product audit not found" };
+
+  const { error: updateError } = await supabase
+    .from("mr_product_audits")
+    .update({
+      product_id: input.productId,
+      quantity_in_stock: input.quantityInStock,
+      usp_understood: input.uspUnderstood,
+      reason_why_stock: input.reasonWhyStock ?? null,
+      supplier: input.supplier ?? null,
+      do_substitute: input.doSubstitute ?? false,
+      substitute_with_and_why: input.substituteWithAndWhy ?? null,
+      reason_for_oos: input.reasonForOos ?? null,
+      days_oos: input.daysOos ?? null,
+      price_per_pack: input.pricePerPack ?? null,
+    })
+    .eq("id", productAuditId)
+    .eq("visit_id", visitId);
+
+  if (updateError) return { success: false, error: updateError.message };
+
+  const { error: delError } = await supabase
+    .from("mr_competitor_audits")
+    .delete()
+    .eq("product_audit_id", productAuditId);
+
+  if (delError) return { success: false, error: delError.message };
+
+  const audits = (input.competitorAudits ?? []).slice(0, 3);
+  if (audits.length > 0) {
+    const rows = audits.map((c) => ({
+      product_audit_id: productAuditId,
+      competitor_name: c.competitorName,
+      supplier: c.supplier ?? null,
+      competitor_stock: c.competitorStock ?? null,
+      stock_sold_per_month: c.stockSoldPerMonth ?? null,
+      substitution_reason: c.substitutionReason ?? null,
+      price_per_pack: c.pricePerPack ?? null,
+      days_out: c.daysOut ?? null,
+      reason_out_of_stock: c.reasonOutOfStock ?? null,
+    }));
+    const { error: insError } = await supabase.from("mr_competitor_audits").insert(rows);
+    if (insError) return { success: false, error: insError.message };
+  }
+
+  revalidatePath(`/mr/visit/${visitId}`);
+  return { success: true };
+}
+
+// =============================================================================
 // PRESCRIPTION AUDIT
 // =============================================================================
 export async function createPrescriptionAudit(input: {
@@ -384,12 +553,12 @@ export async function createPrescriptionAudit(input: {
   rxPerMonth?: number | null;
   prescriptionImageUrl?: string | null;
 }) {
-  const auth = await requireMrRole();
+  const auth = await getMrAuth();
   if (auth.error) {
     return { success: false, error: auth.error };
   }
-
-  const { supabase } = auth;
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
 
   const { data: visit } = await supabase
     .from("mr_visits")
@@ -397,7 +566,10 @@ export async function createPrescriptionAudit(input: {
     .eq("id", input.visitId)
     .single();
 
-  if (!visit || visit.mr_id !== auth.user.id || visit.status !== "OPEN") {
+  if (!visit) {
+    return { success: false, error: "Visit not found" };
+  }
+  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -418,6 +590,51 @@ export async function createPrescriptionAudit(input: {
 }
 
 // =============================================================================
+// UPDATE PRESCRIPTION AUDIT
+// =============================================================================
+export async function updatePrescriptionAudit(
+  auditId: string,
+  visitId: string,
+  input: {
+    doctorId?: string | null;
+    productName: string;
+    rxPerMonth?: number | null;
+    prescriptionImageUrl?: string | null;
+  }
+) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error };
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
+
+  const { data: visit } = await supabase
+    .from("mr_visits")
+    .select("id, status, mr_id")
+    .eq("id", visitId)
+    .single();
+
+  if (!visit) return { success: false, error: "Visit not found" };
+  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+    return { success: false, error: "Invalid or closed visit" };
+  }
+
+  const { error } = await supabase
+    .from("mr_prescription_audits")
+    .update({
+      doctor_id: input.doctorId ?? null,
+      product_name: input.productName.trim(),
+      rx_per_month: input.rxPerMonth ?? null,
+      prescription_image_url: input.prescriptionImageUrl ?? null,
+    })
+    .eq("id", auditId)
+    .eq("visit_id", visitId);
+
+  if (error) return { success: false, error: error.message };
+  revalidatePath(`/mr/visit/${visitId}`);
+  return { success: true };
+}
+
+// =============================================================================
 // COMPETITOR MARKETING
 // =============================================================================
 export async function createCompetitorMarketing(input: {
@@ -428,12 +645,12 @@ export async function createCompetitorMarketing(input: {
   activity2Description?: string | null;
   activity2Reason?: string | null;
 }) {
-  const auth = await requireMrRole();
+  const auth = await getMrAuth();
   if (auth.error) {
     return { success: false, error: auth.error };
   }
-
-  const { supabase } = auth;
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
 
   const { data: visit } = await supabase
     .from("mr_visits")
@@ -441,7 +658,10 @@ export async function createCompetitorMarketing(input: {
     .eq("id", input.visitId)
     .single();
 
-  if (!visit || visit.mr_id !== auth.user.id || visit.status !== "OPEN") {
+  if (!visit) {
+    return { success: false, error: "Visit not found" };
+  }
+  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -463,12 +683,202 @@ export async function createCompetitorMarketing(input: {
 }
 
 // =============================================================================
+// UPDATE COMPETITOR MARKETING
+// =============================================================================
+export async function updateCompetitorMarketing(
+  id: string,
+  visitId: string,
+  input: {
+    competitorName: string;
+    activity1Description?: string | null;
+    activity1Reason?: string | null;
+    activity2Description?: string | null;
+    activity2Reason?: string | null;
+  }
+) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error };
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
+
+  const { data: visit } = await supabase
+    .from("mr_visits")
+    .select("id, status, mr_id")
+    .eq("id", visitId)
+    .single();
+
+  if (!visit) return { success: false, error: "Visit not found" };
+  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+    return { success: false, error: "Invalid or closed visit" };
+  }
+
+  const { error } = await supabase
+    .from("mr_competitor_marketing")
+    .update({
+      competitor_name: input.competitorName.trim(),
+      activity_description: input.activity1Description ?? null,
+      reason_it_works: input.activity1Reason ?? null,
+      activity_2_description: input.activity2Description ?? null,
+      activity_2_reason: input.activity2Reason ?? null,
+    })
+    .eq("id", id)
+    .eq("visit_id", visitId);
+
+  if (error) return { success: false, error: error.message };
+  revalidatePath(`/mr/visit/${visitId}`);
+  return { success: true };
+}
+
+// =============================================================================
+// DELETE: product audit (cascades to competitor_audits), prescription, marketing, visit
+// =============================================================================
+export async function deleteProductAudit(visitId: string, productAuditId: string) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error };
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
+
+  const { data: visit } = await supabase
+    .from("mr_visits")
+    .select("id, status, mr_id")
+    .eq("id", visitId)
+    .single();
+
+  if (!visit) return { success: false, error: "Visit not found" };
+  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+    return { success: false, error: "Invalid or closed visit" };
+  }
+
+  const { error } = await supabase
+    .from("mr_product_audits")
+    .delete()
+    .eq("id", productAuditId)
+    .eq("visit_id", visitId);
+
+  if (error) return { success: false, error: error.message };
+  revalidatePath(`/mr/visit/${visitId}`);
+  return { success: true };
+}
+
+export async function deleteCompetitorAudit(competitorAuditId: string) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error };
+
+  const { supabase } = auth;
+  const { data: ca } = await supabase
+    .from("mr_competitor_audits")
+    .select("id, mr_product_audits(visit_id)")
+    .eq("id", competitorAuditId)
+    .single();
+
+  if (!ca) return { success: false, error: "Competitor audit not found" };
+
+  const { error } = await supabase
+    .from("mr_competitor_audits")
+    .delete()
+    .eq("id", competitorAuditId);
+
+  if (error) return { success: false, error: error.message };
+  const pa = ca.mr_product_audits as { visit_id?: string } | null;
+  if (pa?.visit_id) revalidatePath(`/mr/visit/${pa.visit_id}`);
+  return { success: true };
+}
+
+export async function deletePrescriptionAudit(visitId: string, auditId: string) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error };
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
+
+  const { data: visit } = await supabase
+    .from("mr_visits")
+    .select("id, status, mr_id")
+    .eq("id", visitId)
+    .single();
+
+  if (!visit) return { success: false, error: "Visit not found" };
+  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+    return { success: false, error: "Invalid or closed visit" };
+  }
+
+  const { error } = await supabase
+    .from("mr_prescription_audits")
+    .delete()
+    .eq("id", auditId)
+    .eq("visit_id", visitId);
+
+  if (error) return { success: false, error: error.message };
+  revalidatePath(`/mr/visit/${visitId}`);
+  return { success: true };
+}
+
+export async function deleteCompetitorMarketing(visitId: string, id: string) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error };
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
+
+  const { data: visit } = await supabase
+    .from("mr_visits")
+    .select("id, status, mr_id")
+    .eq("id", visitId)
+    .single();
+
+  if (!visit) return { success: false, error: "Visit not found" };
+  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+    return { success: false, error: "Invalid or closed visit" };
+  }
+
+  const { error } = await supabase
+    .from("mr_competitor_marketing")
+    .delete()
+    .eq("id", id)
+    .eq("visit_id", visitId);
+
+  if (error) return { success: false, error: error.message };
+  revalidatePath(`/mr/visit/${visitId}`);
+  return { success: true };
+}
+
+export async function deleteVisit(visitId: string) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error };
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
+
+  const { data: visit } = await supabase
+    .from("mr_visits")
+    .select("id, status, mr_id")
+    .eq("id", visitId)
+    .single();
+
+  if (!visit) return { success: false, error: "Visit not found" };
+  if (profile.role === "MR" && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+    return { success: false, error: "You can only delete your own open visits" };
+  }
+  // Manager/Admin scope enforced by RLS
+
+  const { error } = await supabase.from("mr_visits").delete().eq("id", visitId);
+
+  if (error) return { success: false, error: error.message };
+  revalidatePath("/mr/visit");
+  revalidatePath("/mr/pharmacies");
+  revalidatePath("/mr/dashboard");
+  revalidatePath("/mr/history");
+  return { success: true };
+}
+
+// =============================================================================
 // CREATE OR GET DOCTOR
 // =============================================================================
 export async function findOrCreateDoctor(name: string, location?: string) {
-  const auth = await requireMrRole();
+  const auth = await getMrAuth();
   if (auth.error) {
     return { success: false, error: auth.error, doctorId: null };
+  }
+  const role = auth.profile.role;
+  if (role !== "MR" && role !== "MANAGER" && role !== "ADMIN") {
+    return { success: false, error: "Not authorized", doctorId: null };
   }
 
   const { supabase } = auth;

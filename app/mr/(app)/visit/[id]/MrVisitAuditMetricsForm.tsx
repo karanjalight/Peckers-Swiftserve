@@ -44,11 +44,10 @@ export function MrVisitAuditMetricsForm({
   }
 
   return (
-    <div className="rounded-lg border bg-white p-4">
-      <h3 className="mb-2 font-medium">Audit Metrics</h3>
-      <p className="mb-4 text-sm text-slate-500">
-        How many patients do they serve per day? What is the basket value per
-        patient?
+    <div className="rounded-xl border bg-white p-5">
+      <h3 className="text-lg font-semibold text-slate-900">Audit metrics</h3>
+      <p className="mt-1 mb-4 text-sm text-slate-500">
+        Capture pharmacy volume and value: how many patients they serve per day and the average basket value (KES) per patient. Used for AUDIT visits.
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>

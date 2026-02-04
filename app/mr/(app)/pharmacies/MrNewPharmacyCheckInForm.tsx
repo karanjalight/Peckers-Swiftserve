@@ -85,7 +85,7 @@ export function MrNewPharmacyCheckInForm() {
       form.reset();
       setRegion("");
       setSubRegion("");
-      router.push(`/mr/visit/${result.visitId}`);
+      router.push(`/mr/visit/${result.visitId}/edit`);
       router.refresh();
     } else {
       setError(result.error ?? "Failed to start visit");

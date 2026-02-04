@@ -53,7 +53,7 @@ export function MrCheckInButton({
 
     setLoading(false);
     if (result.success && result.visitId) {
-      router.push(`/mr/visit/${result.visitId}`);
+      router.push(`/mr/visit/${result.visitId}/edit`);
       router.refresh();
     } else {
       alert(result.error || "Check-in failed");
@@ -65,7 +65,7 @@ export function MrCheckInButton({
       <Button
         className="w-full"
         size="lg"
-        onClick={() => router.push(`/mr/visit/${openVisitId}`)}
+        onClick={() => router.push(`/mr/visit/${openVisitId}/edit`)}
       >
         Continue Open Visit
       </Button>
