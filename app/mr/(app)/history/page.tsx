@@ -77,18 +77,18 @@ export default async function MrHistoryPage({
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
             Visit History
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
             Your submitted visits. Read-only. No edits allowed.
           </p>
         </div>
 
-        <Card className="border-slate-200">
+        <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
           <CardHeader>
-            <CardTitle className="text-base">Recent Visits</CardTitle>
-            <CardDescription>Last 50 visits</CardDescription>
+            <CardTitle className="text-base text-slate-900 dark:text-white">Recent Visits</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400">Last 50 visits</CardDescription>
           </CardHeader>
           <CardContent>
             {!visits || visits.length === 0 ? (
@@ -218,10 +218,10 @@ export default async function MrHistoryPage({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
           Visit History
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
           All visits you can see, with full data (notes, audit metrics). Filter by MR, region, status, or date range.
         </p>
       </div>
@@ -256,14 +256,14 @@ export default async function MrHistoryPage({
 
 function EmptyState({ role }: { role: string }) {
   return (
-    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 py-12">
-      <div className="rounded-full bg-slate-100 p-4">
-        <History className="h-10 w-10 text-slate-400" />
+    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-100 py-12 dark:border-slate-600 dark:bg-slate-800/50">
+      <div className="rounded-full bg-slate-200 p-4 dark:bg-slate-700">
+        <History className="h-10 w-10 text-slate-600 dark:text-slate-300" />
       </div>
-      <h3 className="mt-4 text-base font-medium text-slate-900">
+      <h3 className="mt-4 text-base font-medium text-slate-900 dark:text-white">
         No visits yet
       </h3>
-      <p className="mt-1 max-w-sm text-center text-sm text-slate-500">
+      <p className="mt-1 max-w-sm text-center text-sm text-slate-600 dark:text-slate-400">
         {role === "MR"
           ? "Start a visit from a pharmacy to record audits and notes. Your submitted visits will appear here."
           : "No visits match the current filters. Try changing or clearing filters."}
@@ -343,20 +343,20 @@ function VisitsTable({
                     {(pharmacy(v) as { region?: string } | null)?.region ?? "—"}
                   </TableCell>
                 )}
-                <TableCell className="text-slate-600 whitespace-nowrap">
+                <TableCell className="whitespace-nowrap text-slate-700 dark:text-slate-300">
                   {new Date(v.check_in_time).toLocaleString()}
                 </TableCell>
-                <TableCell className="text-slate-600 whitespace-nowrap">
+                <TableCell className="whitespace-nowrap text-slate-700 dark:text-slate-300">
                   {v.check_out_time
                     ? new Date(v.check_out_time).toLocaleString()
                     : "—"}
                 </TableCell>
-                <TableCell className="text-slate-600">
+                <TableCell className="text-slate-700 dark:text-slate-300">
                   {v.visit_duration_minutes != null
                     ? `${Math.round(v.visit_duration_minutes)} min`
                     : "—"}
                 </TableCell>
-                <TableCell className="text-slate-600">
+                <TableCell className="text-slate-700 dark:text-slate-300">
                   {v.objective}
                 </TableCell>
                 <TableCell>
@@ -383,10 +383,10 @@ function VisitsTable({
                           : "—"}
                       </span>
                     </TableCell>
-                    <TableCell className="text-slate-600">
+                    <TableCell className="text-slate-700 dark:text-slate-300">
                       {v.patients_per_day != null ? v.patients_per_day : "—"}
                     </TableCell>
-                    <TableCell className="text-slate-600">
+                    <TableCell className="text-slate-700 dark:text-slate-300">
                       {v.basket_value_per_patient != null
                         ? v.basket_value_per_patient
                         : "—"}

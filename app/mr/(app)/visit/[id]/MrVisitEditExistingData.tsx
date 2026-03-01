@@ -115,6 +115,12 @@ export function MrVisitEditExistingData({
       .catch(() => setProducts([]));
   }, [visitId]);
 
+  useEffect(() => {
+    const onSaved = () => refresh();
+    window.addEventListener("mr-visit-audit-saved", onSaved);
+    return () => window.removeEventListener("mr-visit-audit-saved", onSaved);
+  }, [visitId]);
+
   function refresh() {
     getVisitAudits(visitId).then((res) => {
       if (res.success && res.data) setData(res.data);
@@ -124,7 +130,7 @@ export function MrVisitEditExistingData({
 
   if (loading || !data) {
     return (
-      <div className="rounded-lg border bg-white p-4 text-sm text-slate-500">
+      <div className="rounded-2xl bg-white p-4 text-sm text-slate-600 dark:bg-card dark:text-muted-foreground shadow-sm ring-1 ring-black/5 dark:ring-white/10">
         Loading existing data…
       </div>
     );
@@ -140,17 +146,17 @@ export function MrVisitEditExistingData({
   return (
     <div className="grid gap-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">Edit existing data</h3>
-        <p className="mt-1 text-sm text-slate-500">
+        <h3 className="text-lg font-semibold text-foreground">Edit existing data</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
           Change or correct any product audit, prescription audit, or competitor marketing entry already added to this visit. Click Edit next to an item to open the form.
         </p>
       </div>
       {message && (
         <div
-          className={`rounded-lg border p-3 text-sm ${
+          className={`rounded-2xl p-3 text-sm shadow-sm ${
             message.includes("saved") || message.includes("Updated")
-              ? "border-green-200 bg-green-50 text-green-800"
-              : "border-red-200 bg-red-50 text-red-800"
+              ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+              : "bg-red-50 text-red-800 dark:bg-red-950/50 dark:text-red-300"
           }`}
         >
           {message}
@@ -158,9 +164,9 @@ export function MrVisitEditExistingData({
       )}
 
       {data.productAudits.length > 0 && (
-        <div className="rounded-xl border bg-white p-5">
-          <h4 className="mb-1 font-medium text-slate-900">Product audits</h4>
-          <p className="mb-3 text-sm text-slate-500">Update stock, supplier, price, or competitor details for a product.</p>
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5 dark:bg-card dark:ring-white/10">
+          <h4 className="mb-1 font-medium text-slate-900 dark:text-foreground">Product audits</h4>
+          <p className="mb-3 text-sm text-slate-600 dark:text-muted-foreground">Update stock, supplier, price, or competitor details for a product.</p>
           <ul className="space-y-2">
             {data.productAudits.map((pa) => {
               const productName = (() => {
@@ -171,7 +177,7 @@ export function MrVisitEditExistingData({
               return (
                 <li
                   key={pa.id}
-                  className="flex items-center justify-between rounded border border-slate-100 bg-slate-50/50 px-3 py-2"
+                  className="flex items-center justify-between rounded-2xl bg-muted/40 px-3 py-2"
                 >
                   <span className="text-sm">
                     <strong>{productName}</strong> — Stock: {pa.quantity_in_stock}
@@ -220,16 +226,16 @@ export function MrVisitEditExistingData({
       )}
 
       {data.prescriptionAudits.length > 0 && (
-        <div className="rounded-xl border bg-white p-5">
-          <h4 className="mb-1 font-medium text-slate-900">Prescription audits</h4>
-          <p className="mb-3 text-sm text-slate-500">Update doctor, product, or prescriptions per month.</p>
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5 dark:bg-card dark:ring-white/10">
+          <h4 className="mb-1 font-medium text-foreground">Prescription audits</h4>
+          <p className="mb-3 text-sm text-muted-foreground">Update doctor, product, or prescriptions per month.</p>
           <ul className="space-y-2">
             {data.prescriptionAudits.map((pa) => {
               const doc = Array.isArray(pa.mr_doctors) ? pa.mr_doctors[0] : pa.mr_doctors;
               return (
                 <li
                   key={pa.id}
-                  className="flex items-center justify-between rounded border border-slate-100 bg-slate-50/50 px-3 py-2"
+                  className="flex items-center justify-between rounded-2xl bg-muted/40 px-3 py-2"
                 >
                   <span className="text-sm">
                     {doc?.name ?? "—"} — {pa.product_name}
@@ -278,14 +284,14 @@ export function MrVisitEditExistingData({
       )}
 
       {data.competitorMarketing.length > 0 && (
-        <div className="rounded-xl border bg-white p-5">
-          <h4 className="mb-1 font-medium text-slate-900">Competitor marketing</h4>
-          <p className="mb-3 text-sm text-slate-500">Update competitor name or activity details.</p>
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5 dark:bg-card dark:ring-white/10">
+          <h4 className="mb-1 font-medium text-slate-900 dark:text-foreground">Competitor marketing</h4>
+          <p className="mb-3 text-sm text-slate-600 dark:text-muted-foreground">Update competitor name or activity details.</p>
           <ul className="space-y-2">
             {data.competitorMarketing.map((cm) => (
               <li
                 key={cm.id}
-                className="flex items-center justify-between rounded border border-slate-100 bg-slate-50/50 px-3 py-2"
+                className="flex items-center justify-between rounded-2xl bg-muted/40 px-3 py-2"
               >
                 <span className="text-sm font-medium">{cm.competitor_name}</span>
                 <div className="flex items-center gap-1">

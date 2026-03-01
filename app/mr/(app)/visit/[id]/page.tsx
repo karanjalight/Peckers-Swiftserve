@@ -79,41 +79,43 @@ export default async function MrVisitViewPage({
   };
 
   return (
-    <div className="space-y-6 px-4 py-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3">
-        <Button variant="ghost" size="sm" className="w-fit" asChild>
+        <Button variant="ghost" size="sm" className="-ml-1 w-fit touch-manipulation" asChild>
           <Link href={isMr ? "/mr/pharmacies" : "/mr/dashboard"} className="gap-1.5">
-            <ChevronLeft className="h-4 w-4" />
-            Back to {isMr ? "Pharmacies" : "Dashboard"}
+            <ChevronLeft className="h-4 w-4 shrink-0" />
+            <span className="truncate">Back to {isMr ? "Pharmacies" : "Dashboard"}</span>
           </Link>
         </Button>
 
         <Card className="overflow-hidden">
-          <div className="border-b bg-slate-50 px-5 py-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-                  {pharmacyName}
-                </h1>
-                <span
-                  className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
-                    isOpen ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
-                  }`}
-                >
-                  {isOpen ? "In progress" : "Submitted"}
-                </span>
+          <div className="border-b bg-slate-50 px-4 py-3 sm:px-5 sm:py-4 dark:bg-slate-900/30 dark:border-slate-800">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center gap-2 gap-y-1.5">
+                  <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 min-w-0 break-words sm:text-2xl">
+                    {pharmacyName}
+                  </h1>
+                  <span
+                    className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium sm:px-3 sm:py-1 sm:text-sm ${
+                      isOpen ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
+                    }`}
+                  >
+                    {isOpen ? "In progress" : "Submitted"}
+                  </span>
+                </div>
                 {visit.objective && (
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-200/80 px-2.5 py-1 text-sm text-slate-700">
-                    <Target className="h-4 w-4" />
-                    {visit.objective}
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-200/80 px-2.5 py-1 text-xs text-slate-700 dark:bg-slate-700/50 dark:text-slate-300 sm:text-sm">
+                    <Target className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+                    <span className="truncate">{visit.objective}</span>
                   </span>
                 )}
               </div>
               {canEdit && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button asChild size="sm" className="gap-1.5">
-                    <Link href={`/mr/visit/${id}/edit`}>
-                      <Pencil className="h-4 w-4" />
+                <div className="flex flex-shrink-0 items-center gap-2 sm:flex-wrap">
+                  <Button asChild size="sm" className="min-h-10 w-full gap-1.5 touch-manipulation sm:w-auto">
+                    <Link href={`/mr/visit/${id}/edit`} className="inline-flex items-center justify-center">
+                      <Pencil className="h-4 w-4 shrink-0" />
                       Edit visit
                     </Link>
                   </Button>
@@ -125,48 +127,48 @@ export default async function MrVisitViewPage({
                 </div>
               )}
             </div>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
               Visit details: when the rep checked in and out, and how long they spent at the pharmacy.
             </p>
           </div>
-          <CardContent className="grid gap-x-8 gap-y-4 pt-5 sm:grid-cols-2">
-            <div className="flex items-start gap-3">
-              <Clock className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
-              <div>
-                <dt className="text-sm text-slate-500">Check-in</dt>
-                <dd className="font-medium text-slate-900">
+          <CardContent className="grid gap-x-6 gap-y-4 px-4 pt-4 sm:grid-cols-2 sm:px-5 sm:pt-5">
+            <div className="flex items-start gap-3 min-w-0">
+              <Clock className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 sm:h-5 sm:w-5" />
+              <div className="min-w-0">
+                <dt className="text-xs text-slate-500 sm:text-sm dark:text-slate-400">Check-in</dt>
+                <dd className="break-words font-medium text-slate-900 text-sm sm:text-base dark:text-slate-100">
                   {new Date(visit.check_in_time).toLocaleString()}
                 </dd>
               </div>
             </div>
             {visit.check_out_time && (
-              <div className="flex items-start gap-3">
-                <Clock className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
-                <div>
-                  <dt className="text-sm text-slate-500">Check-out</dt>
-                  <dd className="font-medium text-slate-900">
+              <div className="flex items-start gap-3 min-w-0">
+                <Clock className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 sm:h-5 sm:w-5" />
+                <div className="min-w-0">
+                  <dt className="text-xs text-slate-500 sm:text-sm dark:text-slate-400">Check-out</dt>
+                  <dd className="break-words font-medium text-slate-900 text-sm sm:text-base dark:text-slate-100">
                     {new Date(visit.check_out_time).toLocaleString()}
                   </dd>
                 </div>
               </div>
             )}
             {(visit as { visit_duration_minutes?: number | null }).visit_duration_minutes != null && (
-              <div className="flex items-start gap-3">
-                <Clock className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
-                <div>
-                  <dt className="text-sm text-slate-500">Duration</dt>
-                  <dd className="font-medium text-slate-900">
+              <div className="flex items-start gap-3 min-w-0">
+                <Clock className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 sm:h-5 sm:w-5" />
+                <div className="min-w-0">
+                  <dt className="text-xs text-slate-500 sm:text-sm dark:text-slate-400">Duration</dt>
+                  <dd className="font-medium text-slate-900 text-sm sm:text-base dark:text-slate-100">
                     {Math.round((visit as { visit_duration_minutes: number }).visit_duration_minutes)} min
                   </dd>
                 </div>
               </div>
             )}
             {(pharmacyRow as { region?: string } | null)?.region && (
-              <div className="flex items-start gap-3 sm:col-span-2">
-                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
-                <div>
-                  <dt className="text-sm text-slate-500">Region</dt>
-                  <dd className="font-medium text-slate-900">
+              <div className="flex items-start gap-3 min-w-0 sm:col-span-2">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 sm:h-5 sm:w-5" />
+                <div className="min-w-0">
+                  <dt className="text-xs text-slate-500 sm:text-sm dark:text-slate-400">Region</dt>
+                  <dd className="font-medium text-slate-900 text-sm sm:text-base dark:text-slate-100">
                     {(pharmacyRow as { region?: string }).region}
                   </dd>
                 </div>
@@ -179,11 +181,11 @@ export default async function MrVisitViewPage({
       <MrVisitReadOnly {...readOnlyProps} />
 
       {!isOpen && (
-        <Card className="border-green-200 bg-green-50/50">
-          <CardContent className="px-5 py-4 text-center">
-            <p className="text-sm text-green-800">
+        <Card className="border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-900/20">
+          <CardContent className="px-4 py-3 text-center sm:px-5 sm:py-4">
+            <p className="text-xs text-green-800 dark:text-green-200 sm:text-sm">
               Visit submitted.{" "}
-              <Button variant="link" className="h-auto p-0" asChild>
+              <Button variant="link" className="h-auto p-0 touch-manipulation" asChild>
                 <Link href={isMr ? "/mr/history" : "/mr/dashboard"}>
                   {isMr ? "View in History" : "Back to Dashboard"}
                 </Link>

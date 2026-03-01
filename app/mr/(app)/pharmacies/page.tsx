@@ -51,25 +51,25 @@ export default async function MrPharmaciesPage() {
       <div className="space-y-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
               Pharmacies
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
               Select a pharmacy to start a visit, or add a new one and check in
             </p>
           </div>
           <MrNewPharmacyCheckInForm />
         </div>
         {pharmacies.length === 0 ? (
-          <Card className="border-slate-200">
+          <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
             <CardContent className="flex min-h-[280px] flex-col items-center justify-center py-12">
-              <div className="rounded-full bg-slate-100 p-4">
-                <MapPin className="h-10 w-10 text-slate-400" />
+              <div className="rounded-full bg-slate-200 p-4 dark:bg-slate-700">
+                <MapPin className="h-10 w-10 text-slate-600 dark:text-slate-300" />
               </div>
-              <h3 className="mt-4 text-base font-medium text-slate-900">
+              <h3 className="mt-4 text-base font-medium text-slate-900 dark:text-white">
                 No pharmacies assigned yet
               </h3>
-              <p className="mt-1 max-w-sm text-center text-sm text-slate-500">
+              <p className="mt-1 max-w-sm text-center text-sm text-slate-600 dark:text-slate-400">
                 Start your first visit by adding a new pharmacy, or contact your
                 manager to get assigned to pharmacies.
               </p>
@@ -80,17 +80,17 @@ export default async function MrPharmaciesPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {pharmacies.map((p) => (
               <Link key={p.id} href={`/mr/pharmacies/${p.id}`}>
-                <Card className="h-full border-slate-200 transition-colors hover:border-slate-300 hover:bg-slate-50/50">
+                <Card className="h-full border-slate-200 bg-white transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600 dark:hover:bg-slate-800">
                   <CardHeader className="pb-2">
                     <div className="flex items-start gap-3">
-                      <div className="rounded-lg bg-slate-100 p-2">
-                        <MapPin className="h-5 w-5 text-slate-600" />
+                      <div className="rounded-lg bg-slate-200 p-2 dark:bg-slate-700">
+                        <MapPin className="h-5 w-5 text-slate-700 dark:text-slate-300" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <CardTitle className="text-base leading-tight">
+                        <CardTitle className="text-base leading-tight text-slate-900 dark:text-white">
                           {p.name}
                         </CardTitle>
-                        <CardDescription className="mt-1 line-clamp-2 text-sm">
+                        <CardDescription className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
                           {p.region}
                           {p.sub_region ? ` • ${p.sub_region}` : ""}
                           {p.location_text ? ` • ${p.location_text}` : ""}
@@ -99,7 +99,7 @@ export default async function MrPharmaciesPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <span className="text-sm font-medium text-primary">
+                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                       View details →
                     </span>
                   </CardContent>
@@ -122,10 +122,10 @@ export default async function MrPharmaciesPage() {
       <div className="space-y-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
               {auth.profile.role === "ADMIN" ? "All Pharmacies" : "My Pharmacies"}
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
               Create pharmacies and assign MRs. Submitted visit data is read-only.
             </p>
           </div>
@@ -133,15 +133,15 @@ export default async function MrPharmaciesPage() {
         </div>
 
         {!pharmacies?.length ? (
-          <Card className="border-slate-200">
+          <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
             <CardContent className="flex min-h-[280px] flex-col items-center justify-center py-12">
-              <div className="rounded-full bg-slate-100 p-4">
-                <MapPin className="h-10 w-10 text-slate-400" />
+              <div className="rounded-full bg-slate-200 p-4 dark:bg-slate-700">
+                <MapPin className="h-10 w-10 text-slate-600 dark:text-slate-300" />
               </div>
-              <h3 className="mt-4 text-base font-medium text-slate-900">
+              <h3 className="mt-4 text-base font-medium text-slate-900 dark:text-white">
                 No pharmacies yet
               </h3>
-              <p className="mt-1 max-w-sm text-center text-sm text-slate-500">
+              <p className="mt-1 max-w-sm text-center text-sm text-slate-600 dark:text-slate-400">
                 Create your first pharmacy to get started. You can then assign MRs
                 to each pharmacy.
               </p>
@@ -152,17 +152,17 @@ export default async function MrPharmaciesPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {pharmacies.map((p) => (
               <Link key={p.id} href={`/mr/pharmacies/${p.id}`}>
-                <Card className="h-full border-slate-200 transition-colors hover:border-slate-300 hover:bg-slate-50/50">
+                <Card className="h-full border-slate-200 bg-white transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600 dark:hover:bg-slate-800">
                   <CardHeader className="pb-2">
                     <div className="flex items-start gap-3">
-                      <div className="rounded-lg bg-slate-100 p-2">
-                        <MapPin className="h-5 w-5 text-slate-600" />
+                      <div className="rounded-lg bg-slate-200 p-2 dark:bg-slate-700">
+                        <MapPin className="h-5 w-5 text-slate-700 dark:text-slate-300" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <CardTitle className="text-base leading-tight">
+                        <CardTitle className="text-base leading-tight text-slate-900 dark:text-white">
                           {p.name}
                         </CardTitle>
-                        <CardDescription className="mt-1 line-clamp-2 text-sm">
+                        <CardDescription className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
                           {p.region}
                           {p.sub_region ? ` • ${p.sub_region}` : ""}
                           {p.location_text ? ` • ${p.location_text}` : ""}
@@ -171,7 +171,7 @@ export default async function MrPharmaciesPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <span className="text-sm font-medium text-primary">
+                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                       View details →
                     </span>
                   </CardContent>

@@ -49,7 +49,7 @@ export function MrLoginForm() {
         return;
       }
 
-      router.push("/mr");
+      router.push("/mr/dashboard");
       router.refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -61,11 +61,14 @@ export function MrLoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-stone-700">
+        <Label
+          htmlFor="email"
+          className="text-sm font-medium dark:text-slate-300 text-slate-600"
+        >
           Email
         </Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
           <Input
             id="email"
             type="email"
@@ -74,17 +77,20 @@ export function MrLoginForm() {
             placeholder="you@company.com"
             required
             disabled={loading}
-            className="h-11 pl-10 rounded-lg border-stone-200 bg-stone-50/50 focus:border-teal-500 focus:ring-teal-500/20"
+            className="h-12 rounded-xl border-slate-600 bg-white dark:bg-slate-900 pl-10 text-slate-600 dark:text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 focus:ring-offset-0 focus:ring-offset-slate-900"
             autoComplete="email"
           />
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-stone-700">
+        <Label
+          htmlFor="password"
+          className="text-sm font-medium dark:text-slate-300 text-slate-600 "
+        >
           Password
         </Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
           <Input
             id="password"
             type="password"
@@ -93,20 +99,20 @@ export function MrLoginForm() {
             placeholder="••••••••"
             required
             disabled={loading}
-            className="h-11 pl-10 rounded-lg border-stone-200 bg-stone-50/50 focus:border-teal-500 focus:ring-teal-500/20"
+            className="h-12 rounded-xl border-slate-600/80 bg-white dark:bg-slate-900 pl-10 text-slate-600 dark:text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 focus:ring-offset-0 focus:ring-offset-slate-900"
             autoComplete="current-password"
           />
         </div>
       </div>
       {error && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-amber-200/80 bg-amber-50/80 px-3.5 py-3 text-sm text-amber-800">
+        <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-3 text-sm text-amber-200">
           <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
       <Button
         type="submit"
-        className="h-11 w-full rounded-lg bg-teal-600 font-medium text-white shadow-sm hover:bg-teal-700 focus-visible:ring-teal-500/50"
+        className="h-12 w-full rounded-full bg-gradient-to-br from-slate-900 via-blue-950 to-slate-950  font-medium text-white hover:from-blue-950 hover:via-blue-900 hover:to-blue-950 transition hover:bg-blue-500 focus-visible:ring-blue-500/50"
         disabled={loading}
       >
         {loading ? (

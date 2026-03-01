@@ -24,13 +24,12 @@ export function MrCheckoutButton({ visitId }: { visitId: string }) {
   }
 
   return (
-    <div className="rounded-lg border-2 border-red-300 bg-red-50 p-4">
-      <p className="mb-3 text-sm font-medium text-red-800">
+    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-card dark:ring-white/10">
+      <p className="mb-3 text-sm font-medium text-slate-900 dark:text-foreground">
         You must check out to submit this visit. No edits allowed after checkout.
       </p>
       <Button
-        variant="destructive"
-        className="w-full"
+        className="w-full rounded-2xl cta-gradient min-h-12"
         onClick={handleCheckout}
         disabled={loading}
       >

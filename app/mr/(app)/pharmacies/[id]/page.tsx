@@ -82,20 +82,20 @@ export default async function MrPharmacyDetailPage({
               Back to Pharmacies
             </Link>
           </Button>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
             {pharmacy.name}
           </h1>
         </div>
 
         <Card className="border-slate-200">
           <CardHeader>
-            <CardTitle className="text-base">Pharmacy Details</CardTitle>
-            <CardDescription>Region, location, and contact info</CardDescription>
+            <CardTitle className="text-base text-slate-900 dark:text-white">Pharmacy Details</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400">Region, location, and contact info</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <dl className="grid gap-4 sm:grid-cols-2">
               <div>
-                <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                   Region
                 </dt>
                 <dd className="mt-1 text-sm text-slate-900">
@@ -105,7 +105,7 @@ export default async function MrPharmacyDetailPage({
               </div>
               {pharmacy.location_text && (
                 <div>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     Location
                   </dt>
                   <dd className="mt-1 text-sm text-slate-900">
@@ -115,7 +115,7 @@ export default async function MrPharmacyDetailPage({
               )}
               {pharmacy.procurement_name && (
                 <div className="sm:col-span-2">
-                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     Procurement Contact
                   </dt>
                   <dd className="mt-1 text-sm text-slate-900">
@@ -127,7 +127,7 @@ export default async function MrPharmacyDetailPage({
               )}
               {pharmacy.avg_attendants_per_day != null && (
                 <div>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     People attended per day
                   </dt>
                   <dd className="mt-1 text-sm text-slate-900">
@@ -137,7 +137,7 @@ export default async function MrPharmacyDetailPage({
               )}
               {pharmacy.avg_order_value != null && (
                 <div>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     Average order value
                   </dt>
                   <dd className="mt-1 text-sm text-slate-900">
@@ -149,10 +149,10 @@ export default async function MrPharmacyDetailPage({
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200">
+        <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
           <CardHeader>
-            <CardTitle className="text-base">Start Visit</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-base text-slate-900 dark:text-white">Start Visit</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-200">
               Check in to record audits, notes, and prescriptions
             </CardDescription>
           </CardHeader>
@@ -208,20 +208,20 @@ export default async function MrPharmacyDetailPage({
               Back to Pharmacies
             </Link>
           </Button>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
             {pharmacy.name}
           </h1>
         </div>
 
         <Card className="border-slate-200">
           <CardHeader>
-            <CardTitle className="text-base">Pharmacy Details</CardTitle>
-            <CardDescription>Region, location, and contact info</CardDescription>
+            <CardTitle className="text-base text-slate-900 dark:text-white">Pharmacy Details</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400">Region, location, and contact info</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <dl className="grid gap-4 sm:grid-cols-2">
               <div>
-                <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                   Region
                 </dt>
                 <dd className="mt-1 text-sm text-slate-900">
@@ -231,7 +231,7 @@ export default async function MrPharmacyDetailPage({
               </div>
               {pharmacy.location_text && (
                 <div>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     Location
                   </dt>
                   <dd className="mt-1 text-sm text-slate-900">
@@ -241,7 +241,7 @@ export default async function MrPharmacyDetailPage({
               )}
               {pharmacy.procurement_name && (
                 <div className="sm:col-span-2">
-                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     Procurement Contact
                   </dt>
                   <dd className="mt-1 text-sm text-slate-900">
@@ -254,7 +254,7 @@ export default async function MrPharmacyDetailPage({
               )}
               {pharmacy.avg_attendants_per_day != null && (
                 <div>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     People attended per day
                   </dt>
                   <dd className="mt-1 text-sm text-slate-900">
@@ -264,7 +264,7 @@ export default async function MrPharmacyDetailPage({
               )}
               {pharmacy.avg_order_value != null && (
                 <div>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     Average order value
                   </dt>
                   <dd className="mt-1 text-sm text-slate-900">

@@ -56,7 +56,8 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  /* Darker muted text for better contrast in light mode (WCAG AA) */
+  --muted-foreground: oklch(0.38 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -145,4 +146,34 @@ button, .btn {
   font-family: var(--font-inter), sans-serif;
   font-weight: 500;
   letter-spacing: -0.01em;
+}
+
+/* MR app: dark blue active sidebar item (reference dashboard style) */
+.mr-app [data-sidebar="menu-button"][data-active="true"],
+.mr-app [data-active="true"].peer\/menu-button {
+  background-color: #1e3a5f !important;
+  color: white !important;
+}
+.mr-app [data-sidebar="menu-button"][data-active="true"]:hover,
+.mr-app [data-active="true"].peer\/menu-button:hover {
+  background-color: #2563eb !important;
+  color: white !important;
+}
+
+/* MR CTA gradient – works in light and dark */
+.cta-gradient {
+  background: linear-gradient(to bottom right, #0f172a, #172554, #020617);
+  color: white;
+}
+.cta-gradient:hover {
+  background: linear-gradient(to bottom right, #1e293b, #1e3a8a, #0f172a);
+  color: white;
+}
+.dark .cta-gradient {
+  background: linear-gradient(to bottom right, #1e293b, #1e3a8a, #0f172a);
+  color: white;
+}
+.dark .cta-gradient:hover {
+  background: linear-gradient(to bottom right, #334155, #2563eb, #1e293b);
+  color: white;
 }

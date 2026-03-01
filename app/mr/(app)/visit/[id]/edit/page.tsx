@@ -1,7 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { getMrAuth } from "@/lib/mr/supabase-server";
 import Link from "next/link";
-import { MrVisitAuditForm } from "../MrVisitAuditForm";
+import { MrVisitProductCycleForm } from "../MrVisitProductCycleForm";
 import { MrVisitAuditMetricsForm } from "../MrVisitAuditMetricsForm";
 import { MrCheckoutButton } from "../MrCheckoutButton";
 import { MrVisitNotesForm } from "../MrVisitNotesForm";
@@ -71,30 +71,31 @@ export default async function MrVisitEditPage({
   const pharmacyName = (pharmacyRow as { name?: string } | null)?.name ?? "Pharmacy";
 
   return (
-    <div className="space-y-6 px-4 py-6">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" className="w-fit" asChild>
-            <Link href={`/mr/visit/${id}`} className="gap-1.5">
-              <ChevronLeft className="h-4 w-4" />
-              Back to view
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5" asChild>
-            <Link href={`/mr/visit/${id}`}>
-              <Eye className="h-4 w-4" />
-              View visit
-            </Link>
-          </Button>
-        </div>
+    <div className="min-h-svh bg-white dark:bg-black/90">
+      <div className="space-y-6 px-4 py-6">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="ghost" size="sm" className="w-fit rounded-2xl" asChild>
+              <Link href={`/mr/visit/${id}`} className="gap-1.5">
+                <ChevronLeft className="h-4 w-4" />
+                Back to view
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-2xl border-black/10 dark:border-white/10" asChild>
+              <Link href={`/mr/visit/${id}`}>
+                <Eye className="h-4 w-4" />
+                View visit
+              </Link>
+            </Button>
+          </div>
 
-        <div className="rounded-xl border bg-slate-50 px-5 py-3">
-          <h1 className="text-xl font-semibold text-slate-900">Edit visit: {pharmacyName}</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            Update notes, audit metrics, add or edit product audits, prescription audits, and competitor marketing. When finished, the MR can check out from this page.
-          </p>
+          <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-black/5 dark:bg-card dark:ring-white/10">
+            <h1 className="text-xl font-semibold text-slate-900 dark:text-foreground">Edit visit: {pharmacyName}</h1>
+            <p className="mt-1 text-sm text-slate-600 dark:text-muted-foreground">
+              Update notes and audit metrics, then add products (stock, prescription & marketing in one round). Edit or delete existing entries below. When finished, the MR can check out.
+            </p>
+          </div>
         </div>
-      </div>
 
       <MrVisitNotesForm visitId={id} initialNotes={notes} />
 
@@ -106,33 +107,30 @@ export default async function MrVisitEditPage({
         />
       )}
 
-      <MrVisitAuditForm visitId={id} objective={visit.objective ?? "AUDIT"} />
+      <MrVisitProductCycleForm visitId={id} objective={visit.objective ?? "AUDIT"} />
 
       <MrVisitEditExistingData visitId={id} objective={visit.objective ?? "AUDIT"} />
 
       {isMr ? (
         <MrCheckoutButton visitId={id} />
       ) : (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardContent className="px-5 py-4">
-            <p className="text-sm text-amber-800">
-              Only the MR can check out and submit this visit. You can edit all notes and audit data. When done, use &quot;View visit&quot; to see the full read-only summary.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 px-5 py-4 ring-1 ring-amber-200/50 dark:ring-amber-800/30">
+          <p className="text-sm text-amber-800 dark:text-amber-200">
+            Only the MR can check out and submit this visit. You can edit all notes and audit data. When done, use &quot;View visit&quot; to see the full read-only summary.
+          </p>
+        </div>
       )}
 
-      <Card className="border-red-100">
-        <CardContent className="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <p className="text-sm text-slate-600">
-            Permanently remove this visit and all its product audits, prescription audits, and competitor marketing. This cannot be undone.
-          </p>
-          <MrDeleteVisitButton
-            visitId={id}
-            redirectTo={isMr ? "/mr/pharmacies" : "/mr/dashboard"}
-          />
-        </CardContent>
-      </Card>
+      <div className="rounded-2xl bg-white dark:bg-card px-5 py-4 shadow-sm ring-1 ring-red-200/50 dark:ring-red-900/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p className="text-sm text-slate-600 dark:text-muted-foreground">
+          Permanently remove this visit and all its product audits, prescription audits, and competitor marketing. This cannot be undone.
+        </p>
+        <MrDeleteVisitButton
+          visitId={id}
+          redirectTo={isMr ? "/mr/pharmacies" : "/mr/dashboard"}
+        />
+      </div>
+      </div>
     </div>
   );
 }

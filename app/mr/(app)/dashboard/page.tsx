@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { requireManagerOrAdmin } from "@/lib/mr/supabase-server";
+import { getMrAuth } from "@/lib/mr/supabase-server";
 import { MrDashboardClient } from "./MrDashboardClient";
 
 export default async function MrDashboardPage() {
-  const auth = await requireManagerOrAdmin();
+  const auth = await getMrAuth();
   if (auth.error) redirect("/mr/login");
 
   const { supabase } = auth;
@@ -15,7 +15,8 @@ export default async function MrDashboardPage() {
         .select(
           "id, pharmacy_id, check_in_time, visit_duration_minutes, objective, mr_pharmacies(region, sub_region, name)"
         )
-        .eq("status", "SUBMITTED"),
+        .eq("status", "SUBMITTED")
+        .order("check_in_time", { ascending: false }),
       supabase
         .from("mr_product_audits")
         .select(
@@ -24,6 +25,10 @@ export default async function MrDashboardPage() {
       supabase.from("mr_competitor_audits").select("id"),
       supabase.from("mr_pharmacies").select("id"),
     ]);
+
+  if (visitsRes.error) {
+    console.error("Dashboard mr_visits error:", visitsRes.error);
+  }
 
   const visits = visitsRes.data ?? [];
   const productAudits = productAuditsRes.data ?? [];
@@ -139,20 +144,24 @@ export default async function MrDashboardPage() {
       .map(([name, value]) => ({ name, value })),
   };
 
-  const visitsTable = visits.slice(0, 100).map((v: Record<string, unknown>) => {
-    const ph = v.mr_pharmacies as { region?: string } | null | undefined;
-    return {
-      id: String(v.id ?? ""),
-      checkIn: v.check_in_time as string,
-      region: ph?.region ?? undefined,
-    };
-  });
+  const visitsTable = visits
+    .slice(0, 100)
+    .filter((v: Record<string, unknown>) => v.id != null && v.id !== "")
+    .map((v: Record<string, unknown>) => {
+      const ph = v.mr_pharmacies as { region?: string } | null | undefined;
+      return {
+        id: String(v.id),
+        checkIn: v.check_in_time as string,
+        region: ph?.region ?? undefined,
+      };
+    });
 
   return (
     <MrDashboardClient
       kpis={kpis}
       chartData={chartData}
       visitsTable={visitsTable}
+      recentPharmacies={chartData.byPharmacy.slice(0, 5)}
     />
   );
 }

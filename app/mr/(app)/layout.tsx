@@ -19,7 +19,7 @@ export default async function MrAppLayout({
   };
 
   return (
-    <div className="flex min-h-svh bg-slate-50">
+    <div className="mr-app flex min-h-svh bg-white dark:bg-black/90">
       <MrSidebarLayout user={user}>{children}</MrSidebarLayout>
     </div>
   );
