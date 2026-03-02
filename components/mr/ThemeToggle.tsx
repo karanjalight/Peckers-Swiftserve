@@ -38,7 +38,7 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-slate-300 bg-slate-100 dark:border-slate-600 dark:bg-slate-700"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-1 border-slate-500 bg-slate-50 dark:border-slate-600 dark:bg-slate-700"
         aria-hidden
       >
         <Sun className="h-5 w-5 text-slate-600 dark:text-slate-300" />
@@ -50,7 +50,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-slate-300 bg-slate-100 text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-200 hover:text-slate-900 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:hover:border-slate-400 dark:hover:bg-slate-600"
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-1 border-slate-500 bg-slate-50 text-slate-800 -sm transition hover:border-slate-400 hover:bg-slate-200 hover:text-slate-900 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:hover:border-slate-400 dark:hover:bg-slate-600"
       aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
     >
       {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}

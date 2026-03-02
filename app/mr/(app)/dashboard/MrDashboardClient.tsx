@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   XAxis,
   YAxis,
@@ -36,9 +37,9 @@ import {
   ExternalLink,
   Clock,
   Building2,
-  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MrCalendarWidget } from "@/components/mr/MrCalendarWidget";
 
 const CHART_COLORS = [
   "#1e3a5f", // dark blue
@@ -102,8 +103,6 @@ export function MrDashboardClient({
   recentPharmacies?: { name: string; value: number }[];
 }) {
   const [regionFilter, setRegionFilter] = useState<string>("all");
-  const [calendarMonth, setCalendarMonth] = useState(new Date());
-
   const filteredVisits =
     regionFilter === "all"
       ? visitsTable
@@ -113,45 +112,31 @@ export function MrDashboardClient({
     new Set(visitsTable.map((v) => v.region).filter(Boolean))
   ).sort() as string[];
 
-  const calendarDays = (() => {
-    const y = calendarMonth.getFullYear();
-    const m = calendarMonth.getMonth();
-    const first = new Date(y, m, 1);
-    const last = new Date(y, m + 1, 0);
-    const startPad = first.getDay();
-    const daysInMonth = last.getDate();
-    const total = startPad + daysInMonth;
-    const rows = Math.ceil(total / 7);
-    const out: (number | null)[] = [];
-    for (let i = 0; i < startPad; i++) out.push(null);
-    for (let d = 1; d <= daysInMonth; d++) out.push(d);
-    while (out.length < rows * 7) out.push(null);
-    return out;
-  })();
-
-  const weekDays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+  const totalRegionVisits = chartData.byRegion.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <div className="space-y-6 lg:space-y-8">
       {/* Row 1: CTA card + Demographic (donut) */}
       <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
-        {/* CTA – quick action to pharmacies */}
-        <Card className="overflow-hidden border-0 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm dark:from-slate-800 dark:to-slate-800 dark:ring-1 dark:ring-slate-700">
-          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:gap-6">
-            <div className="flex shrink-0 items-center justify-center rounded-2xl bg-white/70 p-4 dark:bg-slate-700/50">
-              <ClipboardList className="h-12 w-12 text-slate-800 dark:text-slate-200" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Start a pharmacy visit
-              </h3>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                Log pharmacy visits, product audits, and competitor insights.
-                Select a pharmacy to check in and record your visit.
+        
+        {/* CTA – product-focused pharmacy visit banner */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#f5f5f5] via-[#fce8e8] to-[#f5d9d9] dark:from-gray-800 dark:via-gray-800/95 dark:to-gray-900 p-6 sm:p-8 lg:p-10 border border-transparent dark:border-gray-700">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            {/* Left Content */}
+            <div className="space-y-4 sm:space-y-6 max-w-md">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-50">
+                Plan your next pharmacy visit
+              </h2>
+              <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-relaxed">
+                Quickly log pharmacy visits, product audits, stock checks, and competitor
+                insights. Open your pharmacy list to check in and capture everything from a
+                single, focused workspace.
               </p>
               <Button
                 asChild
-                className="mt-4 rounded-full border-2 border-slate-900 bg-white px-5 font-medium text-slate-900 hover:bg-slate-50 hover:text-slate-900"
+                size="lg"
+                variant="outline"
+                className="rounded-full border-2 border-gray-900 dark:border-gray-300 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 hover:bg-gray-900 hover:text-white dark:hover:bg-gray-200 dark:hover:text-gray-900 px-6 sm:px-8 h-10 sm:h-12 font-medium"
               >
                 <Link href="/mr/pharmacies">
                   <MapPin className="mr-2 h-4 w-4" />
@@ -159,62 +144,92 @@ export function MrDashboardClient({
                 </Link>
               </Button>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Visit demographic – donut + quick action */}
-        <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2 space-y-0 pb-2">
+            {/* Right Illustration */}
+            <div className="flex justify-center lg:justify-end mt-6 lg:mt-0">
+              <div className="relative w-full max-w-xs sm:max-w-sm h-48 sm:h-56 lg:h-60">
+                <Image
+                  src="https://kochi.figma.site/_assets/v11/4abacce8a2fca6d0db987825f87ec79ca967f6ef.png"
+                  alt="Professional assessment for assistive technology - schedule your appointment"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Visit demographic – revamped UI */}
+        <Card className="rounded-3xl border-2 border-gray-400 bg-white shadow-sm dark:border-gray-600 dark:bg-slate-900">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2 sm:pb-3">
             <div>
-              <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
-                Visit demographic
+              <CardTitle className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                Visit demographics
               </CardTitle>
-              <CardDescription className="text-slate-600 dark:text-slate-400">
+              <CardDescription className="text-[13px] sm:text-sm text-slate-600 dark:text-slate-400">
                 By region · submitted visits
               </CardDescription>
             </div>
             <CardAction>
-              <Button asChild size="sm" className="rounded-lg bg-slate-800 text-white hover:bg-slate-700 dark:bg-slate-600 dark:hover:bg-slate-500">
-                <Link href="/mr/pharmacies">View Pharmacies</Link>
+              <Button
+                asChild
+                size="sm"
+                className="rounded-full !bg-[#0b1b53] hover:!bg-[#0b1b53]/90 dark:!bg-blue-600 dark:hover:!bg-blue-600/90 !text-white px-4 sm:px-6 h-9 sm:h-10 text-[13px] sm:text-[14px] font-medium"
+              >
+                <Link href="/mr/pharmacies">View pharmacies</Link>
               </Button>
             </CardAction>
           </CardHeader>
           <CardContent>
             {chartData.byRegion.length === 0 ? (
-              <div className="flex h-48 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-center text-sm text-slate-500">
-                No visit data yet. Start a visit from Pharmacies.
+              <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 text-center text-sm text-slate-500 dark:border-slate-600 dark:bg-slate-800/40 dark:text-slate-300">
+                No visit data yet. Start a visit from pharmacies to see region insights.
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-4 sm:flex-row">
-                <div className="h-44 w-44 shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={chartData.byRegion}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={52}
-                        outerRadius={72}
-                        paddingAngle={2}
-                      >
-                        {chartData.byRegion.map((_, i) => (
-                          <Cell
-                            key={i}
-                            fill={DONUT_COLORS[i % DONUT_COLORS.length]}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+              <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-start">
+                {/* Donut chart with center metric */}
+                <div className="relative flex items-center justify-center">
+                  <div className="h-40 w-40 sm:h-48 sm:w-48 lg:h-56 lg:w-56">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={chartData.byRegion}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={52}
+                          outerRadius={72}
+                          paddingAngle={2}
+                        >
+                          {chartData.byRegion.map((_, i) => (
+                            <Cell
+                              key={i}
+                              fill={DONUT_COLORS[i % DONUT_COLORS.length]}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                    <p className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
+                      {totalRegionVisits}
+                    </p>
+                    <p className="text-[12px] sm:text-[13px] text-slate-600 dark:text-slate-300">
+                      Visits by region
+                    </p>
+                  </div>
                 </div>
-                <div className="flex flex-1 flex-wrap gap-x-4 gap-y-1 text-sm">
+
+                {/* Legend – pill style badges */}
+                <div className="flex flex-1 flex-wrap justify-center gap-2 sm:gap-3 text-sm lg:justify-start">
                   {chartData.byRegion.map((r, i) => (
                     <span
                       key={r.name}
-                      className="flex items-center gap-1.5"
+                      className="inline-flex items-center gap-1.5 rounded-full border-2 border-slate-400 px-3 py-1.5 sm:px-4 sm:py-2 text-[12px] sm:text-[13px] font-medium text-slate-900 dark:text-slate-50 dark:border-slate-600"
                     >
                       <span
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -222,14 +237,13 @@ export function MrDashboardClient({
                           backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length],
                         }}
                       />
-                      {r.name} ({chartData.byRegion.length > 0
-                        ? Math.round(
-                            (r.value /
-                              chartData.byRegion.reduce((a, x) => a + x.value, 0)) *
-                              100
-                          )
-                        : 0}
-                      %)
+                      <span className="whitespace-nowrap">
+                        {r.name}{" "}
+                        ({totalRegionVisits > 0
+                          ? Math.round((r.value / totalRegionVisits) * 100)
+                          : 0}
+                        %)
+                      </span>
                     </span>
                   ))}
                 </div>
@@ -286,117 +300,59 @@ export function MrDashboardClient({
         </Card>
 
         {/* Calendar */}
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base font-semibold text-slate-900">
-              {calendarMonth.toLocaleString("default", {
-                month: "long",
-                year: "numeric",
-              })}
-            </CardTitle>
-            <div className="flex gap-1">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8"
-                onClick={() =>
-                  setCalendarMonth(
-                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1)
-                  )
-                }
-              >
-                Prev
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8"
-                onClick={() =>
-                  setCalendarMonth(
-                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1)
-                  )
-                }
-              >
-                Next
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs">
-              {weekDays.map((d) => (
-                <div key={d} className="font-medium text-slate-600 dark:text-slate-400">
-                  {d}
-                </div>
-              ))}
-              {calendarDays.map((d, i) =>
-                d === null ? (
-                  <div key={`e-${i}`} className="h-8" />
-                ) : (
-                  <div
-                    key={d}
-                    className="flex h-8 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                  >
-                    {d}
-                  </div>
-                )
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <MrCalendarWidget visits={visitsTable} />
       </div>
 
       {/* KPI cards – compact grid */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-slate-200 bg-white shadow-sm">
+        <Card className="border-slate-200 bg-white dark:bg-transparent shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">
+            <CardTitle className="text-sm font-medium text-slate-600 dark:text-white">
               Total visits
             </CardTitle>
-            <MapPin className="h-4 w-4 text-slate-500" />
+            <MapPin className="h-4 w-4 text-slate-500 dark:text-white" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold text-slate-900">
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white">
               {kpis.totalVisits}
             </p>
           </CardContent>
         </Card>
-        <Card className="border-slate-200 bg-white shadow-sm">
+        <Card className="border-slate-200 bg-white dark:bg-transparent shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">
+            <CardTitle className="text-sm font-medium text-slate-600 dark:text-white">
               Stock-outs
             </CardTitle>
-            <Package className="h-4 w-4 text-amber-500" />
+            <Package className="h-4 w-4 text-amber-500 dark:text-white" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold text-amber-600">
+            <p className="text-2xl font-semibold text-amber-600 dark:text-white">
               {kpis.stockOuts}
             </p>
           </CardContent>
         </Card>
-        <Card className="border-slate-200 bg-white shadow-sm">
+        <Card className="border-slate-200 bg-white dark:bg-transparent shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">
+            <CardTitle className="text-sm font-medium text-slate-600 dark:text-white">
               Avg duration
             </CardTitle>
-            <Clock className="h-4 w-4 text-blue-500" />
+            <Clock className="h-4 w-4 text-blue-500 dark:text-white" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold text-slate-900">
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white">
               {kpis.avgDuration} min
             </p>
           </CardContent>
         </Card>
-        <Card className="border-slate-200 bg-white shadow-sm">
+        <Card className="border-slate-200 bg-white dark:bg-transparent shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">
+            <CardTitle className="text-sm font-medium text-slate-600 dark:text-white  ">
               Pharmacies
             </CardTitle>
-            <Building2 className="h-4 w-4 text-slate-500" />
+            <Building2 className="h-4 w-4 text-slate-500 dark:text-white" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold text-slate-900">
+            <p className="text-2xl font-semibold text-slate-900 dark:text-white">
               {kpis.uniquePharmacies}
               <span className="ml-1 text-sm font-normal text-slate-500">
                 / {kpis.totalPharmacies}

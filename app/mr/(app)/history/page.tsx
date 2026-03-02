@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { History } from "lucide-react";
 import { MrHistoryFilters } from "./MrHistoryFilters";
+import { MrVisitHistoryTable } from "./MrVisitHistoryTable";
 import { Suspense } from "react";
 
 type VisitRow = {
@@ -90,13 +91,13 @@ export default async function MrHistoryPage({
             <CardTitle className="text-base text-slate-900 dark:text-white">Recent Visits</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-400">Last 50 visits</CardDescription>
           </CardHeader>
-          <CardContent>
-            {!visits || visits.length === 0 ? (
-              <EmptyState role="MR" />
-            ) : (
-              <VisitsTable visits={visits as unknown as VisitRow[]} showMrColumn={false} />
-            )}
-          </CardContent>
+        <CardContent>
+          {!visits || visits.length === 0 ? (
+            <EmptyState role="MR" />
+          ) : (
+            <MrVisitHistoryTable visits={visits as unknown as VisitRow[]} showMrColumn={false} />
+          )}
+        </CardContent>
         </Card>
       </div>
     );
@@ -217,13 +218,15 @@ export default async function MrHistoryPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
-          Visit History
-        </h1>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          All visits you can see, with full data (notes, audit metrics). Filter by MR, region, status, or date range.
-        </p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            Visit History
+          </h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            All visits you can see, with full data (notes, audit metrics). Filter by MR, region, status, or date range.
+          </p>
+        </div>
       </div>
 
       <Suspense fallback={null}>
@@ -235,21 +238,15 @@ export default async function MrHistoryPage({
         />
       </Suspense>
 
-      <Card className="border-slate-200">
-        <CardHeader>
-          <CardTitle className="text-base">Visits</CardTitle>
-          <CardDescription>
-            {visits.length} visit{visits.length !== 1 ? "s" : ""} (max 200)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {visits.length === 0 ? (
+      {visits.length === 0 ? (
+        <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+          <CardContent className="pt-6">
             <EmptyState role={role} />
-          ) : (
-            <VisitsTable visits={visits} showMrColumn={true} />
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ) : (
+        <MrVisitHistoryTable visits={visits} showMrColumn={true} />
+      )}
     </div>
   );
 }
@@ -273,136 +270,6 @@ function EmptyState({ role }: { role: string }) {
           <Link href="/mr/pharmacies">View pharmacies</Link>
         </Button>
       )}
-    </div>
-  );
-}
-
-function VisitsTable({
-  visits,
-  showMrColumn,
-}: {
-  visits: VisitRow[];
-  showMrColumn: boolean;
-}) {
-  const pharmacy = (v: VisitRow) =>
-    Array.isArray(v.mr_pharmacies) ? v.mr_pharmacies[0] : v.mr_pharmacies;
-  const profile = (v: VisitRow) =>
-    Array.isArray(v.mr_profiles) ? v.mr_profiles[0] : v.mr_profiles;
-
-  return (
-    <div className="overflow-hidden rounded-lg border border-slate-200">
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur hover:bg-slate-50/95">
-              {showMrColumn && (
-                <TableHead className="text-slate-600">MR</TableHead>
-              )}
-              <TableHead className="text-slate-600">Pharmacy</TableHead>
-              {showMrColumn && (
-                <TableHead className="text-slate-600">Region</TableHead>
-              )}
-              <TableHead className="text-slate-600">Check-in</TableHead>
-              <TableHead className="text-slate-600">Check-out</TableHead>
-              <TableHead className="text-slate-600">Duration</TableHead>
-              <TableHead className="text-slate-600">Objective</TableHead>
-              <TableHead className="text-slate-600">Status</TableHead>
-              {showMrColumn && (
-                <>
-                  <TableHead className="text-slate-600 max-w-[160px]">Notes</TableHead>
-                  <TableHead className="text-slate-600 whitespace-nowrap">Patients/day</TableHead>
-                  <TableHead className="text-slate-600 whitespace-nowrap">Basket (KES)</TableHead>
-                </>
-              )}
-              <TableHead className="text-slate-600 text-right">
-                Action
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visits.map((v) => (
-              <TableRow
-                key={v.id}
-                className="transition-colors hover:bg-slate-50/50"
-              >
-                {showMrColumn && (
-                  <TableCell className="text-slate-600">
-                    {profile(v)?.full_name ?? "—"}
-                  </TableCell>
-                )}
-                <TableCell className="font-medium">
-                  <Link
-                    href={`/mr/visit/${v.id}`}
-                    className="text-primary hover:underline"
-                  >
-                    {pharmacy(v)?.name ?? "—"}
-                  </Link>
-                </TableCell>
-                {showMrColumn && (
-                  <TableCell className="text-slate-600">
-                    {(pharmacy(v) as { region?: string } | null)?.region ?? "—"}
-                  </TableCell>
-                )}
-                <TableCell className="whitespace-nowrap text-slate-700 dark:text-slate-300">
-                  {new Date(v.check_in_time).toLocaleString()}
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-slate-700 dark:text-slate-300">
-                  {v.check_out_time
-                    ? new Date(v.check_out_time).toLocaleString()
-                    : "—"}
-                </TableCell>
-                <TableCell className="text-slate-700 dark:text-slate-300">
-                  {v.visit_duration_minutes != null
-                    ? `${Math.round(v.visit_duration_minutes)} min`
-                    : "—"}
-                </TableCell>
-                <TableCell className="text-slate-700 dark:text-slate-300">
-                  {v.objective}
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={
-                      v.status === "SUBMITTED"
-                        ? "inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700"
-                        : "inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700"
-                    }
-                  >
-                    {v.status}
-                  </span>
-                </TableCell>
-                {showMrColumn && (
-                  <>
-                    <TableCell className="max-w-[160px] text-slate-600">
-                      <span
-                        title={v.notes ?? undefined}
-                        className="line-clamp-2 text-sm"
-                      >
-                        {v.notes?.trim()
-                          ? v.notes.trim().slice(0, 60) +
-                            (v.notes.length > 60 ? "…" : "")
-                          : "—"}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-slate-700 dark:text-slate-300">
-                      {v.patients_per_day != null ? v.patients_per_day : "—"}
-                    </TableCell>
-                    <TableCell className="text-slate-700 dark:text-slate-300">
-                      {v.basket_value_per_patient != null
-                        ? v.basket_value_per_patient
-                        : "—"}
-                    </TableCell>
-                  </>
-                )}
-                <TableCell className="text-right">
-                  <Button variant="default" size="sm" asChild>
-                    <Link href={`/mr/visit/${v.id}`}>View full details</Link>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
     </div>
   );
 }

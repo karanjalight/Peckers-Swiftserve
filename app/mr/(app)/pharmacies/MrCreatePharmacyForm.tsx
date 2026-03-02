@@ -68,8 +68,8 @@ export function MrCreatePharmacyForm() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
+        <Button className="gap-2 rounded-full py-4 px-10 bg-blue-700 text-white hover:bg-blue-800 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800">
+          <Plus className="h-4 w-4 text-white" />
           Create Pharmacy
         </Button>
       </DialogTrigger>

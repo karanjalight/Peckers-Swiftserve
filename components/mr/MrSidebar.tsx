@@ -79,7 +79,7 @@ export function MrSidebar({ user }: MrSidebarProps) {
       collapsible="icon"
       className="border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
     >
-      <SidebarHeader className="border-b border-slate-200 px-3 py-4 dark:border-slate-800">
+      <SidebarHeader className="border-b dark:bg-slate-900 border-slate-200 px-3 py-4 dark:border-slate-900">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild tooltip="Field Intelligence">
@@ -87,9 +87,9 @@ export function MrSidebar({ user }: MrSidebarProps) {
                 <img
                   src="/logo.png"
                   alt="Logo"
-                  className="h-8 w-auto shrink-0 object-contain lg:h-9"
+                  className="h-8 w-auto shrink-0 object-contain lg:h-12 dark:invert"
                 />
-                <span className="font-semibold text-slate-800 group-data-[collapsible=icon]:hidden">
+                <span className="font-semibold text-slate-800 dark:text-gray-50 group-data-[collapsible=icon]:hidden">
                   Field
                 </span>
               </Link>
@@ -98,7 +98,7 @@ export function MrSidebar({ user }: MrSidebarProps) {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="gap-0 px-2 py-3">
+      <SidebarContent className="gap-0 dark:bg-slate-900 px-2 py-3">
         <SidebarGroup>
           <SidebarGroupLabel className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
             Main menu
@@ -160,7 +160,7 @@ export function MrSidebar({ user }: MrSidebarProps) {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-slate-200 px-2 py-3 dark:border-slate-800">
+      <SidebarFooter className="border-t border-slate-200 dark:bg-slate-900 px-2 py-3 dark:border-slate-800">
         <SidebarMenu className="gap-0.5">
           <SidebarMenuItem>
             <div className="flex w-full flex-col gap-0.5 px-3 py-2 text-xs">

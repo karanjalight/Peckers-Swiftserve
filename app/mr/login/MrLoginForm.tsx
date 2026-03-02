@@ -112,7 +112,7 @@ export function MrLoginForm() {
       )}
       <Button
         type="submit"
-        className="h-12 w-full rounded-full bg-gradient-to-br from-slate-900 via-blue-950 to-slate-950  font-medium text-white hover:from-blue-950 hover:via-blue-900 hover:to-blue-950 transition hover:bg-blue-500 focus-visible:ring-blue-500/50"
+        className="h-12 w-full flex justify-center items-center rounded-full bg-gradient-to-br from-slate-900 via-blue-950 to-slate-950  font-medium text-white hover:from-blue-950 hover:via-blue-900 hover:to-blue-950 transition hover:bg-blue-500 focus-visible:ring-blue-500/50"
         disabled={loading}
       >
         {loading ? (
@@ -121,7 +121,9 @@ export function MrLoginForm() {
             Signing in…
           </span>
         ) : (
-          "Sign in"
+          <span className="flex items-center justify-center gap-2">
+            Sign in
+          </span>
         )}
       </Button>
     </form>

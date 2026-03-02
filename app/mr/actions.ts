@@ -953,6 +953,30 @@ export async function createPharmacy(input: {
 }
 
 // =============================================================================
+// MANAGER: DELETE PHARMACY
+// =============================================================================
+export async function deletePharmacy(pharmacyId: string) {
+  const auth = await requireManagerOrAdmin();
+  if (auth.error) {
+    return { success: false, error: auth.error };
+  }
+
+  const { supabase } = auth;
+
+  const { error } = await supabase
+    .from("mr_pharmacies")
+    .delete()
+    .eq("id", pharmacyId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/mr/pharmacies");
+  return { success: true };
+}
+
+// =============================================================================
 // MANAGER: ASSIGN / UNASSIGN MR TO PHARMACY
 // =============================================================================
 export async function assignMrToPharmacy(pharmacyId: string, mrId: string) {

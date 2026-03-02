@@ -98,6 +98,14 @@ export function MrProductsClient({
     return list;
   }, [products, search, typeFilter]);
 
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const pageItems = filtered.slice(startIndex, endIndex);
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -245,92 +253,165 @@ export function MrProductsClient({
         </div>
 
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                  <TableHead className="font-medium text-slate-600">Name</TableHead>
-                  <TableHead className="font-medium text-slate-600">SKU</TableHead>
-                  <TableHead className="font-medium text-slate-600">Type</TableHead>
-                  <TableHead className="font-medium text-slate-600">Price (KES)</TableHead>
-                  <TableHead className="font-medium text-slate-600">Owned by</TableHead>
-                  <TableHead className="font-medium text-slate-600">Created</TableHead>
-                  <TableHead className="w-[120px] text-right font-medium text-slate-600">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="py-12 text-center text-slate-500"
-                    >
-                      {products.length === 0
-                        ? "No products yet. Add one to get started."
-                        : "No products match your filters."}
-                    </TableCell>
+          <div className="overflow-hidden rounded-b-2xl border-t border-slate-200">
+            <div className="overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-[#071b5f] text-xs font-semibold uppercase tracking-wide text-white">
+                    <TableHead className="min-w-[220px] border-none pl-4 py-3 text-white">
+                      Name
+                    </TableHead>
+                    <TableHead className="min-w-[120px] border-none text-white">
+                      SKU
+                    </TableHead>
+                    <TableHead className="min-w-[120px] border-none text-white">
+                      Type
+                    </TableHead>
+                    <TableHead className="min-w-[140px] border-none text-white">
+                      Price (KES)
+                    </TableHead>
+                    <TableHead className="min-w-[160px] border-none text-white">
+                      Owned by
+                    </TableHead>
+                    <TableHead className="min-w-[140px] border-none text-white">
+                      Created
+                    </TableHead>
+                    <TableHead className="w-[140px] border-none pr-4 text-right text-white">
+                      Actions
+                    </TableHead>
                   </TableRow>
-                ) : (
-                  filtered.map((p) => (
-                    <TableRow
-                      key={p.id}
-                      className="transition-colors hover:bg-slate-50/50"
-                    >
-                      <TableCell className="font-medium text-slate-900">
-                        {p.name}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm text-slate-600">
-                        {p.sku ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            p.is_company_product
-                              ? "bg-teal-50 text-teal-700"
-                              : "bg-amber-50 text-amber-700"
-                          }`}
-                        >
-                          {p.is_company_product ? "Company" : "Competitor"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="font-medium text-slate-700">
-                        {p.price != null ? `KES ${p.price}` : "—"}
-                      </TableCell>
-                      <TableCell className="text-sm text-slate-600">
-                        {p.owned_by ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-sm text-slate-500">
-                        {new Date(p.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 gap-1 text-slate-600 hover:text-teal-700"
-                            onClick={() => openEdit(p)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 gap-1 text-slate-600 hover:text-red-600"
-                            onClick={() => openDelete(p)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Delete
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="py-12 text-center text-sm text-slate-500"
+                      >
+                        {products.length === 0
+                          ? "No products yet. Add one to get started."
+                          : "No products match your filters."}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    pageItems.map((p) => (
+                      <TableRow
+                        key={p.id}
+                        className="border-b border-slate-200 text-sm text-slate-800 hover:bg-slate-50/80 dark:border-slate-800 dark:text-slate-100 dark:hover:bg-slate-800/70"
+                      >
+                        <TableCell className="pl-4 font-medium text-slate-900 dark:text-white">
+                          {p.name}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm text-slate-600 dark:text-slate-300">
+                          {p.sku ?? "—"}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                              p.is_company_product
+                                ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-200 dark:ring-emerald-900"
+                                : "bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-900"
+                            }`}
+                          >
+                            {p.is_company_product ? "Company" : "Competitor"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="font-medium text-slate-700 dark:text-slate-200">
+                          {p.price != null ? `KES ${p.price}` : "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-slate-600 dark:text-slate-300">
+                          {p.owned_by ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-slate-500 dark:text-slate-300">
+                          {new Date(p.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="pr-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 rounded-full border-slate-300 px-3 text-xs font-medium text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800"
+                              onClick={() => openEdit(p)}
+                            >
+                              <Pencil className="mr-1 h-3.5 w-3.5" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 rounded-full px-2 text-xs text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/30"
+                              onClick={() => openDelete(p)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            {filtered.length > 0 && (
+              <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                <div className="flex items-center gap-4">
+                  <span>
+                    Showing{" "}
+                    <span className="font-semibold">
+                      {filtered.length === 0 ? 0 : startIndex + 1}-
+                      {Math.min(endIndex, filtered.length)}
+                    </span>{" "}
+                    of <span className="font-semibold">{filtered.length}</span>
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Rows per page:
+                    </span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        const next = Number(e.target.value) || 25;
+                        setPageSize(next);
+                        setPage(1);
+                      }}
+                      className="h-8 rounded-full border border-slate-300 bg-white px-2 text-[11px] font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    >
+                      {[25, 50, 100, 300, 500, 1000].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex items-center gap-5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={page === 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    className="rounded-full border-slate-300 px-6 py-4 text-xs font-medium text-slate-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-slate-800 dark:text-slate-400">
+                    Page <span className="font-semibold">{page}</span> of{" "}
+                    <span className="font-semibold">{totalPages}</span>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={page === totalPages || filtered.length === 0}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    className="rounded-full border-slate-300 px-6 py-4 text-xs font-medium text-slate-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
