@@ -65,7 +65,7 @@ const CustomTooltip = ({
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-md">
+    <div className="rounded-lg border border-slate-600 bg-white px-3 py-2 shadow-md">
       <p className="text-xs font-medium text-slate-500">{label}</p>
       <p className="text-sm font-semibold text-slate-900">
         {payload[0]?.value ?? 0}
@@ -117,10 +117,10 @@ export function MrDashboardClient({
   return (
     <div className="space-y-6 lg:space-y-8">
       {/* Row 1: CTA card + Demographic (donut) */}
-      <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-12">
         
         {/* CTA – product-focused pharmacy visit banner */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#f5f5f5] via-[#fce8e8] to-[#f5d9d9] dark:from-gray-800 dark:via-gray-800/95 dark:to-gray-900 p-6 sm:p-8 lg:p-10 border border-transparent dark:border-gray-700">
+        <div className="relative lg:col-span-8 col-span-12 overflow-hidden rounded-3xl bg-gradient-to-br from-blue-200 via-blue-500/70 to-blue-600 dark:from-gray-800 dark:via-gray-800/95 dark:to-gray-900 p-6 sm:p-8 lg:p-10 border border-transparent dark:border-gray-700">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             {/* Left Content */}
             <div className="space-y-4 sm:space-y-6 max-w-md">
@@ -135,8 +135,8 @@ export function MrDashboardClient({
               <Button
                 asChild
                 size="lg"
-                variant="outline"
-                className="rounded-full border-2 border-gray-900 dark:border-gray-300 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 hover:bg-gray-900 hover:text-white dark:hover:bg-gray-200 dark:hover:text-gray-900 px-6 sm:px-8 h-10 sm:h-12 font-medium"
+               
+                className="rounded-full py-8 flex items-center justify-center border-2 border-gray-900 dark:border-gray-300 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 hover:bg-gray-900 hover:text-white dark:hover:bg-gray-200 dark:hover:text-gray-900 px-6 sm:px-8 h-10 sm:h-12 font-medium"
               >
                 <Link href="/mr/pharmacies">
                   <MapPin className="mr-2 h-4 w-4" />
@@ -161,7 +161,7 @@ export function MrDashboardClient({
         </div>
 
         {/* Visit demographic – revamped UI */}
-        <Card className="rounded-3xl border-2 border-gray-400 bg-white shadow-sm dark:border-gray-600 dark:bg-slate-900">
+        <Card className="rounded-3xl lg:col-span-4 col-span-12 border-2 border-gray-400 bg-white shadow-sm dark:border-gray-600 dark:bg-slate-900">
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2 sm:pb-3">
             <div>
               <CardTitle className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
@@ -183,7 +183,7 @@ export function MrDashboardClient({
           </CardHeader>
           <CardContent>
             {chartData.byRegion.length === 0 ? (
-              <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 text-center text-sm text-slate-500 dark:border-slate-600 dark:bg-slate-800/40 dark:text-slate-300">
+              <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-600 bg-slate-50/50 text-center text-sm text-slate-500 dark:border-slate-600 dark:bg-slate-800/40 dark:text-slate-300">
                 No visit data yet. Start a visit from pharmacies to see region insights.
               </div>
             ) : (
@@ -253,59 +253,10 @@ export function MrDashboardClient({
         </Card>
       </div>
 
-      {/* Row 2: Top pharmacies list + Calendar */}
-      <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
-        {/* Top pharmacies / See more */}
-        <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
-              Top pharmacies by visits
-            </CardTitle>
-            <CardDescription className="text-slate-600 dark:text-slate-400">
-              Most frequently visited
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentPharmacies.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-100 py-8 text-center text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-400">
-                <MapPin className="mb-2 h-8 w-8 text-slate-500 dark:text-slate-400" />
-                No pharmacy visits yet
-              </div>
-            ) : (
-              <ul className="space-y-3">
-                {recentPharmacies.slice(0, 4).map((p, i) => (
-                  <li
-                    key={`${p.name}-${i}`}
-                    className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
-                  >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-300 text-xs font-medium text-slate-800 dark:bg-slate-600 dark:text-slate-200">
-                      {p.name.charAt(0)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="font-medium text-slate-900 dark:text-white">{p.name}</span>
-                      <span className="ml-2 text-xs text-slate-600 dark:text-slate-400">
-                        {p.value} visit{p.value !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Button asChild variant="ghost" className="mt-3 w-full text-slate-700 dark:text-slate-300">
-              <Link href="/mr/pharmacies">
-                See more →
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Calendar */}
-        <MrCalendarWidget visits={visitsTable} />
-      </div>
 
       {/* KPI cards – compact grid */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-slate-200 bg-white dark:bg-transparent shadow-sm">
+        <Card className="border-slate-600 bg-white dark:bg-transparent shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-white">
               Total visits
@@ -318,7 +269,7 @@ export function MrDashboardClient({
             </p>
           </CardContent>
         </Card>
-        <Card className="border-slate-200 bg-white dark:bg-transparent shadow-sm">
+        <Card className="border-slate-600 bg-white dark:bg-transparent shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-white">
               Stock-outs
@@ -331,7 +282,7 @@ export function MrDashboardClient({
             </p>
           </CardContent>
         </Card>
-        <Card className="border-slate-200 bg-white dark:bg-transparent shadow-sm">
+        <Card className="border-slate-600 bg-white dark:bg-transparent shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-white">
               Avg duration
@@ -344,7 +295,7 @@ export function MrDashboardClient({
             </p>
           </CardContent>
         </Card>
-        <Card className="border-slate-200 bg-white dark:bg-transparent shadow-sm">
+        <Card className="border-slate-600 bg-white dark:bg-transparent shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-white  ">
               Pharmacies
@@ -362,16 +313,69 @@ export function MrDashboardClient({
         </Card>
       </div>
 
+      {/* Row 2: Top pharmacies list + Calendar */}
+      <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-12">
+        {/* Calendar */}
+        <div className="lg:col-span-8 col-span-12">
+          <MrCalendarWidget visits={visitsTable} />
+        </div>
+        {/* Top pharmacies / See more */}
+        <Card className="lg:col-span-4 col-span-12 border-slate-600 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
+              Top pharmacies by visits
+            </CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400">
+              Most frequently visited
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentPharmacies.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-600 bg-slate-100 py-8 text-center text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-400">
+                <MapPin className="mb-2 h-8 w-8 text-slate-500 dark:text-slate-400" />
+                No pharmacy visits yet
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {recentPharmacies.slice(0, 4).map((p, i) => (
+                  <li
+                    key={`${p.name}-${i}`}
+                    className="flex items-center gap-3 rounded-2xl border border-slate-400 bg-slate-700 px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-300 text-xs font-medium text-slate-900 dark:bg-slate-600 dark:text-slate-200">
+                      {p.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium text-slate-100 dark:text-white">{p.name}</span>
+                      <span className="ml-2 text-xs text-slate-50 dark:text-slate-400">
+                        {p.value} visit{p.value !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Button asChild  className="mt-3 w-full flex items-center justify-center py-3 bg-blue-700 text-center rounded-full  text-slate-200 dark:text-slate-300">
+              <Link href="/mr/pharmacies" className="text-center w-full">
+                See more →
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+      </div>
+
+
       {/* Charts row */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:col-span-2">
+        <Card className="border-slate-600 bg-white dark:border-slate-700 dark:bg-slate-900 lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base text-slate-900 dark:text-white">Visits over time</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-400">Submitted visits by month</CardDescription>
           </CardHeader>
           <CardContent>
             {chartData.byMonth.length === 0 ? (
-              <div className="flex h-48 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-100 text-center text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-400">
+              <div className="flex h-48 flex-col items-center justify-center rounded-lg border border-dashed border-slate-600 bg-slate-100 text-center text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-400">
                 No visit data yet
               </div>
             ) : (
@@ -404,14 +408,14 @@ export function MrDashboardClient({
             )}
           </CardContent>
         </Card>
-        <Card className="border-slate-200">
+        <Card className="border-slate-600">
           <CardHeader>
             <CardTitle className="text-base">Visit objectives</CardTitle>
             <CardDescription>By type</CardDescription>
           </CardHeader>
           <CardContent>
             {chartData.byObjective.length === 0 ? (
-              <div className="flex h-48 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-center text-sm text-slate-500">
+              <div className="flex h-48 flex-col items-center justify-center rounded-lg border border-dashed border-slate-600 bg-slate-50/50 text-center text-sm text-slate-500">
                 No data yet
               </div>
             ) : (
@@ -443,7 +447,7 @@ export function MrDashboardClient({
       </div>
 
       {/* Recent visits table */}
-      <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+      <Card className="border-slate-600 bg-white dark:border-slate-700 dark:bg-slate-900 hidden">
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2 space-y-0">
           <div>
             <CardTitle className="text-base text-slate-900 dark:text-white">Recent visits</CardTitle>
@@ -453,7 +457,7 @@ export function MrDashboardClient({
             <select
               value={regionFilter}
               onChange={(e) => setRegionFilter(e.target.value)}
-              className="h-9 w-[180px] rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-slate-400/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="h-9 w-[180px] rounded-lg border border-slate-600 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-slate-400/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             >
               <option value="all">All regions</option>
               {regions.map((r) => (
@@ -464,17 +468,17 @@ export function MrDashboardClient({
         </CardHeader>
         <CardContent>
           {filteredVisits.length === 0 ? (
-            <div className="flex h-48 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-center text-sm text-slate-500">
+            <div className="flex h-48 flex-col  items-center justify-center rounded-lg border border-dashed border-slate-600 bg-slate-50/50 text-center text-sm text-slate-500">
               No visits yet
             </div>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-slate-200">
+            <div className="overflow-hidden rounded-lg border border-slate-600">
               <div className="max-h-72 overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur hover:bg-slate-50/95">
-                      <TableHead className="text-slate-600">Check-in</TableHead>
-                      <TableHead className="text-slate-600">Region</TableHead>
+                    <TableHead className="text-slate-600">Check-in</TableHead>
+                    <TableHead className="text-slate-600">Region</TableHead>
                       <TableHead className="text-slate-600 text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>

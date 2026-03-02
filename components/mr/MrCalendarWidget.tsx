@@ -145,28 +145,28 @@ export function MrCalendarWidget({ visits }: { visits: Visit[] }) {
   };
 
   return (
-    <div className="bg-white dark:bg-card rounded-3xl border-2 border-gray-400 dark:border-gray-600 p-6 space-y-5 shadow-sm">
+    <div className="bg-white dark:bg-card rounded-3xl border-2 border-gray-400 dark:border-gray-600 p-4 sm:p-5 space-y-4 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[15px] sm:text-[17px] font-bold text-slate-900 dark:text-slate-50">
+      <div className="flex items-center justify-between gap-2.5">
+        <h2 className="text-[14px] sm:text-[16px] font-semibold text-slate-900 dark:text-slate-50">
           {headerLabel}
         </h2>
         <Button
           type="button"
           size="sm"
-          className="rounded-full !bg-[#0b1b53] hover:!bg-[#0b1b53]/90 dark:!bg-blue-600 dark:hover:!bg-blue-600/90 !text-white px-4 sm:px-5 h-8 sm:h-9 text-[12px] sm:text-[13px] font-medium"
+          className="rounded-full !bg-[#0b1b53] hover:!bg-[#0b1b53]/90 dark:!bg-blue-600 dark:hover:!bg-blue-600/90 !text-white px-3.5 sm:px-4 h-8 text-[11px] sm:text-[12px] font-medium"
         >
           Full calendar
         </Button>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="grid grid-cols-2 gap-3 sm:w-auto">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="grid grid-cols-2 gap-2.5 sm:w-auto">
           <select
             value={String(currentYear)}
             onChange={handleYearChange}
-            className="rounded-full border-2 border-gray-300 dark:border-gray-500 h-10 px-3 text-[13px] sm:text-[14px] font-medium bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
+            className="rounded-full border-2 border-gray-300 dark:border-gray-500 h-9 px-3 text-[12px] sm:text-[13px] font-medium bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
           >
             {years.map((year) => (
               <option key={year} value={year}>
@@ -178,7 +178,7 @@ export function MrCalendarWidget({ visits }: { visits: Visit[] }) {
           <select
             value={currentMonthName}
             onChange={handleMonthChange}
-            className="rounded-full border-2 border-gray-300 dark:border-gray-500 h-10 px-3 text-[13px] sm:text-[14px] font-medium bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
+            className="rounded-full border-2 border-gray-300 dark:border-gray-500 h-9 px-3 text-[12px] sm:text-[13px] font-medium bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
           >
             {monthLabels.map((m) => (
               <option key={m} value={m}>
@@ -191,12 +191,12 @@ export function MrCalendarWidget({ visits }: { visits: Visit[] }) {
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <Button
             type="button"
-            variant="outline"
             size="icon"
-            className="h-8 w-8 rounded-full"
+            className="h-8 w-8 flex items-center justify-center rounded-full text-white"
             onClick={handlePrevMonth}
           >
-            <ChevronLeft className="h-4 w-4" />
+            {"<"}
+            <ChevronLeft className="h-4 w-4 text-white" />
           </Button>
           <Button
             type="button"
@@ -205,25 +205,26 @@ export function MrCalendarWidget({ visits }: { visits: Visit[] }) {
             className="h-8 w-8 rounded-full"
             onClick={handleNextMonth}
           >
-            <ChevronRight className="h-4 w-4" />
+            {">"}
+            {/* <ChevronRight className="h-4 w-4" /> */}
           </Button>
         </div>
       </div>
 
       {/* Calendar grid */}
       <div className="space-y-2">
-        <div className="grid grid-cols-7 gap-1 mb-1">
+        <div className="grid grid-cols-7 gap-[3px] sm:gap-1 mb-1">
           {dayLabels.map((day) => (
             <div
               key={day}
-              className="text-center text-[11px] sm:text-[12px] font-semibold text-slate-600 dark:text-slate-300 py-1.5"
+              className="text-center text-[10px] sm:text-[11px] font-semibold text-slate-600 dark:text-slate-300 py-1.5"
             >
               {day}
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-[3px] sm:gap-1">
           {calendarCells.map((cell) => {
             const key = formatKey(cell.date);
             const hasVisits = (visitsByDay.get(key)?.length ?? 0) > 0;
@@ -232,13 +233,13 @@ export function MrCalendarWidget({ visits }: { visits: Visit[] }) {
             return (
               <div
                 key={key}
-                className="relative aspect-square flex items-center justify-center"
+                className="relative h-16 aspect-square flex items-center justify-center"
               >
                 <button
                   type="button"
                   onClick={() => handleDayClick(cell.date)}
                   className={[
-                    "w-full h-full rounded-lg text-[12px] sm:text-[13px] font-medium transition-colors border border-transparent",
+                    "w-full h-20 rounded-lg  text-[11px] sm:text-[12px] font-medium transition-colors border border-transparent",
                     cell.isCurrentMonth
                       ? "text-slate-900 dark:text-slate-50"
                       : "text-slate-400 dark:text-slate-500",

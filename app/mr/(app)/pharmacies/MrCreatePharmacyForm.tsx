@@ -68,7 +68,7 @@ export function MrCreatePharmacyForm() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 rounded-full py-4 px-10 bg-blue-700 text-white hover:bg-blue-800 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800">
+        <Button className="gap-2 text-center flex items-center justify-center rounded-full py-4 px-10 bg-blue-700 text-white hover:bg-blue-800 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800">
           <Plus className="h-4 w-4 text-white" />
           Create Pharmacy
         </Button>
@@ -189,12 +189,12 @@ export function MrCreatePharmacyForm() {
           <DialogFooter>
             <Button
               type="button"
-              variant="outline"
+              className="text-center flex items-center justify-center rounded-full py-4 px-10 bg-red-500 text-white hover:bg-blue-800 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800"
               onClick={() => setOpen(false)}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" className="text-center flex items-center justify-center rounded-full py-4 px-10 bg-blue-900 text-white hover:bg-blue-800 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800" disabled={loading}>
               {loading ? "Creating…" : "Create"}
             </Button>
           </DialogFooter>
