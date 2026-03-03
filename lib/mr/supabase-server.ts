@@ -69,33 +69,16 @@ export async function getMrAuth() {
   let supabase = createAuthedClient(accessToken);
 
   // Try to get the user with the current access token (if present)
-  let userResult =
+  let {
+    data: { user },
+    error: authError,
+  } =
     accessToken !== null
       ? await supabase.auth.getUser(accessToken)
       : { data: { user: null }, error: null as any };
 
-  if (!userResult.error && userResult.data.user) {
-    const user = userResult.data.user;
-    const { data: profile, error: profileError } = await supabase
-      .from("mr_profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return { error: "Not an MR system user" as const };
-    }
-
-    return {
-      supabase,
-      user,
-      profile: profile as MrProfile,
-      error: null as null,
-    };
-  }
-
   // If access token is invalid/expired but we have a refresh token, try to refresh
-  if (refreshToken) {
+  if ((!user || authError) && refreshToken) {
     const refreshClient = createAuthedClient(null);
     const { data: refreshData, error: refreshError } =
       await refreshClient.auth.refreshSession({ refresh_token: refreshToken });
@@ -106,52 +89,33 @@ export async function getMrAuth() {
       refreshData.session.user
     ) {
       accessToken = refreshData.session.access_token;
-      const newRefreshToken = refreshData.session.refresh_token;
-
-      // Persist the refreshed tokens back into cookies
-      cookieStore.set("sb-auth-token", accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: "/",
-      });
-
-      if (newRefreshToken) {
-        cookieStore.set("sb-refresh-token", newRefreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: 60 * 60 * 24 * 30, // 30 days
-          path: "/",
-        });
-      }
-
-      // Recreate client with the fresh access token
       supabase = createAuthedClient(accessToken);
-
-      const user = refreshData.session.user;
-      const { data: profile, error: profileError } = await supabase
-        .from("mr_profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError || !profile) {
-        return { error: "Not an MR system user" as const };
-      }
-
-      return {
-        supabase,
-        user,
-        profile: profile as MrProfile,
-        error: null as null,
-      };
+      user = refreshData.session.user;
+      authError = null;
     }
   }
 
-  // If we reach here, we could not validate or refresh the session
-  return { error: "Invalid session" as const };
+  // If we still don't have a valid user, the session is invalid
+  if (authError || !user) {
+    return { error: "Invalid session" as const };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("mr_profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError || !profile) {
+    return { error: "Not an MR system user" as const };
+  }
+
+  return {
+    supabase,
+    user,
+    profile: profile as MrProfile,
+    error: null as null,
+  };
 }
 
 /**
