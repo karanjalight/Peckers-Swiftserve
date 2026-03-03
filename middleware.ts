@@ -23,13 +23,23 @@ export async function middleware(req: NextRequest) {
     if (!supabaseSession) {
       return NextResponse.redirect(new URL("/mr/login", req.url));
     }
+
     try {
-      const token = supabaseSession;
-      if (!token || token === "") {
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(supabaseSession);
+
+      if (error || !user) {
+        console.log("❌ MR INVALID SESSION - Redirecting to /mr/login");
         return NextResponse.redirect(new URL("/mr/login", req.url));
       }
+
+      console.log("✅ MR SESSION VALID - allowing");
       return NextResponse.next();
-    } catch {
+    } catch (err: any) {
+      console.log("❌ MR SESSION CHECK FAILED:", err?.message);
       return NextResponse.redirect(new URL("/mr/login", req.url));
     }
   }
@@ -49,11 +59,13 @@ export async function middleware(req: NextRequest) {
     }
 
     try {
-      // Verify the session token is valid
-      const token = supabaseSession;
-      
-      // Basic validation - check if token exists and is not expired
-      if (!token || token === "") {
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(supabaseSession);
+
+      if (error || !user) {
         console.log("❌ INVALID SESSION - Redirecting to /login");
         return NextResponse.redirect(new URL("/login", req.url));
       }
@@ -62,7 +74,7 @@ export async function middleware(req: NextRequest) {
       console.log("✅ ALLOWING ACCESS");
       return NextResponse.next();
     } catch (err: any) {
-      console.log("❌ SESSION VERIFICATION FAILED:", err.message);
+      console.log("❌ SESSION VERIFICATION FAILED:", err?.message);
       return NextResponse.redirect(new URL("/login", req.url));
     }
   }

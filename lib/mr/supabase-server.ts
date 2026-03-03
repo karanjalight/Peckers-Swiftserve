@@ -45,38 +45,113 @@ export async function getMrSupabase() {
  * Returns { supabase, user, profile } or { error } if not authenticated / not MR user.
  */
 export async function getMrAuth() {
-  const supabase = await getMrSupabase();
+  const cookieStore = await cookies();
+  let accessToken = cookieStore.get("sb-auth-token")?.value ?? null;
+  const refreshToken = cookieStore.get("sb-refresh-token")?.value ?? null;
 
-  const accessToken = (await cookies()).get("sb-auth-token")?.value;
-  if (!accessToken) {
+  // Helper to create a Supabase client bound to a specific access token
+  const createAuthedClient = (token: string | null) =>
+    createClient(supabaseUrl, supabaseAnonKey, {
+      global: token
+        ? {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        : undefined,
+    });
+
+  // If we have neither access nor refresh token, treat as not authenticated
+  if (!accessToken && !refreshToken) {
     return { error: "Not authenticated" as const };
   }
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser(accessToken);
+  let supabase = createAuthedClient(accessToken);
 
-  if (authError || !user) {
-    return { error: "Invalid session" as const };
+  // Try to get the user with the current access token (if present)
+  let userResult =
+    accessToken !== null
+      ? await supabase.auth.getUser(accessToken)
+      : { data: { user: null }, error: null as any };
+
+  if (!userResult.error && userResult.data.user) {
+    const user = userResult.data.user;
+    const { data: profile, error: profileError } = await supabase
+      .from("mr_profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile) {
+      return { error: "Not an MR system user" as const };
+    }
+
+    return {
+      supabase,
+      user,
+      profile: profile as MrProfile,
+      error: null as null,
+    };
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("mr_profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  // If access token is invalid/expired but we have a refresh token, try to refresh
+  if (refreshToken) {
+    const refreshClient = createAuthedClient(null);
+    const { data: refreshData, error: refreshError } =
+      await refreshClient.auth.refreshSession({ refresh_token: refreshToken });
 
-  if (profileError || !profile) {
-    return { error: "Not an MR system user" as const };
+    if (
+      !refreshError &&
+      refreshData?.session?.access_token &&
+      refreshData.session.user
+    ) {
+      accessToken = refreshData.session.access_token;
+      const newRefreshToken = refreshData.session.refresh_token;
+
+      // Persist the refreshed tokens back into cookies
+      cookieStore.set("sb-auth-token", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: "/",
+      });
+
+      if (newRefreshToken) {
+        cookieStore.set("sb-refresh-token", newRefreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+          path: "/",
+        });
+      }
+
+      // Recreate client with the fresh access token
+      supabase = createAuthedClient(accessToken);
+
+      const user = refreshData.session.user;
+      const { data: profile, error: profileError } = await supabase
+        .from("mr_profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError || !profile) {
+        return { error: "Not an MR system user" as const };
+      }
+
+      return {
+        supabase,
+        user,
+        profile: profile as MrProfile,
+        error: null as null,
+      };
+    }
   }
 
-  return {
-    supabase,
-    user,
-    profile: profile as MrProfile,
-    error: null as null,
-  };
+  // If we reach here, we could not validate or refresh the session
+  return { error: "Invalid session" as const };
 }
 
 /**
