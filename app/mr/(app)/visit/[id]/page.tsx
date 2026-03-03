@@ -111,7 +111,7 @@ export default async function MrVisitViewPage({
                   </span>
                 )}
               </div>
-              {canEdit && (
+              {/* {canEdit && ( */}
                 <div className="flex flex-shrink-0 items-center gap-2 sm:flex-wrap">
                   <Button asChild size="sm" className="min-h-10 w-full gap-1.5 touch-manipulation sm:w-auto">
                     <Link href={`/mr/visit/${id}/edit`} className="inline-flex items-center justify-center">
@@ -125,7 +125,7 @@ export default async function MrVisitViewPage({
                     variant="ghost"
                   />
                 </div>
-              )}
+              {/* )} */}
             </div>
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
               Visit details: when the rep checked in and out, and how long they spent at the pharmacy.

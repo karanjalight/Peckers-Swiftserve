@@ -106,22 +106,23 @@ export default async function MrReportsPage() {
       objective: (v.objective as string) ?? "—",
     }));
 
+    const managerKpis = {
+      totalVisits: visits.length,
+      stockOuts,
+      substitutionRate: Math.round(substitutionRate * 10) / 10,
+      totalProductAudits,
+      competitorCount,
+      uniquePharmacies: Object.keys(pharmacyCounts).length,
+    };
+
     return (
       <div className="space-y-10">
-        <MrReportsClient
-          mode="manager"
-          kpis={{
-            totalVisits: visits.length,
-            stockOuts,
-            substitutionRate: Math.round(substitutionRate * 10) / 10,
-            totalProductAudits,
-            competitorCount,
-            uniquePharmacies: Object.keys(pharmacyCounts).length,
-          }}
+        
+        <MrAdvancedReports
+          kpis={managerKpis}
           chartData={chartData}
           recentVisits={recentVisits}
         />
-        <MrAdvancedReports />
       </div>
     );
   }
@@ -130,19 +131,24 @@ export default async function MrReportsPage() {
   const { data: visits } = await supabase
     .from("mr_visits")
     .select(
-      "id, check_in_time, visit_duration_minutes, objective, mr_pharmacies(name)"
+      "id, check_in_time, visit_duration_minutes, objective, status, mr_pharmacies(name)"
     )
     .eq("mr_id", auth.user.id)
-    .eq("status", "SUBMITTED")
+    .in("status", ["OPEN", "SUBMITTED"])
     .order("check_in_time", { ascending: false })
     .limit(100);
 
-  const totalVisits = visits?.length ?? 0;
+  const submittedVisits =
+    (visits ?? []).filter(
+      (v) => (v as { status?: string }).status === "SUBMITTED"
+    );
+
+  const totalVisits = submittedVisits.length;
   const byMonth: Record<string, number> = {};
   const byObjective: Record<string, number> = {};
   const byPharmacy: Record<string, number> = {};
 
-  for (const v of visits ?? []) {
+  for (const v of submittedVisits) {
     const d = new Date((v as { check_in_time: string }).check_in_time);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     byMonth[key] = (byMonth[key] ?? 0) + 1;
@@ -169,14 +175,18 @@ export default async function MrReportsPage() {
       .map(([name, value]) => ({ name, value })),
   };
 
-  const recentVisits = (visits ?? []).slice(0, 20).map((v: Record<string, unknown>) => ({
-    id: String(v.id ?? ""),
-    checkIn: v.check_in_time as string,
-    pharmacy:
-      ((v.mr_pharmacies as { name: string } | null) ?? {})?.name ?? "—",
-    region: undefined,
-    objective: undefined,
-  }));
+  const recentVisits = (visits ?? [])
+    .slice(0, 20)
+    .map((v: Record<string, unknown>) => ({
+      id: String(v.id ?? ""),
+      checkIn: v.check_in_time as string,
+      pharmacy:
+        ((v.mr_pharmacies as { name: string } | null) ?? {})?.name ?? "—",
+      region: undefined,
+      objective: undefined,
+      canEdit:
+        (v as { status?: string }).status === "OPEN",
+    }));
 
   return (
     <MrReportsClient

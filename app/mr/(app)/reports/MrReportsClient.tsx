@@ -36,13 +36,26 @@ import {
   Package,
   TrendingUp,
   Building2,
+  Download,
+  Filter,
+  FilePlus2,
+  ArrowUpRight,
+  Eye,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Vibrant palette matching dashboard
+// Palette for charts
 const CHART_COLORS = [
-  "#0ea5e9", "#14b8a6", "#8b5cf6", "#f97316", "#ec4899",
-  "#eab308", "#22c55e", "#f43f5e",
+  "#0ea5e9",
+  "#14b8a6",
+  "#8b5cf6",
+  "#f97316",
+  "#ec4899",
+  "#eab308",
+  "#22c55e",
+  "#f43f5e",
 ];
 const LINE_CHART_COLOR = "#8b5cf6";
 
@@ -66,7 +79,7 @@ const CustomTooltip = ({
   );
 };
 
-type ManagerKpis = {
+export type ManagerKpis = {
   totalVisits: number;
   stockOuts: number;
   substitutionRate: number;
@@ -80,7 +93,7 @@ type MrKpis = {
   uniquePharmacies: number;
 };
 
-type ManagerChartData = {
+export type ManagerChartData = {
   byRegion: { name: string; value: number }[];
   byObjective: { name: string; value: number }[];
   byPharmacy: { name: string; value: number }[];
@@ -94,12 +107,13 @@ type MrChartData = {
   byPharmacy: { name: string; value: number }[];
 };
 
-type RecentVisit = {
+export type RecentVisit = {
   id: string;
   checkIn: string;
   pharmacy: string;
   region?: string;
   objective?: string;
+  canEdit?: boolean;
 };
 
 export function MrReportsClient({
@@ -118,28 +132,116 @@ export function MrReportsClient({
   const managerChartData = chartData as ManagerChartData;
   const mrChartData = chartData as MrChartData;
 
+  // Derive visits-per-day series from recent visits (no backend changes)
+  const visitsPerDay = (() => {
+    const counts: Record<string, number> = {};
+    for (const v of recentVisits) {
+      const d = new Date(v.checkIn);
+      if (Number.isNaN(d.getTime())) continue;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+        2,
+        "0",
+      )}-${String(d.getDate()).padStart(2, "0")}`;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return Object.entries(counts)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, visits]) => ({ name, visits }));
+  })();
+
+  const handleExport = () => {
+    if (!recentVisits.length) return;
+
+    const header = ["id", "pharmacy", "region", "objective", "checkIn"];
+    const rows = recentVisits.map((v) => [
+      v.id,
+      v.pharmacy,
+      v.region ?? "",
+      v.objective ?? "",
+      new Date(v.checkIn).toISOString(),
+    ]);
+
+    const csv = [header, ...rows]
+      .map((cols) =>
+        cols
+          .map((c) => {
+            const value = String(c ?? "");
+            return /[",\n]/.test(value)
+              ? `"${value.replace(/"/g, '""')}"`
+              : value;
+          })
+          .join(","),
+      )
+      .join("\n");
+
+    const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = isManager ? "mr-visits-manager.csv" : "mr-visits.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const lineSeries =
+    visitsPerDay.length > 0
+      ? visitsPerDay
+      : isManager
+        ? managerChartData.byMonth
+        : mrChartData.byMonth;
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-          {isManager ? "Field Intelligence Reports" : "My Reports"}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {isManager
-            ? "Comprehensive analytics and performance metrics across all MR activity"
-            : "Your visit activity and performance summary"}
-        </p>
+    <div className="space-y-10">
+      {/* Page header */}
+      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white/80 px-4 py-4 shadow-sm backdrop-blur-sm sm:flex-row sm:items-center sm:px-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            {isManager ? "MR Reports" : "My Reports"}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            {isManager
+              ? "Enterprise-grade analytics across medical rep activity and field intelligence."
+              : "A focused summary of your visit activity and performance."}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* <Button
+            variant="outline"
+            className="inline-flex items-center gap-1.5 rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-300"
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+          </Button>
+          <Button
+            variant="outline"
+            className="inline-flex items-center gap-1.5 rounded-xl border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-300"
+            onClick={handleExport}
+          >
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
+          {isManager && (
+            <Button className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-slate-50 shadow-sm transition-all duration-200 hover:bg-slate-800 hover:shadow-md focus-visible:ring-2 focus-visible:ring-slate-400">
+              <FilePlus2 className="h-4 w-4" />
+              Create Report
+            </Button>
+          )} */}
+        </div>
       </div>
 
       {/* KPI cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">
+        <Card className="border-slate-200 bg-white shadow-sm rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
               Total Visits
             </CardTitle>
-            <div className="rounded-lg bg-slate-100 p-2">
-              <MapPin className="h-4 w-4 text-slate-600" />
+            <div className="rounded-xl bg-slate-900/5 p-2">
+              <MapPin className="h-4 w-4 text-slate-900" />
             </div>
           </CardHeader>
           <CardContent>
@@ -148,12 +250,12 @@ export function MrReportsClient({
             </p>
           </CardContent>
         </Card>
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">
+        <Card className="border-slate-200 bg-white shadow-sm rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
               Pharmacies Visited
             </CardTitle>
-            <div className="rounded-lg bg-violet-100 p-2">
+            <div className="rounded-xl bg-violet-500/10 p-2">
               <Building2 className="h-4 w-4 text-violet-600" />
             </div>
           </CardHeader>
@@ -165,12 +267,12 @@ export function MrReportsClient({
         </Card>
         {isManager && (
           <>
-            <Card className="border-slate-200 bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600">
+            <Card className="border-slate-200 bg-white shadow-sm rounded-2xl">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
                   Stock-outs
                 </CardTitle>
-                <div className="rounded-lg bg-amber-100 p-2">
+                <div className="rounded-xl bg-amber-500/10 p-2">
                   <Package className="h-4 w-4 text-amber-600" />
                 </div>
               </CardHeader>
@@ -180,12 +282,12 @@ export function MrReportsClient({
                 </p>
               </CardContent>
             </Card>
-            <Card className="border-slate-200 bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600">
+            <Card className="border-slate-200 bg-white shadow-sm rounded-2xl">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
                   Substitution Rate
                 </CardTitle>
-                <div className="rounded-lg bg-emerald-100 p-2">
+                <div className="rounded-xl bg-emerald-500/10 p-2">
                   <TrendingUp className="h-4 w-4 text-emerald-600" />
                 </div>
               </CardHeader>
@@ -201,26 +303,29 @@ export function MrReportsClient({
 
       {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-slate-200">
+        <Card className="border-slate-200 rounded-2xl bg-white shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">Visits Over Time</CardTitle>
-            <CardDescription>
-              {isManager ? "All submitted visits by month" : "Your visits by month"}
+            <CardTitle className="text-sm font-semibold text-slate-900">
+              Visits Over Time
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-500">
+              {visitsPerDay.length
+                ? "Daily submitted visits (recent period)"
+                : isManager
+                  ? "All submitted visits by month"
+                  : "Your visits by month"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {(isManager ? managerChartData.byMonth : mrChartData.byMonth).length ===
-            0 ? (
-              <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-center text-sm text-slate-500">
+            {lineSeries.length === 0 ? (
+              <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 text-center text-sm text-slate-500">
                 No visit data yet
               </div>
             ) : (
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
-                    data={
-                      isManager ? managerChartData.byMonth : mrChartData.byMonth
-                    }
+                    data={lineSeries}
                     margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
                   >
                     <CartesianGrid
@@ -256,15 +361,19 @@ export function MrReportsClient({
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200">
+        <Card className="border-slate-200 rounded-2xl bg-white shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">Visit Objectives</CardTitle>
-            <CardDescription>Breakdown by objective type</CardDescription>
+            <CardTitle className="text-sm font-semibold text-slate-900">
+              Visit Objectives
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-500">
+              Breakdown by objective type
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {(isManager ? managerChartData.byObjective : mrChartData.byObjective)
               .length === 0 ? (
-              <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-center text-sm text-slate-500">
+              <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 text-center text-sm text-slate-500">
                 No data yet
               </div>
             ) : (
@@ -282,8 +391,16 @@ export function MrReportsClient({
                       cx="50%"
                       cy="50%"
                       outerRadius={80}
-                      label={({ name, percent }: { name?: string; percent?: number }) =>
-                        `${name ?? ""} ${percent != null ? (percent * 100).toFixed(0) : ""}%`
+                      label={({
+                        name,
+                        percent,
+                      }: {
+                        name?: string;
+                        percent?: number;
+                      }) =>
+                        `${name ?? ""} ${
+                          percent != null ? (percent * 100).toFixed(0) : ""
+                        }%`
                       }
                     >
                       {(isManager
@@ -291,6 +408,7 @@ export function MrReportsClient({
                         : mrChartData.byObjective
                       ).map((_, i) => (
                         <Cell
+                          // eslint-disable-next-line react/no-array-index-key
                           key={i}
                           fill={CHART_COLORS[i % CHART_COLORS.length]}
                         />
@@ -305,13 +423,17 @@ export function MrReportsClient({
         </Card>
       </div>
 
-      {/* Region / Pharmacy charts - manager only or MR pharmacy chart */}
+      {/* Region / Pharmacy charts */}
       <div className="grid gap-6 lg:grid-cols-2">
         {isManager && managerChartData.byRegion?.length > 0 && (
-          <Card className="border-slate-200">
+          <Card className="border-slate-200 rounded-2xl bg-white shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Visits by Region</CardTitle>
-              <CardDescription>Submitted visits per region</CardDescription>
+              <CardTitle className="text-sm font-semibold text-slate-900">
+                Visits by Region
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Submitted visits per region
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-64">
@@ -342,6 +464,7 @@ export function MrReportsClient({
                       radius={[4, 4, 0, 0]}
                     >
                       {managerChartData.byRegion.map((_, i) => (
+                        // eslint-disable-next-line react/no-array-index-key
                         <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                       ))}
                     </Bar>
@@ -352,12 +475,12 @@ export function MrReportsClient({
           </Card>
         )}
 
-        <Card className="border-slate-200">
+        <Card className="border-slate-200 rounded-2xl bg-white shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">
+            <CardTitle className="text-sm font-semibold text-slate-900">
               {isManager ? "Top Pharmacies" : "My Top Pharmacies"}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs text-slate-500">
               {isManager ? "Most frequently visited" : "Your most visited pharmacies"}
             </CardDescription>
           </CardHeader>
@@ -366,7 +489,7 @@ export function MrReportsClient({
               ? managerChartData.byPharmacy
               : mrChartData.byPharmacy
             ).length === 0 ? (
-              <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-center text-sm text-slate-500">
+              <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 text-center text-sm text-slate-500">
                 No pharmacy data yet
               </div>
             ) : (
@@ -405,8 +528,15 @@ export function MrReportsClient({
                       name="Visits"
                       radius={[0, 4, 4, 0]}
                     >
-                      {(isManager ? managerChartData.byPharmacy : mrChartData.byPharmacy).map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[(i + 2) % CHART_COLORS.length]} />
+                      {(isManager
+                        ? managerChartData.byPharmacy
+                        : mrChartData.byPharmacy
+                      ).map((_, i) => (
+                        // eslint-disable-next-line react/no-array-index-key
+                        <Cell
+                          key={i}
+                          fill={CHART_COLORS[(i + 2) % CHART_COLORS.length]}
+                        />
                       ))}
                     </Bar>
                   </BarChart>
@@ -417,10 +547,14 @@ export function MrReportsClient({
         </Card>
 
         {isManager && managerChartData.byProduct?.length > 0 && (
-          <Card className="border-slate-200 lg:col-span-2">
+          <Card className="border-slate-200 lg:col-span-2 rounded-2xl bg-white shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Products Discussed</CardTitle>
-              <CardDescription>Audit frequency by product</CardDescription>
+              <CardTitle className="text-sm font-semibold text-slate-900">
+                Products Discussed
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Audit frequency by product
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-56">
@@ -454,7 +588,11 @@ export function MrReportsClient({
                       radius={[4, 4, 0, 0]}
                     >
                       {managerChartData.byProduct.map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[(i + 4) % CHART_COLORS.length]} />
+                        // eslint-disable-next-line react/no-array-index-key
+                        <Cell
+                          key={i}
+                          fill={CHART_COLORS[(i + 4) % CHART_COLORS.length]}
+                        />
                       ))}
                     </Bar>
                   </BarChart>
@@ -466,65 +604,139 @@ export function MrReportsClient({
       </div>
 
       {/* Recent visits table */}
-      <Card className="border-slate-200">
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="border-slate-200 rounded-2xl bg-white shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-base">Recent Visits</CardTitle>
-            <CardDescription>Latest submitted visits</CardDescription>
+            <CardTitle className="text-sm font-semibold text-slate-900">
+              Recent Visits
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-500">
+              Latest submitted visits across your territory.
+            </CardDescription>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link href={isManager ? "/mr/dashboard" : "/mr/history"}>
-              {isManager ? "View Dashboard" : "View all"}
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden h-8 items-center gap-1.5 rounded-full border-slate-200 px-3 text-xs font-medium text-slate-700 transition-all duration-200 hover:bg-slate-50 hover:text-slate-900 sm:inline-flex"
+              asChild
+            >
+              <Link href={isManager ? "/mr/dashboard" : "/mr/history"}>
+                <span>{isManager ? "View Dashboard" : "View all"}</span>
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {recentVisits.length === 0 ? (
-            <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-center text-sm text-slate-500">
-              No visits yet
+            <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 text-center text-sm text-slate-500">
+              <Eye className="mb-2 h-6 w-6 text-slate-400" />
+              <p className="font-medium text-slate-700">No visits yet</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Once visits are submitted, they will appear here with quick access.
+              </p>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-slate-200">
-              <div className="max-h-72 overflow-auto">
+            <div className="overflow-hidden rounded-2xl border border-slate-200">
+              <div className="max-h-80 overflow-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur hover:bg-slate-50/95">
-                      <TableHead className="text-slate-600">Pharmacy</TableHead>
+                    <TableRow className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        Pharmacy
+                      </TableHead>
                       {isManager && (
                         <>
-                          <TableHead className="text-slate-600">Region</TableHead>
-                          <TableHead className="text-slate-600">Objective</TableHead>
+                          <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            Region
+                          </TableHead>
+                          <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            Objective
+                          </TableHead>
                         </>
                       )}
-                      <TableHead className="text-slate-600">Check-in</TableHead>
-                      <TableHead className="text-slate-600 text-right">
-                        Action
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        Check-in
+                      </TableHead>
+                      <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        Actions
                       </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {recentVisits.map((v) => (
-                      <TableRow key={v.id} className="hover:bg-slate-50/50">
-                        <TableCell className="font-medium">
+                      <TableRow
+                        key={v.id}
+                        className="transition-colors duration-150 hover:bg-slate-50"
+                      >
+                        <TableCell className="text-sm font-medium text-slate-900">
                           {v.pharmacy}
                         </TableCell>
                         {isManager && (
                           <>
-                            <TableCell className="text-slate-600">
+                            <TableCell className="text-sm text-slate-600">
                               {v.region ?? "—"}
                             </TableCell>
-                            <TableCell className="text-slate-600">
-                              {v.objective ?? "—"}
+                            <TableCell className="text-sm">
+                              {v.objective ? (
+                                <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                                  {v.objective}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-slate-500">—</span>
+                              )}
                             </TableCell>
                           </>
                         )}
-                        <TableCell className="text-slate-600">
+                        <TableCell className="text-sm text-slate-600">
                           {new Date(v.checkIn).toLocaleString()}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/mr/visit/${v.id}`}>View</Link>
-                          </Button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                              asChild
+                            >
+                              <Link href={`/mr/visit/${v.id}`}>
+                                <Eye className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            {mode === "mr" && v.canEdit ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-full text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                asChild
+                                aria-label="Edit visit"
+                              >
+                                <Link href={`/mr/visit/${v.id}/edit`}>
+                                  <Edit2 className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 cursor-not-allowed rounded-full text-slate-300 hover:bg-slate-50"
+                                disabled
+                                aria-label="Edit not available"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 cursor-not-allowed rounded-full text-slate-300 hover:bg-slate-50"
+                              disabled
+                              aria-label="Delete (coming soon)"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
