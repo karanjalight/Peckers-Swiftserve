@@ -45,9 +45,7 @@ export default async function MrVisitEditPage({
     notFound();
   }
 
-  const isOpen = visit.status === "OPEN";
-  const canEdit =
-    (isMr && isOpen) || isManagerOrAdmin;
+  const canEdit = isMr || isManagerOrAdmin;
 
   if (!canEdit) {
     redirect(`/mr/visit/${id}`);

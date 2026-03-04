@@ -229,7 +229,7 @@ export async function updateVisitNotes(visitId: string, notes: string) {
   if (!visit) {
     return { success: false, error: "Visit not found" };
   }
-  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -238,7 +238,7 @@ export async function updateVisitNotes(visitId: string, notes: string) {
     .update({ notes: notes.trim() || null })
     .eq("id", visitId);
   if (profile.role === "MR") {
-    query = query.eq("mr_id", auth.user.id).eq("status", "OPEN");
+    query = query.eq("mr_id", auth.user.id);
   }
   const { error } = await query;
 
@@ -251,7 +251,7 @@ export async function updateVisitNotes(visitId: string, notes: string) {
 }
 
 // =============================================================================
-// UPDATE VISIT AUDIT METRICS (MR: own OPEN only; Manager/Admin: any visit)
+// UPDATE VISIT AUDIT METRICS (MR: own visit; Manager/Admin: any visit)
 // =============================================================================
 export async function updateVisitAuditMetrics(
   visitId: string,
@@ -272,7 +272,7 @@ export async function updateVisitAuditMetrics(
   if (!visit) {
     return { success: false, error: "Visit not found" };
   }
-  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -284,7 +284,7 @@ export async function updateVisitAuditMetrics(
     })
     .eq("id", visitId);
   if (profile.role === "MR") {
-    query = query.eq("mr_id", auth.user.id).eq("status", "OPEN");
+    query = query.eq("mr_id", auth.user.id);
   }
   const { error } = await query;
 
@@ -336,7 +336,7 @@ export async function createProductAudit(input: {
   if (!visit) {
     return { success: false, error: "Visit not found" };
   }
-  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -483,7 +483,7 @@ export async function updateProductAudit(
     .single();
 
   if (!visit) return { success: false, error: "Visit not found" };
-  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -569,7 +569,7 @@ export async function createPrescriptionAudit(input: {
   if (!visit) {
     return { success: false, error: "Visit not found" };
   }
-  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -614,7 +614,7 @@ export async function updatePrescriptionAudit(
     .single();
 
   if (!visit) return { success: false, error: "Visit not found" };
-  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -661,7 +661,7 @@ export async function createCompetitorMarketing(input: {
   if (!visit) {
     return { success: false, error: "Visit not found" };
   }
-  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -708,7 +708,7 @@ export async function updateCompetitorMarketing(
     .single();
 
   if (!visit) return { success: false, error: "Visit not found" };
-  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -745,7 +745,7 @@ export async function deleteProductAudit(visitId: string, productAuditId: string
     .single();
 
   if (!visit) return { success: false, error: "Visit not found" };
-  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -797,7 +797,7 @@ export async function deletePrescriptionAudit(visitId: string, auditId: string) 
     .single();
 
   if (!visit) return { success: false, error: "Visit not found" };
-  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -825,7 +825,7 @@ export async function deleteCompetitorMarketing(visitId: string, id: string) {
     .single();
 
   if (!visit) return { success: false, error: "Visit not found" };
-  if (!isManagerOrAdmin && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
     return { success: false, error: "Invalid or closed visit" };
   }
 
@@ -853,8 +853,8 @@ export async function deleteVisit(visitId: string) {
     .single();
 
   if (!visit) return { success: false, error: "Visit not found" };
-  if (profile.role === "MR" && (visit.mr_id !== auth.user.id || visit.status !== "OPEN")) {
-    return { success: false, error: "You can only delete your own open visits" };
+  if (profile.role === "MR" && visit.mr_id !== auth.user.id) {
+    return { success: false, error: "You can only delete your own visits" };
   }
   // Manager/Admin scope enforced by RLS
 
