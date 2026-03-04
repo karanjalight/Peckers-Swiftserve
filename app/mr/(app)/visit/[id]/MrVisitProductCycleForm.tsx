@@ -242,7 +242,12 @@ export function MrVisitProductCycleForm({
       }
       resetCycle();
     } catch (e) {
-      setMessage({ type: "error", text: "Something went wrong. Please try again." });
+      console.error("Error while saving visit product cycle:", e);
+      const fallbackMessage =
+        e instanceof Error && e.message
+          ? e.message
+          : "Something went wrong. Please try again.";
+      setMessage({ type: "error", text: fallbackMessage });
     } finally {
       setLoading(false);
     }
