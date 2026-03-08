@@ -43,6 +43,7 @@ type ProductAuditRow = {
   usp_understood: boolean;
   reason_why_stock?: string | null;
   supplier?: string | null;
+  quantity_sold_good_month?: number | null;
   price_per_pack?: number | null;
   days_oos?: number | null;
   reason_for_oos?: string | null;
@@ -182,6 +183,7 @@ export function MrVisitEditExistingData({
                   <span className="text-sm">
                     <strong>{productName}</strong> — Stock: {pa.quantity_in_stock}
                     {pa.supplier ? ` • ${pa.supplier}` : ""}
+                    {pa.quantity_sold_good_month != null ? ` • ${pa.quantity_sold_good_month} sold/good mo` : ""}
                   </span>
                   <div className="flex items-center gap-1">
                     <Button
@@ -413,6 +415,7 @@ function EditProductAuditDialog({
   const [uspUnderstood, setUspUnderstood] = useState(row.usp_understood);
   const [reasonWhyStock, setReasonWhyStock] = useState(row.reason_why_stock ?? "");
   const [supplier, setSupplier] = useState(row.supplier ?? "");
+  const [quantitySoldGoodMonth, setQuantitySoldGoodMonth] = useState(row.quantity_sold_good_month?.toString() ?? "");
   const [pricePerPack, setPricePerPack] = useState(row.price_per_pack?.toString() ?? "");
   const [reasonForOos, setReasonForOos] = useState(row.reason_for_oos ?? "");
   const [daysOos, setDaysOos] = useState(row.days_oos?.toString() ?? "");
@@ -463,6 +466,7 @@ function EditProductAuditDialog({
       uspUnderstood,
       reasonWhyStock: reasonWhyStock.trim() || undefined,
       supplier: supplier.trim() || undefined,
+      quantitySoldGoodMonth: quantitySoldGoodMonth ? parseInt(quantitySoldGoodMonth, 10) : undefined,
       doSubstitute,
       substituteWithAndWhy: substituteWithAndWhy.trim() || undefined,
       reasonForOos: reasonForOos.trim() || undefined,
@@ -523,9 +527,22 @@ function EditProductAuditDialog({
               ))}
             </select>
           </div>
-          <div>
-            <Label>Supplier</Label>
-            <Input value={supplier} onChange={(e) => setSupplier(e.target.value)} className="mt-1" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>Supplier</Label>
+              <Input value={supplier} onChange={(e) => setSupplier(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <Label>Quantity sold in a good month</Label>
+              <Input
+                type="number"
+                min={0}
+                value={quantitySoldGoodMonth}
+                onChange={(e) => setQuantitySoldGoodMonth(e.target.value)}
+                placeholder="Packs"
+                className="mt-1"
+              />
+            </div>
           </div>
           {isAudit && (
             <>

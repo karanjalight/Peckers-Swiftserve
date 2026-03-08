@@ -304,6 +304,7 @@ export async function createProductAudit(input: {
   uspUnderstood: boolean;
   reasonWhyStock?: string | null;
   supplier?: string | null;
+  quantitySoldGoodMonth?: number | null;
   doSubstitute?: boolean;
   substituteWithAndWhy?: string | null;
   reasonForOos?: string | null;
@@ -349,6 +350,7 @@ export async function createProductAudit(input: {
       usp_understood: input.uspUnderstood,
       reason_why_stock: input.reasonWhyStock ?? null,
       supplier: input.supplier ?? null,
+      quantity_sold_good_month: input.quantitySoldGoodMonth ?? null,
       do_substitute: input.doSubstitute ?? false,
       substitute_with_and_why: input.substituteWithAndWhy ?? null,
       reason_for_oos: input.reasonForOos ?? null,
@@ -415,7 +417,7 @@ export async function getVisitAudits(visitId: string) {
       .from("mr_product_audits")
       .select(`
         id, visit_id, product_id, quantity_in_stock, usp_understood,
-        reason_why_stock, supplier, price_per_pack, days_oos, reason_for_oos,
+        reason_why_stock, supplier, quantity_sold_good_month, price_per_pack, days_oos, reason_for_oos,
         do_substitute, substitute_with_and_why,
         mr_products (id, name),
         mr_competitor_audits (id, competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock)
@@ -454,6 +456,7 @@ export async function updateProductAudit(
     uspUnderstood: boolean;
     reasonWhyStock?: string | null;
     supplier?: string | null;
+    quantitySoldGoodMonth?: number | null;
     doSubstitute?: boolean;
     substituteWithAndWhy?: string | null;
     reasonForOos?: string | null;
@@ -504,6 +507,7 @@ export async function updateProductAudit(
       usp_understood: input.uspUnderstood,
       reason_why_stock: input.reasonWhyStock ?? null,
       supplier: input.supplier ?? null,
+      quantity_sold_good_month: input.quantitySoldGoodMonth ?? null,
       do_substitute: input.doSubstitute ?? false,
       substitute_with_and_why: input.substituteWithAndWhy ?? null,
       reason_for_oos: input.reasonForOos ?? null,
@@ -572,11 +576,15 @@ export async function createPrescriptionAudit(input: {
   if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
     return { success: false, error: "Invalid or closed visit" };
   }
+  const productName = (input.productName ?? "").trim();
+  if (!productName) {
+    return { success: false, error: "Product name is required so the prescription is linked to a product." };
+  }
 
   const { error } = await supabase.from("mr_prescription_audits").insert({
     visit_id: input.visitId,
     doctor_id: input.doctorId ?? null,
-    product_name: input.productName,
+    product_name: productName,
     rx_per_month: input.rxPerMonth ?? null,
     prescription_image_url: input.prescriptionImageUrl ?? null,
   });

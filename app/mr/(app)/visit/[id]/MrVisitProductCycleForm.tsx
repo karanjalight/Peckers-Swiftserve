@@ -6,6 +6,9 @@ import {
   createPrescriptionAudit,
   createCompetitorMarketing,
   findOrCreateDoctor,
+  getVisitAudits,
+  updateProductAudit,
+  updatePrescriptionAudit,
 } from "@/app/mr/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,14 +55,22 @@ type CompetitorEntry = {
   pricePerPack: string;
   daysOut: string;
   reasonOutOfStock: string;
+  activity1Description: string;
+  activity1Reason: string;
+  activity2Description: string;
+  activity2Reason: string;
 };
 
 type PrescriptionEntry = {
   id: string;
+  /** When set, this prescription was loaded from server; use update on save instead of create */
+  auditId?: string;
   doctorName: string;
   doctorLocation: string;
   rxPerMonth: string;
   prescriptionImage: File | null;
+  /** Kept when loading from server so we don't clear image on update */
+  prescriptionImageUrl?: string | null;
 };
 
 type MarketingEntry = {
@@ -77,12 +88,11 @@ function genId() {
 
 type Product = { id: string; name: string; price?: number | null; owned_by?: string | null };
 
-const STEPS = ["product", "audit", "prescription", "marketing"] as const;
+const STEPS = ["product", "audit", "prescription"] as const;
 const STEP_LABELS: Record<(typeof STEPS)[number], string> = {
   product: "Choose product",
   audit: "Stock & pharmacy",
   prescription: "Prescription",
-  marketing: "Competitor activity",
 };
 
 const MAX_COMPETITORS = 3;
@@ -100,6 +110,28 @@ export function MrVisitProductCycleForm({
   const [stepIndex, setStepIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [completedProductIds, setCompletedProductIds] = useState<string[]>([]);
+  const [activeProductAuditId, setActiveProductAuditId] = useState<string | null>(null);
+  const [existingByProductId, setExistingByProductId] = useState<
+    Record<
+      string,
+      {
+        productAuditId: string;
+        quantityInStock: number;
+        uspUnderstood: boolean;
+        reasonWhyStock?: string | null;
+        supplier?: string | null;
+        quantitySoldGoodMonth?: number | null;
+        doSubstitute?: boolean;
+        substituteWithAndWhy?: string | null;
+        reasonForOos?: string | null;
+        daysOos?: number | null;
+        pricePerPack?: number | null;
+        competitors: CompetitorEntry[];
+        prescriptions: PrescriptionEntry[];
+      }
+    >
+  >({});
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -109,6 +141,7 @@ export function MrVisitProductCycleForm({
   const [pricePerPack, setPricePerPack] = useState("");
   const [reasonWhyStock, setReasonWhyStock] = useState("");
   const [supplier, setSupplier] = useState("");
+  const [quantitySoldGoodMonth, setQuantitySoldGoodMonth] = useState("");
   const [doSubstitute, setDoSubstitute] = useState(false);
   const [substituteWithAndWhy, setSubstituteWithAndWhy] = useState("");
   const [reasonForOos, setReasonForOos] = useState("");
@@ -129,12 +162,103 @@ export function MrVisitProductCycleForm({
   const [competitorModalOpen, setCompetitorModalOpen] = useState(false);
   const [editingCompetitorId, setEditingCompetitorId] = useState<string | null>(null);
 
+  function buildExistingByProductIdMap(data: {
+    productAudits: any[];
+    prescriptionAudits: any[];
+  }): Record<string, { productAuditId: string; quantityInStock: number; uspUnderstood: boolean; reasonWhyStock?: string | null; supplier?: string | null; quantitySoldGoodMonth?: number | null; doSubstitute?: boolean; substituteWithAndWhy?: string | null; reasonForOos?: string | null; daysOos?: number | null; pricePerPack?: number | null; competitors: CompetitorEntry[]; prescriptions: PrescriptionEntry[] }> {
+    const map: typeof existingByProductId = {};
+    const prescriptionAudits = (data.prescriptionAudits ?? []) as any[];
+    const prescriptionsByProductName: Record<string, PrescriptionEntry[]> = {};
+    const orphanPrescriptions: PrescriptionEntry[] = [];
+    for (const pr of prescriptionAudits) {
+      const doctor = Array.isArray(pr.mr_doctors) ? pr.mr_doctors[0] : pr.mr_doctors;
+      const entry: PrescriptionEntry = {
+        id: pr.id,
+        auditId: pr.id,
+        doctorName: doctor?.name ?? "",
+        doctorLocation: doctor?.location ?? "",
+        rxPerMonth: pr.rx_per_month != null ? String(pr.rx_per_month) : "",
+        prescriptionImage: null,
+        prescriptionImageUrl: pr.prescription_image_url ?? null,
+      };
+      const pname = (pr.product_name ?? "").trim();
+      if (pname) {
+        if (!prescriptionsByProductName[pname]) prescriptionsByProductName[pname] = [];
+        prescriptionsByProductName[pname].push(entry);
+      } else {
+        orphanPrescriptions.push(entry);
+      }
+    }
+    const productAuditsList = (data.productAudits ?? []) as any[];
+    for (const pa of productAuditsList) {
+      const product = Array.isArray(pa.mr_products) ? pa.mr_products[0] : pa.mr_products;
+      const productId = product?.id ?? pa.product_id;
+      const productName = (product?.name ?? "").trim();
+      if (!productId || map[productId]) continue;
+      const competitors: CompetitorEntry[] = (pa.mr_competitor_audits ?? []).map((c: any) => ({
+        id: c.id,
+        name: c.competitor_name ?? "",
+        supplier: c.supplier ?? "",
+        stock: c.competitor_stock != null ? String(c.competitor_stock) : "",
+        stockSoldPerMonth: c.stock_sold_per_month != null ? String(c.stock_sold_per_month) : "",
+        substitutionReason: c.substitution_reason ?? "",
+        pricePerPack: c.price_per_pack != null ? String(c.price_per_pack) : "",
+        daysOut: c.days_out != null ? String(c.days_out) : "",
+        reasonOutOfStock: c.reason_out_of_stock ?? "",
+        activity1Description: "",
+        activity1Reason: "",
+        activity2Description: "",
+        activity2Reason: "",
+      }));
+      const byName = prescriptionsByProductName[productName] ?? [];
+      map[productId] = {
+        productAuditId: pa.id,
+        quantityInStock: pa.quantity_in_stock ?? 0,
+        uspUnderstood: !!pa.usp_understood,
+        reasonWhyStock: pa.reason_why_stock ?? null,
+        supplier: pa.supplier ?? null,
+        quantitySoldGoodMonth: pa.quantity_sold_good_month ?? null,
+        doSubstitute: !!pa.do_substitute,
+        substituteWithAndWhy: pa.substitute_with_and_why ?? null,
+        reasonForOos: pa.reason_for_oos ?? null,
+        daysOos: pa.days_oos ?? null,
+        pricePerPack: pa.price_per_pack ?? null,
+        competitors,
+        prescriptions: byName,
+      };
+    }
+    if (orphanPrescriptions.length > 0 && productAuditsList.length > 0) {
+      const firstPa = productAuditsList[0];
+      const firstProduct = Array.isArray(firstPa.mr_products) ? firstPa.mr_products[0] : firstPa.mr_products;
+      const firstProductId = firstProduct?.id ?? firstPa.product_id;
+      if (firstProductId && map[firstProductId]) {
+        map[firstProductId] = {
+          ...map[firstProductId],
+          prescriptions: [...(map[firstProductId].prescriptions ?? []), ...orphanPrescriptions],
+        };
+      }
+    }
+    return map;
+  }
+
   useEffect(() => {
     fetch("/api/mr/products")
       .then((r) => r.json())
       .then((d) => setProducts(d.products ?? []))
       .catch(() => setProducts([]));
-  }, []);
+
+    (async () => {
+      try {
+        const res = await getVisitAudits(visitId);
+        if (!res.success || !res.data) return;
+        const map = buildExistingByProductIdMap(res.data);
+        setExistingByProductId(map);
+        setCompletedProductIds(Object.keys(map));
+      } catch {
+        // ignore
+      }
+    })();
+  }, [visitId]);
 
   function resetCycle() {
     setSelectedProduct(null);
@@ -144,6 +268,7 @@ export function MrVisitProductCycleForm({
     setPricePerPack("");
     setReasonWhyStock("");
     setSupplier("");
+    setQuantitySoldGoodMonth("");
     setDoSubstitute(false);
     setSubstituteWithAndWhy("");
     setReasonForOos("");
@@ -157,11 +282,39 @@ export function MrVisitProductCycleForm({
     setEditingPrescriptionId(null);
     setEditingMarketingId(null);
     setEditingCompetitorId(null);
+    setActiveProductAuditId(null);
     setMessage(null);
   }
 
   async function handleSaveAll() {
     if (!selectedProduct) return;
+    // Basic validation to ensure rich data for analytics
+    if (objective === "AUDIT") {
+      const hasCompetitor = competitors.length > 0;
+      const hasPrescription = prescriptions.length > 0;
+      const hasMarketing = competitors.some((c) => {
+        const a1 = (c.activity1Description || "").trim();
+        const r1 = (c.activity1Reason || "").trim();
+        const a2 = (c.activity2Description || "").trim();
+        const r2 = (c.activity2Reason || "").trim();
+        return a1 || r1 || a2 || r2;
+      });
+
+      if (!hasCompetitor || !hasPrescription || !hasMarketing) {
+        const missing: string[] = [];
+        if (!hasCompetitor) missing.push("at least one competitor");
+        if (!hasPrescription) missing.push("at least one prescription");
+        if (!hasMarketing) missing.push("at least one marketing activity");
+        setMessage({
+          type: "error",
+          text: `To save this product for an AUDIT visit, please capture ${missing.join(
+            ", "
+          )}.`,
+        });
+        return;
+      }
+    }
+
     setLoading(true);
     setMessage(null);
 
@@ -177,20 +330,44 @@ export function MrVisitProductCycleForm({
         reasonOutOfStock: c.reasonOutOfStock.trim() || undefined,
       }));
 
-      const productResult = await createProductAudit({
-        visitId,
-        productId: selectedProduct.id,
-        quantityInStock: qty,
-        uspUnderstood,
-        reasonWhyStock: reasonWhyStock.trim() || undefined,
-        supplier: supplier.trim() || undefined,
-        doSubstitute,
-        substituteWithAndWhy: substituteWithAndWhy.trim() || undefined,
-        reasonForOos: reasonForOos.trim() || undefined,
-        daysOos: daysOos ? parseInt(daysOos, 10) : undefined,
-        pricePerPack: pricePerPack ? parseFloat(pricePerPack) : undefined,
-        competitorAudits: competitorAudits.length > 0 ? competitorAudits : undefined,
-      });
+      let productResult:
+        | { success: true; productAuditId?: string }
+        | { success: false; error?: string };
+
+      if (activeProductAuditId) {
+        const res = await updateProductAudit(activeProductAuditId, visitId, {
+          productId: selectedProduct.id,
+          quantityInStock: qty,
+          uspUnderstood,
+          reasonWhyStock: reasonWhyStock.trim() || undefined,
+          supplier: supplier.trim() || undefined,
+          quantitySoldGoodMonth: quantitySoldGoodMonth ? parseInt(quantitySoldGoodMonth, 10) : undefined,
+          doSubstitute,
+          substituteWithAndWhy: substituteWithAndWhy.trim() || undefined,
+          reasonForOos: reasonForOos.trim() || undefined,
+          daysOos: daysOos ? parseInt(daysOos, 10) : undefined,
+          pricePerPack: pricePerPack ? parseFloat(pricePerPack) : undefined,
+          competitorAudits: competitorAudits.length > 0 ? competitorAudits : undefined,
+        });
+        productResult = { success: res.success, productAuditId: activeProductAuditId, error: res.error };
+      } else {
+        const res = await createProductAudit({
+          visitId,
+          productId: selectedProduct.id,
+          quantityInStock: qty,
+          uspUnderstood,
+          reasonWhyStock: reasonWhyStock.trim() || undefined,
+          supplier: supplier.trim() || undefined,
+          quantitySoldGoodMonth: quantitySoldGoodMonth ? parseInt(quantitySoldGoodMonth, 10) : undefined,
+          doSubstitute,
+          substituteWithAndWhy: substituteWithAndWhy.trim() || undefined,
+          reasonForOos: reasonForOos.trim() || undefined,
+          daysOos: daysOos ? parseInt(daysOos, 10) : undefined,
+          pricePerPack: pricePerPack ? parseFloat(pricePerPack) : undefined,
+          competitorAudits: competitorAudits.length > 0 ? competitorAudits : undefined,
+        });
+        productResult = { success: res.success, productAuditId: res.productAuditId, error: res.error };
+      }
 
       if (!productResult.success) {
         setMessage({ type: "error", text: productResult.error ?? "Failed to save product audit" });
@@ -198,8 +375,49 @@ export function MrVisitProductCycleForm({
         return;
       }
 
+      // Mark this product as completed in the local session and keep latest snapshot
+      setCompletedProductIds((prev) =>
+        prev.includes(selectedProduct.id) ? prev : [...prev, selectedProduct.id]
+      );
+      setExistingByProductId((prev) => ({
+        ...prev,
+        [selectedProduct.id]: {
+          productAuditId: productResult.productAuditId ?? activeProductAuditId ?? "",
+          quantityInStock: qty,
+          uspUnderstood,
+          reasonWhyStock: reasonWhyStock.trim() || null,
+          supplier: supplier.trim() || null,
+          quantitySoldGoodMonth: quantitySoldGoodMonth ? parseInt(quantitySoldGoodMonth, 10) : null,
+          doSubstitute,
+          substituteWithAndWhy: substituteWithAndWhy.trim() || null,
+          reasonForOos: reasonForOos.trim() || null,
+          daysOos: daysOos ? parseInt(daysOos, 10) : null,
+          pricePerPack: pricePerPack ? parseFloat(pricePerPack) : null,
+          competitors,
+        },
+      }));
+
+      // Save competitor marketing insights per competitor (activity 1 & 2)
+      for (const c of competitors) {
+        const a1 = (c.activity1Description || "").trim();
+        const r1 = (c.activity1Reason || "").trim();
+        const a2 = (c.activity2Description || "").trim();
+        const r2 = (c.activity2Reason || "").trim();
+        const hasAnyActivity = a1 || r1 || a2 || r2;
+        if (!hasAnyActivity) continue;
+
+        await createCompetitorMarketing({
+          visitId,
+          competitorName: (c.name || c.supplier || "Competitor").trim(),
+          activity1Description: a1 || undefined,
+          activity1Reason: r1 || undefined,
+          activity2Description: a2 || undefined,
+          activity2Reason: r2 || undefined,
+        });
+      }
+
       for (const p of prescriptions) {
-        if (!p.doctorName.trim() && !p.rxPerMonth && !p.prescriptionImage) continue;
+        if (!p.doctorName.trim() && !p.rxPerMonth && !p.prescriptionImage && !p.prescriptionImageUrl) continue;
         let doctorId: string | undefined;
         if (p.doctorName.trim()) {
           const dr = await findOrCreateDoctor(p.doctorName.trim(), p.doctorLocation.trim() || undefined);
@@ -213,14 +431,27 @@ export function MrVisitProductCycleForm({
           const res = await fetch("/api/mr/upload-prescription", { method: "POST", body: fd });
           const data = await res.json();
           imageUrl = data.path;
+        } else if (p.prescriptionImageUrl) {
+          imageUrl = p.prescriptionImageUrl;
         }
-        await createPrescriptionAudit({
-          visitId,
-          doctorId,
-          productName: selectedProduct.name,
-          rxPerMonth: p.rxPerMonth ? parseInt(p.rxPerMonth, 10) : undefined,
-          prescriptionImageUrl: imageUrl,
-        });
+        const productName = (selectedProduct.name ?? "").trim();
+        if (!productName) continue; // skip if no product (should not happen in product cycle)
+        if (p.auditId) {
+          await updatePrescriptionAudit(p.auditId, visitId, {
+            doctorId,
+            productName,
+            rxPerMonth: p.rxPerMonth ? parseInt(p.rxPerMonth, 10) : undefined,
+            prescriptionImageUrl: imageUrl ?? null,
+          });
+        } else {
+          await createPrescriptionAudit({
+            visitId,
+            doctorId,
+            productName,
+            rxPerMonth: p.rxPerMonth ? parseInt(p.rxPerMonth, 10) : undefined,
+            prescriptionImageUrl: imageUrl,
+          });
+        }
       }
 
       for (const m of marketingActivities) {
@@ -239,6 +470,13 @@ export function MrVisitProductCycleForm({
       onSaved?.();
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("mr-visit-audit-saved"));
+      }
+      // Refetch audits so prescriptions (and competitors) appear when re-editing this product
+      const refetch = await getVisitAudits(visitId);
+      if (refetch.success && refetch.data) {
+        const map = buildExistingByProductIdMap(refetch.data);
+        setExistingByProductId(map);
+        setCompletedProductIds(Object.keys(map));
       }
       resetCycle();
     } catch (e) {
@@ -259,27 +497,13 @@ export function MrVisitProductCycleForm({
   const canNext =
     (step === "product" && selectedProduct) ||
     (step === "audit" && true) ||
-    (step === "prescription" && true) ||
-    (step === "marketing" && true);
+    (step === "prescription" && true);
 
   const inputClass =
     "h-12 rounded-2xl bg-white dark:bg-background text-slate-900 dark:text-foreground placeholder:text-slate-500 dark:placeholder:text-muted-foreground shadow-sm ring-1 ring-black/5 dark:ring-white/10 focus:ring-2 focus:ring-blue-500/30 transition";
 
   return (
     <div className="space-y-5">
-      {/* Hero strip - white, no slate */}
-      <div className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-card dark:ring-white/10">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl cta-gradient">
-          <Sparkles className="h-6 w-6 text-white" />
-        </div>
-        <div>
-          <h2 className="font-semibold text-slate-900 dark:text-foreground">Add product — one round</h2>
-          <p className="text-sm text-slate-600 dark:text-muted-foreground">
-            Pick a product, then stock, prescriptions & competitor info. Perfect for mobile.
-          </p>
-        </div>
-      </div>
-
       {/* Stepper - pills, minimal border */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
         {STEPS.map((s, i) => (
@@ -337,31 +561,91 @@ export function MrVisitProductCycleForm({
         <div className="p-4 sm:p-5">
           {step === "product" && (
             <div className="space-y-3">
-              <p className="flex items-center gap-2 text-sm text-slate-600 dark:text-muted-foreground">
-                <Layers className="h-4 w-4" />
-                Tap a product to enter its audit, prescription and marketing in one round.
-              </p>
               <div className="grid gap-3 sm:grid-cols-2">
-                {products.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setSelectedProduct(p)}
-                    className={`flex flex-col items-start gap-1 rounded-2xl p-4 text-left transition touch-manipulation shadow-sm ${
-                      selectedProduct?.id === p.id
-                        ? "cta-gradient text-white ring-2 ring-blue-500/50"
-                        : "bg-white dark:bg-background ring-1 ring-black/5 dark:ring-white/10 hover:ring-2 hover:ring-blue-400/30"
-                    }`}
-                  >
-                    <span className="font-semibold">{p.name}</span>
-                    {p.price != null && (
-                      <span className="text-sm opacity-90">KES {p.price}</span>
-                    )}
-                    {p.owned_by && (
-                      <span className="text-xs opacity-75">{p.owned_by}</span>
-                    )}
-                  </button>
-                ))}
+                {products.map((p) => {
+                  const isComplete = completedProductIds.includes(p.id);
+                  const label = isComplete ? "Edit" : "Start";
+                  const statusClass = isComplete
+                    ? "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-700/60"
+                    : "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/60 dark:text-slate-200 dark:ring-slate-700/70";
+
+                  const goToAudit = () => {
+                    setSelectedProduct(p);
+                    setStepIndex(1);
+
+                    const existing = existingByProductId[p.id];
+                    if (existing) {
+                      setActiveProductAuditId(existing.productAuditId);
+                      setQty(existing.quantityInStock ?? 0);
+                      setUspUnderstood(existing.uspUnderstood);
+                      setReasonWhyStock(existing.reasonWhyStock ?? "");
+                      setSupplier(existing.supplier ?? "");
+                      setQuantitySoldGoodMonth(existing.quantitySoldGoodMonth != null ? String(existing.quantitySoldGoodMonth) : "");
+                      setDoSubstitute(!!existing.doSubstitute);
+                      setSubstituteWithAndWhy(existing.substituteWithAndWhy ?? "");
+                      setReasonForOos(existing.reasonForOos ?? "");
+                      setDaysOos(
+                        existing.daysOos != null ? String(existing.daysOos) : ""
+                      );
+                      setPricePerPack(
+                        existing.pricePerPack != null
+                          ? String(existing.pricePerPack)
+                          : ""
+                      );
+                      setCompetitors(existing.competitors.length ? existing.competitors : []);
+                      setPrescriptions(existing.prescriptions?.length ? existing.prescriptions : []);
+                    } else {
+                      // brand new cycle for this product
+                      setActiveProductAuditId(null);
+                      setQty(0);
+                      setUspUnderstood(false);
+                      setReasonWhyStock("");
+                      setSupplier("");
+                      setQuantitySoldGoodMonth("");
+                      setDoSubstitute(false);
+                      setSubstituteWithAndWhy("");
+                      setReasonForOos("");
+                      setDaysOos("");
+                      setPricePerPack("");
+                      setCompetitors([]);
+                      setPrescriptions([]);
+                    }
+                  };
+
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={goToAudit}
+                      className={`flex flex-col items-start gap-1 rounded-2xl p-4 text-left transition touch-manipulation shadow-sm ${
+                        selectedProduct?.id === p.id
+                          ? "cta-gradient text-white ring-2 ring-blue-500/50"
+                          : "bg-white dark:bg-background ring-1 ring-black/5 dark:ring-white/10 hover:ring-2 hover:ring-blue-400/30"
+                      }`}
+                    >
+                      <div className="flex w-full items-center justify-between gap-2">
+                        <span className="font-semibold">{p.name}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            goToAudit();
+                          }}
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${statusClass}`}
+                        >
+                          {isComplete && <Check className="h-3 w-3" />}
+                          {label}
+                        </button>
+                      </div>
+                      {p.price != null && (
+                        <span className="text-sm opacity-90">KES {p.price}</span>
+                      )}
+                      {p.owned_by && (
+                        <span className="text-xs opacity-75">{p.owned_by}</span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
               {products.length === 0 && (
                 <p className="py-6 text-center text-sm text-slate-600 dark:text-muted-foreground">No products available.</p>
@@ -402,17 +686,33 @@ export function MrVisitProductCycleForm({
                   </select>
                 </div>
               </div>
-              <div>
-                <Label className="mb-1.5 flex items-center gap-2 text-foreground">
-                  <Building2 className="h-4 w-4" />
-                  Supplier
-                </Label>
-                <Input
-                  value={supplier}
-                  onChange={(e) => setSupplier(e.target.value)}
-                  placeholder="e.g. DK Pharma"
-                  className={inputClass}
-                />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label className="mb-1.5 flex items-center gap-2 text-foreground">
+                    <Building2 className="h-4 w-4" />
+                    Supplier
+                  </Label>
+                  <Input
+                    value={supplier}
+                    onChange={(e) => setSupplier(e.target.value)}
+                    placeholder="e.g. DK Pharma"
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1.5 flex items-center gap-2 text-foreground">
+                    <TrendingUp className="h-4 w-4" />
+                    Quantity sold in a good month
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={quantitySoldGoodMonth}
+                    onChange={(e) => setQuantitySoldGoodMonth(e.target.value)}
+                    placeholder="Packs"
+                    className={inputClass}
+                  />
+                </div>
               </div>
               {objective === "AUDIT" && (
                 <>
@@ -725,9 +1025,9 @@ export function MrVisitProductCycleForm({
         inputClass={inputClass}
       />
 
-      {/* Navigation - rounded CTA */}
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-        <div className="flex gap-2">
+      {/* Navigation - rounded CTA, same row on mobile */}
+      <div className="flex flex-row flex-wrap items-center justify-between gap-2">
+        <div className="flex shrink-0">
           {!isFirstStep && (
             <Button
               type="button"
@@ -741,7 +1041,7 @@ export function MrVisitProductCycleForm({
             </Button>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex shrink-0 justify-end">
           {!isLastStep && (
             <Button
               type="button"
@@ -767,7 +1067,7 @@ export function MrVisitProductCycleForm({
               ) : (
                 <>
                   <Check className="mr-2 h-5 w-5" />
-                  Save {selectedProduct?.name ?? "product"}
+                  <span className="truncate">Save {selectedProduct?.name ?? "product"}</span>
                 </>
               )}
             </Button>
@@ -804,6 +1104,10 @@ function CompetitorModal({
   const [pricePerPack, setPricePerPack] = useState("");
   const [daysOut, setDaysOut] = useState("");
   const [reasonOutOfStock, setReasonOutOfStock] = useState("");
+  const [activity1Description, setActivity1Description] = useState("");
+  const [activity1Reason, setActivity1Reason] = useState("");
+  const [activity2Description, setActivity2Description] = useState("");
+  const [activity2Reason, setActivity2Reason] = useState("");
 
   useEffect(() => {
     if (editing) {
@@ -815,6 +1119,10 @@ function CompetitorModal({
       setPricePerPack(editing.pricePerPack);
       setDaysOut(editing.daysOut);
       setReasonOutOfStock(editing.reasonOutOfStock);
+      setActivity1Description(editing.activity1Description);
+      setActivity1Reason(editing.activity1Reason);
+      setActivity2Description(editing.activity2Description);
+      setActivity2Reason(editing.activity2Reason);
     } else {
       setName("");
       setSupplier("");
@@ -824,6 +1132,10 @@ function CompetitorModal({
       setPricePerPack("");
       setDaysOut("");
       setReasonOutOfStock("");
+      setActivity1Description("");
+      setActivity1Reason("");
+      setActivity2Description("");
+      setActivity2Reason("");
     }
   }, [editing, open]);
 
@@ -838,6 +1150,10 @@ function CompetitorModal({
       pricePerPack,
       daysOut,
       reasonOutOfStock,
+      activity1Description,
+      activity1Reason,
+      activity2Description,
+      activity2Reason,
     };
     if (editingId) {
       setCompetitors((prev) => prev.map((c) => (c.id === editingId ? entry : c)));
@@ -939,6 +1255,44 @@ function CompetitorModal({
               className={inputClass}
             />
           </div>
+          <div className="border-t pt-3 space-y-3">
+            <div>
+              <Label className="mb-1.5">Activity 1 (why do you dispense)</Label>
+              <Input
+                value={activity1Description}
+                onChange={(e) => setActivity1Description(e.target.value)}
+                placeholder="e.g. Breakfast meeting every Tuesday"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <Label className="mb-1.5">Reason for Activity 1</Label>
+              <Input
+                value={activity1Reason}
+                onChange={(e) => setActivity1Reason(e.target.value)}
+                placeholder="e.g. Communicating on easy to carry"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <Label className="mb-1.5">Activity 2 (optional)</Label>
+              <Input
+                value={activity2Description}
+                onChange={(e) => setActivity2Description(e.target.value)}
+                placeholder="Optional"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <Label className="mb-1.5">Reason for Activity 2</Label>
+              <Input
+                value={activity2Reason}
+                onChange={(e) => setActivity2Reason(e.target.value)}
+                placeholder="Optional"
+                className={inputClass}
+              />
+            </div>
+          </div>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button type="button" variant="outline" className="rounded-2xl" onClick={onClose}>
@@ -998,6 +1352,10 @@ function PrescriptionModal({
       doctorLocation,
       rxPerMonth,
       prescriptionImage,
+      ...(editing && {
+        auditId: editing.auditId,
+        prescriptionImageUrl: prescriptionImage ? undefined : editing.prescriptionImageUrl,
+      }),
     };
     if (editingId) {
       setPrescriptions((prev) => prev.map((p) => (p.id === editingId ? entry : p)));

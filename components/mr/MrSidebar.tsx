@@ -9,6 +9,7 @@ import {
   PlusCircle,
   History,
   FileBarChart,
+  TrendingDown,
   Users,
   Package,
   LogOut,
@@ -43,13 +44,14 @@ interface NavItem {
 const mainMenuItems: NavItem[] = [
   { title: "Dashboard", url: "/mr/dashboard", icon: LayoutDashboard },
   { title: "Pharmacies", url: "/mr/pharmacies", icon: MapPin },
-  { title: "New visit", url: "/mr/pharmacies", icon: PlusCircle, roles: ["MR"] },
+  { title: "New visit", url: "/mr/visit/create", icon: PlusCircle, roles: ["MR"] },
   { title: "Visit history", url: "/mr/history", icon: History },
 ];
 
 const managementItems: NavItem[] = [
   { title: "Products", url: "/mr/products", icon: Package, roles: ["MANAGER", "ADMIN"] },
   { title: "Reports", url: "/mr/reports", icon: FileBarChart },
+  { title: "Lost Sales", url: "/mr/reports/lost-sales", icon: TrendingDown, roles: ["MANAGER", "ADMIN"] },
   { title: "Users", url: "/mr/users", icon: Users, roles: ["ADMIN"] },
 ];
 
