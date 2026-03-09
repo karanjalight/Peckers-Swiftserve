@@ -28,8 +28,8 @@ export default async function MrCreateVisitPage() {
     .eq("mr_id", auth.user.id)
     .order("created_at", { ascending: false });
 
-  const pharmacies =
-    assignments
+  const pharmacies: { id: string; name: string; region: string; subRegion: string | null }[] =
+    (assignments
       ?.map((a) => {
         const phRaw = a.mr_pharmacies as
           | { id: string; name: string; region: string; sub_region?: string | null }
@@ -44,7 +44,10 @@ export default async function MrCreateVisitPage() {
           subRegion: ph.sub_region ?? null,
         };
       })
-      .filter(Boolean) ?? [];
+      .filter(
+        (p): p is { id: string; name: string; region: string; subRegion: string | null } =>
+          p !== null
+      ) ?? []);
 
   return <MrCreateVisitClient pharmacies={pharmacies} />;
 }
