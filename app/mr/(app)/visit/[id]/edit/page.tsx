@@ -42,6 +42,7 @@ export default async function MrVisitEditPage({
   }
 
   const canEdit = isMr || isManagerOrAdmin;
+  const isOpen = (visit as { status?: string }).status === "OPEN";
 
   if (!canEdit) {
     redirect(`/mr/visit/${id}`);
@@ -95,7 +96,7 @@ export default async function MrVisitEditPage({
         <MrVisitEditExistingData visitId={id} objective={visit.objective ?? "AUDIT"} />
 
         {/* Finish/submit block */}
-        {isMr ? (
+        {isMr && isOpen && (
           <MrVisitFinishButton
             visitId={id}
             objective={visit.objective ?? null}
@@ -103,10 +104,19 @@ export default async function MrVisitEditPage({
             initialBasketValue={basketValuePerPatient}
             initialNotes={notes}
           />
-        ) : (
+        )}
+        {isMr && !isOpen && (
+          <div className="rounded-2xl bg-blue-50 dark:bg-blue-950/30 px-5 py-4 ring-1 ring-blue-200/50 dark:ring-blue-800/30">
+            <p className="text-sm text-blue-900 dark:text-blue-100">
+              This visit has already been submitted and You can only edit the existing data.
+            </p>
+          </div>
+        )}
+        {!isMr && (
           <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 px-5 py-4 ring-1 ring-amber-200/50 dark:ring-amber-800/30">
             <p className="text-sm text-amber-800 dark:text-amber-200">
-              Only the MR can check out and submit this visit. You can edit all audit data. When done, use &quot;View visit&quot; to see the full read-only summary.
+              Only the MR can check out and submit this visit. You can edit all audit data. When done, use &quot;View visit&quot; to
+              see the full read-only summary.
             </p>
           </div>
         )}

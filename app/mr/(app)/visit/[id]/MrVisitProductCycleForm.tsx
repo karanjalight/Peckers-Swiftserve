@@ -88,12 +88,12 @@ function genId() {
 
 type Product = { id: string; name: string; price?: number | null; owned_by?: string | null };
 
-const STEPS = ["product", "audit", "prescription", "marketing"] as const;
+const STEPS = ["product", "audit", "prescription"] as const;
 const STEP_LABELS: Record<(typeof STEPS)[number], string> = {
   product: "Choose product",
   audit: "Stock & pharmacy",
   prescription: "Prescription",
-  marketing: "Competitor marketing",
+  // marketing: "Competitor marketing",
 };
 
 const MAX_COMPETITORS = 3;
