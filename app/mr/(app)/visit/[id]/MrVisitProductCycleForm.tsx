@@ -923,61 +923,6 @@ export function MrVisitProductCycleForm({
               </ul>
             </div>
           )}
-
-          {step === "marketing" && selectedProduct && (
-            <div className="space-y-4">
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  size="sm"
-                  className="rounded-full cta-gradient"
-                  onClick={() => {
-                    setEditingMarketingId(null);
-                    setMarketingModalOpen(true);
-                  }}
-                >
-                  <Plus className="mr-1 h-4 w-4" />
-                  Add competitor activity
-                </Button>
-              </div>
-              <ul className="space-y-2">
-                {marketingActivities.map((m) => (
-                  <li
-                    key={m.id}
-                    className="flex items-center justify-between gap-2 rounded-2xl bg-muted/40 px-3 py-2"
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Megaphone className="h-4 w-4 shrink-0 text-slate-600 dark:text-muted-foreground" />
-                      <span className="truncate font-medium">{m.competitorName || "Competitor"}</span>
-                    </div>
-                    <div className="flex shrink-0 gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full"
-                        onClick={() => {
-                          setEditingMarketingId(m.id);
-                          setMarketingModalOpen(true);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full text-destructive"
-                        onClick={() => setMarketingActivities((prev) => prev.filter((x) => x.id !== m.id))}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
       </div>
 
