@@ -145,7 +145,7 @@ export function MrVisitEditExistingData({
   if (!hasAny) return null;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-6 hidden">
       <div>
         <h3 className="text-lg font-semibold text-foreground">Edit existing data</h3>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -479,8 +479,6 @@ function EditProductAuditDialog({
     else onMessage(result.error ?? "Failed to update");
   }
 
-  const isAudit = objective === "AUDIT";
-
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
@@ -544,63 +542,61 @@ function EditProductAuditDialog({
               />
             </div>
           </div>
-          {isAudit && (
-            <>
+          <>
+            <div>
+              <Label>Price per pack (KES)</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={pricePerPack}
+                onChange={(e) => setPricePerPack(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Reason for OOS</Label>
+              <select
+                value={reasonForOos}
+                onChange={(e) => setReasonForOos(e.target.value)}
+                className="mt-1 w-full rounded border px-3 py-2"
+              >
+                <option value="">Select (optional)</option>
+                {REASON_FOR_OOS_OPTIONS.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label>Days OOS</Label>
+              <Input
+                type="number"
+                min={0}
+                value={daysOos}
+                onChange={(e) => setDaysOos(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="doSub"
+                checked={doSubstitute}
+                onChange={(e) => setDoSubstitute(e.target.checked)}
+              />
+              <Label htmlFor="doSub">Do you substitute?</Label>
+            </div>
+            {doSubstitute && (
               <div>
-                <Label>Price per pack (KES)</Label>
+                <Label>Substitute with and why</Label>
                 <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={pricePerPack}
-                  onChange={(e) => setPricePerPack(e.target.value)}
+                  value={substituteWithAndWhy}
+                  onChange={(e) => setSubstituteWithAndWhy(e.target.value)}
                   className="mt-1"
                 />
               </div>
-              <div>
-                <Label>Reason for OOS</Label>
-                <select
-                  value={reasonForOos}
-                  onChange={(e) => setReasonForOos(e.target.value)}
-                  className="mt-1 w-full rounded border px-3 py-2"
-                >
-                  <option value="">Select (optional)</option>
-                  {REASON_FOR_OOS_OPTIONS.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label>Days OOS</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={daysOos}
-                  onChange={(e) => setDaysOos(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="doSub"
-                  checked={doSubstitute}
-                  onChange={(e) => setDoSubstitute(e.target.checked)}
-                />
-                <Label htmlFor="doSub">Do you substitute?</Label>
-              </div>
-              {doSubstitute && (
-                <div>
-                  <Label>Substitute with and why</Label>
-                  <Input
-                    value={substituteWithAndWhy}
-                    onChange={(e) => setSubstituteWithAndWhy(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              )}
-            </>
-          )}
+            )}
+          </>
           <div className="flex items-center gap-2">
             <input
               type="checkbox"

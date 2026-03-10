@@ -84,7 +84,7 @@ export default async function MrPharmacyDetailPage({
                 Back to Pharmacies
               </Link>
             </Button>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight dark:text-slate-200 text-slate-900 dark:text-white">
               {pharmacy.name}
             </h1>
           </div>
@@ -105,7 +105,7 @@ export default async function MrPharmacyDetailPage({
 
         <Card className="border-slate-200">
           <CardHeader>
-            <CardTitle className="text-base text-slate-900 dark:text-white">Pharmacy Details</CardTitle>
+            <CardTitle className="text-base dark:text-slate-200 text-slate-900 dark:text-white">Pharmacy Details</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-400">Region, location, and contact info</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -114,7 +114,7 @@ export default async function MrPharmacyDetailPage({
                 <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                   Region
                 </dt>
-                <dd className="mt-1 text-sm text-slate-900">
+                <dd className="mt-1 text-sm dark:text-slate-200 text-slate-900">
                   {pharmacy.region}
                   {pharmacy.sub_region && ` • ${pharmacy.sub_region}`}
                 </dd>
@@ -124,7 +124,7 @@ export default async function MrPharmacyDetailPage({
                   <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     Location
                   </dt>
-                  <dd className="mt-1 text-sm text-slate-900">
+                  <dd className="mt-1 text-sm dark:text-slate-200 text-slate-900">
                     {pharmacy.location_text}
                   </dd>
                 </div>
@@ -134,7 +134,7 @@ export default async function MrPharmacyDetailPage({
                   <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     Procurement Contact
                   </dt>
-                  <dd className="mt-1 text-sm text-slate-900">
+                  <dd className="mt-1 text-sm dark:text-slate-200 text-slate-900">
                     {pharmacy.procurement_name}
                     {pharmacy.procurement_contact &&
                       ` • ${pharmacy.procurement_contact}`}
@@ -146,7 +146,7 @@ export default async function MrPharmacyDetailPage({
                   <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     People attended per day
                   </dt>
-                  <dd className="mt-1 text-sm text-slate-900">
+                  <dd className="mt-1 text-sm dark:text-slate-200 text-slate-900">
                     {pharmacy.avg_attendants_per_day}
                   </dd>
                 </div>
@@ -156,7 +156,7 @@ export default async function MrPharmacyDetailPage({
                   <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     Average order value
                   </dt>
-                  <dd className="mt-1 text-sm text-slate-900">
+                  <dd className="mt-1 text-sm dark:text-slate-200 text-slate-900">
                     KES {pharmacy.avg_order_value.toLocaleString()}
                   </dd>
                 </div>
@@ -167,7 +167,7 @@ export default async function MrPharmacyDetailPage({
 
         <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
           <CardHeader>
-            <CardTitle className="text-base text-slate-900 dark:text-white">Start Visit</CardTitle>
+            <CardTitle className="text-base dark:text-slate-200 text-slate-900 dark:text-white">Start Visit</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-200">
               Check in to record audits, notes, and prescriptions
             </CardDescription>
@@ -225,7 +225,7 @@ export default async function MrPharmacyDetailPage({
                 Back to Pharmacies
               </Link>
             </Button>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight dark:text-slate-200 text-slate-900 dark:text-white">
               {pharmacy.name}
             </h1>
           </div>
@@ -246,7 +246,7 @@ export default async function MrPharmacyDetailPage({
 
         <Card className="border-slate-200">
           <CardHeader>
-            <CardTitle className="text-base text-slate-900 dark:text-white">Pharmacy Details</CardTitle>
+            <CardTitle className="text-base dark:text-slate-200 text-slate-900 dark:text-white">Pharmacy Details</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-400">Region, location, and contact info</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -255,7 +255,7 @@ export default async function MrPharmacyDetailPage({
                 <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                   Region
                 </dt>
-                <dd className="mt-1 text-sm text-slate-900">
+                <dd className="mt-1 text-sm dark:text-slate-200 text-slate-900">
                   {pharmacy.region}
                   {pharmacy.sub_region ? ` • ${pharmacy.sub_region}` : ""}
                 </dd>
@@ -265,7 +265,7 @@ export default async function MrPharmacyDetailPage({
                   <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     Location
                   </dt>
-                  <dd className="mt-1 text-sm text-slate-900">
+                  <dd className="mt-1 text-sm dark:text-slate-200 text-slate-900">
                     {pharmacy.location_text}
                   </dd>
                 </div>
@@ -275,7 +275,7 @@ export default async function MrPharmacyDetailPage({
                   <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     Procurement Contact
                   </dt>
-                  <dd className="mt-1 text-sm text-slate-900">
+                  <dd className="mt-1 text-sm dark:text-slate-200 text-slate-900">
                     {pharmacy.procurement_name}
                     {pharmacy.procurement_contact
                       ? ` • ${pharmacy.procurement_contact}`
@@ -288,7 +288,7 @@ export default async function MrPharmacyDetailPage({
                   <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     People attended per day
                   </dt>
-                  <dd className="mt-1 text-sm text-slate-900">
+                  <dd className="mt-1 text-sm dark:text-slate-200 text-slate-900">
                     {pharmacy.avg_attendants_per_day}
                   </dd>
                 </div>
@@ -298,7 +298,7 @@ export default async function MrPharmacyDetailPage({
                   <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-200">
                     Average order value
                   </dt>
-                  <dd className="mt-1 text-sm text-slate-900">
+                  <dd className="mt-1 text-sm dark:text-slate-200 text-slate-900">
                     KES {Number(pharmacy.avg_order_value).toLocaleString()}
                   </dd>
                 </div>

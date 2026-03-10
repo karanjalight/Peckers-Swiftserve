@@ -716,8 +716,6 @@ export function MrVisitProductCycleForm({
                   />
                 </div>
               </div>
-              {objective === "AUDIT" && (
-                <>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <Label className="mb-1.5 flex items-center gap-2 text-slate-900 dark:text-foreground">
@@ -786,8 +784,6 @@ export function MrVisitProductCycleForm({
                       />
                     </div>
                   )}
-                </>
-              )}
               <div className="flex items-center gap-3 rounded-2xl bg-muted/50 p-3">
                 <input
                   type="checkbox"

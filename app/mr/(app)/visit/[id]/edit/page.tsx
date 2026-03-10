@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { getMrAuth } from "@/lib/mr/supabase-server";
 import Link from "next/link";
 import { MrVisitProductCycleForm } from "../MrVisitProductCycleForm";
-// import { MrVisitEditExistingData } from "../MrVisitEditExistingData";
+import { MrVisitEditExistingData } from "../MrVisitEditExistingData";
 import { MrDeleteVisitButton } from "../MrDeleteVisitButton";
 import { MrVisitFinishButton } from "../MrVisitFinishButton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -91,9 +91,8 @@ export default async function MrVisitEditPage({
         {/* Product cycles first */}
         <MrVisitProductCycleForm visitId={id} objective={visit.objective ?? "AUDIT"} />
 
-        {/* Edit existing data: hidden per request
+        {/* Edit any existing audits, prescriptions, or competitor marketing */}
         <MrVisitEditExistingData visitId={id} objective={visit.objective ?? "AUDIT"} />
-        */}
 
         {/* Finish/submit block */}
         {isMr ? (
