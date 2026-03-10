@@ -3,6 +3,7 @@ import { getMrAuth } from "@/lib/mr/supabase-server";
 import Link from "next/link";
 import { MrCheckInButton } from "./MrCheckInButton";
 import { MrAssignReps } from "./MrAssignReps";
+import { MrEditPharmacyForm } from "../MrEditPharmacyForm";
 import {
   Card,
   CardContent,
@@ -75,16 +76,31 @@ export default async function MrPharmacyDetailPage({
 
     return (
       <div className="space-y-8">
-        <div>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/mr/pharmacies" className="gap-1.5 -ml-2">
-              <ChevronLeft className="h-4 w-4" />
-              Back to Pharmacies
-            </Link>
-          </Button>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
-            {pharmacy.name}
-          </h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/mr/pharmacies" className="gap-1.5 -ml-2">
+                <ChevronLeft className="h-4 w-4" />
+                Back to Pharmacies
+              </Link>
+            </Button>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+              {pharmacy.name}
+            </h1>
+          </div>
+          <MrEditPharmacyForm
+            pharmacyId={id}
+            initial={{
+              name: pharmacy.name,
+              region: pharmacy.region,
+              sub_region: pharmacy.sub_region,
+              location_text: pharmacy.location_text,
+              procurement_name: pharmacy.procurement_name,
+              procurement_contact: pharmacy.procurement_contact,
+              avg_attendants_per_day: pharmacy.avg_attendants_per_day,
+              avg_order_value: pharmacy.avg_order_value,
+            }}
+          />
         </div>
 
         <Card className="border-slate-200">
@@ -201,16 +217,31 @@ export default async function MrPharmacyDetailPage({
 
     return (
       <div className="space-y-8">
-        <div>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/mr/pharmacies" className="gap-1.5 -ml-2">
-              <ChevronLeft className="h-4 w-4" />
-              Back to Pharmacies
-            </Link>
-          </Button>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
-            {pharmacy.name}
-          </h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/mr/pharmacies" className="gap-1.5 -ml-2">
+                <ChevronLeft className="h-4 w-4" />
+                Back to Pharmacies
+              </Link>
+            </Button>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+              {pharmacy.name}
+            </h1>
+          </div>
+          <MrEditPharmacyForm
+            pharmacyId={id}
+            initial={{
+              name: pharmacy.name,
+              region: pharmacy.region,
+              sub_region: pharmacy.sub_region,
+              location_text: pharmacy.location_text,
+              procurement_name: pharmacy.procurement_name,
+              procurement_contact: pharmacy.procurement_contact,
+              avg_attendants_per_day: pharmacy.avg_attendants_per_day,
+              avg_order_value: pharmacy.avg_order_value,
+            }}
+          />
         </div>
 
         <Card className="border-slate-200">

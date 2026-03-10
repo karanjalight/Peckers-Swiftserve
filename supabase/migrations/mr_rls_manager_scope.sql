@@ -70,9 +70,23 @@ CREATE POLICY "mr_pharmacies_insert" ON public.mr_pharmacies
     OR (get_mr_role() = 'MANAGER' AND created_by = auth.uid())
   );
 
--- UPDATE: Manager only their pharmacies; Admin all
+-- UPDATE: Admin all; Manager only their pharmacies; MR when assigned to pharmacy
 CREATE POLICY "mr_pharmacies_update" ON public.mr_pharmacies
   FOR UPDATE USING (
+    get_mr_role() = 'ADMIN'
+    OR (get_mr_role() = 'MANAGER' AND created_by = auth.uid())
+    OR (
+      get_mr_role() = 'MR'
+      AND EXISTS (
+        SELECT 1 FROM public.mr_pharmacy_assignments a
+        WHERE a.pharmacy_id = id AND a.mr_id = auth.uid()
+      )
+    )
+  );
+
+-- DELETE: Admin any pharmacy; Manager only pharmacies they created
+CREATE POLICY "mr_pharmacies_delete" ON public.mr_pharmacies
+  FOR DELETE USING (
     get_mr_role() = 'ADMIN'
     OR (get_mr_role() = 'MANAGER' AND created_by = auth.uid())
   );

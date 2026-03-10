@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getMrAuth } from "@/lib/mr/supabase-server";
 import Link from "next/link";
-import { MapPin, Building2, Package, ClipboardList } from "lucide-react";
+import { MapPin, Building2, Package, ClipboardList, Plus } from "lucide-react";
 import { MrCreatePharmacyForm } from "./MrCreatePharmacyForm";
 import { MrNewPharmacyCheckInForm } from "./MrNewPharmacyCheckInForm";
 import { MrPharmaciesTable } from "./MrPharmaciesTable";
@@ -56,12 +56,18 @@ export default async function MrPharmaciesPage() {
       avg_order_value?: number | null;
     }[];
 
-    const totalPharmacies = pharmacies.length;
-    const nairobiCount = pharmacies.filter((p) => p.region === "Nairobi").length;
-    const highValue = pharmacies.filter(
+    const sortedPharmacies = [...pharmacies].sort((a, b) => {
+      const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return bTime - aTime;
+    });
+
+    const totalPharmacies = sortedPharmacies.length;
+    const nairobiCount = sortedPharmacies.filter((p) => p.region === "Nairobi").length;
+    const highValue = sortedPharmacies.filter(
       (p) => (p.avg_order_value ?? 0) >= 200000
     ).length;
-    const withProcurementContact = pharmacies.filter(
+    const withProcurementContact = sortedPharmacies.filter(
       (p) => !!p.procurement_name || !!p.procurement_contact
     ).length;
 
@@ -77,7 +83,18 @@ export default async function MrPharmaciesPage() {
                 View and manage pharmacies you can visit.
               </p>
             </div>
-            <MrNewPharmacyCheckInForm />
+            <div>
+              <Button
+                asChild
+                className="gap-2 text-center flex items-center justify-center rounded-full py-4 px-10 bg-blue-700 text-white hover:bg-blue-800 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800"
+              >
+                <Link href="/mr/visit/create">
+                  <Plus className="h-4 w-4 text-white" />
+                  Create Pharmacy
+                </Link>
+              </Button>
+            </div>
+            {/* <MrNewPharmacyCheckInForm /> */}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -157,7 +174,7 @@ export default async function MrPharmaciesPage() {
           </div>
         </div>
 
-        {pharmacies.length === 0 ? (
+        {sortedPharmacies.length === 0 ? (
           <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
             <CardContent className="flex min-h-[280px] flex-col items-center justify-center py-12">
               <div className="rounded-full bg-slate-200 p-4 dark:bg-slate-700">
@@ -174,7 +191,7 @@ export default async function MrPharmaciesPage() {
             </CardContent>
           </Card>
         ) : (
-          <MrPharmaciesTable pharmacies={pharmacies} canDelete={false} />
+          <MrPharmaciesTable pharmacies={sortedPharmacies} canDelete={false} />
         )}
       </div>
     );
@@ -186,17 +203,19 @@ export default async function MrPharmaciesPage() {
       .select(
         "id, name, region, sub_region, location_text, procurement_name, procurement_contact, created_at, avg_order_value"
       )
-      .order("name");
+      .order("created_at", { ascending: false });
 
-    const totalPharmacies = pharmacies?.length ?? 0;
-    const nairobiCount = (pharmacies ?? []).filter(
+    const sortedPharmacies = pharmacies ?? [];
+
+    const totalPharmacies = sortedPharmacies.length;
+    const nairobiCount = sortedPharmacies.filter(
       (p: { region?: string }) => p.region === "Nairobi"
     ).length;
-    const highValue = (pharmacies ?? []).filter(
+    const highValue = sortedPharmacies.filter(
       (p: { avg_order_value?: number | null }) =>
         (p.avg_order_value ?? 0) >= 200000
     ).length;
-    const withProcurementContact = (pharmacies ?? []).filter(
+    const withProcurementContact = sortedPharmacies.filter(
       (p: { procurement_name?: string | null; procurement_contact?: string | null }) =>
         !!p.procurement_name || !!p.procurement_contact
     ).length;
@@ -213,7 +232,12 @@ export default async function MrPharmaciesPage() {
                 Create pharmacies, assign MRs, and oversee visit performance.
               </p>
             </div>
-            <MrCreatePharmacyForm />
+            <div>
+              <link href="/mr/visit/create" className="gap-2 text-center flex items-center justify-center rounded-full py-4 px-10 bg-blue-700 text-white hover:bg-blue-800 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800">
+                <Plus className="h-4 w-4 text-white" />
+                Create Pharmacy
+              </link>
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -961,6 +961,70 @@ export async function createPharmacy(input: {
 }
 
 // =============================================================================
+// UPDATE PHARMACY (Manager/Admin, or MR assigned to pharmacy)
+// =============================================================================
+export async function updatePharmacy(
+  pharmacyId: string,
+  input: {
+    name: string;
+    region: string;
+    subRegion?: string | null;
+    locationText?: string | null;
+    procurementName?: string | null;
+    procurementContact?: string | null;
+    avgAttendantsPerDay?: number | null;
+    avgOrderValue?: number | null;
+  }
+) {
+  const auth = await getMrAuth();
+  if (auth.error) {
+    return { success: false, error: auth.error };
+  }
+
+  const { supabase, profile, user } = auth;
+  const role = profile.role;
+
+  let canEdit = false;
+  if (role === "ADMIN" || role === "MANAGER") {
+    canEdit = true;
+  } else if (role === "MR") {
+    const { data: assignment } = await supabase
+      .from("mr_pharmacy_assignments")
+      .select("id")
+      .eq("pharmacy_id", pharmacyId)
+      .eq("mr_id", user.id)
+      .maybeSingle();
+    canEdit = !!assignment;
+  }
+
+  if (!canEdit) {
+    return { success: false, error: "Not authorized to edit this pharmacy" };
+  }
+
+  const { error } = await supabase
+    .from("mr_pharmacies")
+    .update({
+      name: input.name.trim(),
+      region: input.region.trim(),
+      sub_region: input.subRegion?.trim() ?? null,
+      location_text: input.locationText?.trim() ?? null,
+      procurement_name: input.procurementName?.trim() ?? null,
+      procurement_contact: input.procurementContact?.trim() ?? null,
+      avg_attendants_per_day: input.avgAttendantsPerDay ?? null,
+      avg_order_value: input.avgOrderValue ?? null,
+    })
+    .eq("id", pharmacyId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/mr/pharmacies");
+  revalidatePath(`/mr/pharmacies/${pharmacyId}`);
+  return { success: true };
+}
+
+// =============================================================================
 // MANAGER: DELETE PHARMACY
 // =============================================================================
 export async function deletePharmacy(pharmacyId: string) {

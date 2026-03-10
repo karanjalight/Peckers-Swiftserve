@@ -126,9 +126,9 @@ export default async function MrVisitViewPage({
                 <Button
                   asChild
                   size="sm"
-                  className="min-h-10 gap-1.5 touch-manipulation bg-white text-blue-900 hover:bg-blue-50 sm:w-auto"
+                  className="min-h-10 gap-1.5 touch-manipulation bg-white text-blue-900 border dark:text-white dark:bg-blue-900 hover:bg-blue-50 sm:w-auto"
                 >
-                  <Link href={`/mr/visit/${id}/edit`} className="inline-flex items-center justify-center font-semibold">
+                  <Link href={`/mr/visit/${id}/edit`} className="inline-flex items-center justify-center  px-6 font-semibold">
                     <Pencil className="h-4 w-4 shrink-0" />
                     Edit visit
                   </Link>

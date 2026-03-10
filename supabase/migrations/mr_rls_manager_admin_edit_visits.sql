@@ -23,12 +23,24 @@ CREATE POLICY "mr_visits_update_open_only" ON public.mr_visits
 CREATE OR REPLACE FUNCTION mr_prevent_submitted_visit_update()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- For MRs, allow limited edits on submitted visits (notes and audit metrics only).
   IF OLD.status = 'SUBMITTED' AND get_mr_role() NOT IN ('MANAGER', 'ADMIN') THEN
-    RAISE EXCEPTION 'Cannot modify submitted visit - data is immutable';
+    IF NOT (
+      OLD.notes IS DISTINCT FROM NEW.notes
+      OR OLD.patients_per_day IS DISTINCT FROM NEW.patients_per_day
+      OR OLD.basket_value_per_patient IS DISTINCT FROM NEW.basket_value_per_patient
+    ) THEN
+      RAISE EXCEPTION 'Cannot modify submitted visit - data is immutable';
+    END IF;
   END IF;
-  IF OLD.check_in_time IS DISTINCT FROM NEW.check_in_time AND OLD.check_in_time IS NOT NULL AND get_mr_role() = 'MR' THEN
+
+  -- Prevent MRs from changing check_in_time after visit creation.
+  IF OLD.check_in_time IS DISTINCT FROM NEW.check_in_time
+     AND OLD.check_in_time IS NOT NULL
+     AND get_mr_role() = 'MR' THEN
     RAISE EXCEPTION 'Cannot change check_in_time after visit created';
   END IF;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

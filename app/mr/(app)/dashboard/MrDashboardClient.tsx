@@ -138,9 +138,9 @@ export function MrDashboardClient({
                
                 className="rounded-full py-8 flex items-center justify-center border-2 border-gray-900 dark:border-gray-300 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 hover:bg-gray-900 hover:text-white dark:hover:bg-gray-200 dark:hover:text-gray-900 px-6 sm:px-8 h-10 sm:h-12 font-medium"
               >
-                <Link href="/mr/pharmacies">
+                <Link href="/mr/visit/create">
                   <MapPin className="mr-2 h-4 w-4" />
-                  Go to Pharmacies
+                  Start Visit
                 </Link>
               </Button>
             </div>
