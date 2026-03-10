@@ -233,10 +233,15 @@ export default async function MrPharmaciesPage() {
               </p>
             </div>
             <div>
-              <link href="/mr/visit/create" className="gap-2 text-center flex items-center justify-center rounded-full py-4 px-10 bg-blue-700 text-white hover:bg-blue-800 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800">
-                <Plus className="h-4 w-4 text-white" />
-                Create Pharmacy
-              </link>
+            <Button
+                asChild
+                className="gap-2 text-center flex items-center justify-center rounded-full py-4 px-10 bg-blue-700 text-white hover:bg-blue-800 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800"
+              >
+                <Link href="/mr/visit/create">
+                  <Plus className="h-4 w-4 text-white" />
+                  Create Pharmacy
+                </Link>
+              </Button>
             </div>
           </div>
 
