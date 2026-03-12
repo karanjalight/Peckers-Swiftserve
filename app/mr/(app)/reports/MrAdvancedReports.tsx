@@ -1,13 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -54,7 +48,7 @@ import {
   Download,
   ExternalLink,
 } from "lucide-react";
-import type { ManagerChartData, ManagerKpis, RecentVisit } from "./MrReportsClient";
+import type { ManagerChartData, ManagerKpis, RecentVisit } from "./MrReportsTypes";
 
 const CHART_COLORS = ["#0ea5e9", "#14b8a6", "#8b5cf6", "#f97316", "#ec4899", "#eab308", "#22c55e", "#f43f5e"];
 
@@ -131,6 +125,27 @@ export function MrAdvancedReports({
   const [exporting, setExporting] = useState(false);
   const [reportPdfLoading, setReportPdfLoading] = useState<string | null>(null);
   const workspaceRef = useRef<HTMLDivElement | null>(null);
+
+  const headlineStockOuts = useMemo(() => {
+    if (!data) return kpis.stockOuts;
+    return data.stockOutPharmacies.length;
+  }, [data, kpis.stockOuts]);
+
+  const headlineSubstitutionRate = useMemo(() => {
+    if (!data) return kpis.substitutionRate;
+    if (!data.substitutionRateReport.length) return 0;
+
+    let weightedSum = 0;
+    let totalRx = 0;
+    for (const row of data.substitutionRateReport) {
+      const prescribed = row.prescribed ?? 0;
+      // row.rate is already a percentage; weight by prescriptions
+      weightedSum += row.rate * prescribed;
+      totalRx += prescribed;
+    }
+    if (!totalRx) return 0;
+    return Math.round((weightedSum / totalRx) * 10) / 10;
+  }, [data, kpis.substitutionRate]);
 
   async function generateReportPdf(reportKey: string) {
     if (!data) return null;
@@ -807,7 +822,7 @@ export function MrAdvancedReports({
   return (
     <div
       ref={workspaceRef}
-      className="space-y-6 bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100"
+      className="space-y-6 lg:-mt-10 bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100"
     >
       {/* Page header */}
       <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-white px-4 py-8 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-slate-700 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900">
@@ -830,7 +845,7 @@ export function MrAdvancedReports({
             <option value="12m">Last 12 months</option>
             <option value="all">All time</option>
           </select>
-          <button
+          {/* <button
             type="button"
             onClick={handleExportPdf}
             disabled={exporting}
@@ -847,7 +862,7 @@ export function MrAdvancedReports({
                 <span>Export PDF</span>
               </>
             )}
-          </button>
+          </button> */}
           <button
             type="button"
             onClick={fetchReports}
@@ -955,7 +970,7 @@ export function MrAdvancedReports({
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-semibold text-amber-900 dark:text-amber-50">
-                  {kpis.stockOuts}
+                  {headlineStockOuts}
                 </p>
               </CardContent>
             </Card>
@@ -970,14 +985,14 @@ export function MrAdvancedReports({
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-semibold text-violet-950 dark:text-violet-50">
-                  {kpis.substitutionRate}%
+                  {headlineSubstitutionRate}%
                 </p>
               </CardContent>
             </Card>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="rounded-2xl border border-slate-100 bg-white  dark:border-slate-700 dark:bg-slate-800/90">
+            <Card className="rounded-2xl v hidden border border-slate-100 bg-white  dark:border-slate-700 dark:bg-slate-800/90">
               <CardHeader>
                 <CardTitle className="text-sm font-semibold text-gray-900 dark:text-slate-50">
                   Visits Over Time
@@ -1079,7 +1094,7 @@ export function MrAdvancedReports({
                   )}
               </CardContent>
             </Card>
-            <Card className="rounded-2xl border border-rose-100 bg-gradient-to-br from-blue-400 via-indigo-300 to-blue-300  dark:border-rose-300/60 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950">
+            <Card className="rounded-2xl hidden border border-rose-100 bg-gradient-to-br from-blue-400 via-indigo-300 to-blue-300  dark:border-rose-300/60 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950">
               <CardHeader>
                 <CardTitle className="text-sm font-semibold text-rose-900 dark:text-rose-100">
                   Total Lost Revenue

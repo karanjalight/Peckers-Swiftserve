@@ -21,8 +21,7 @@ export default async function MrReportsPage() {
             "id, check_in_time, visit_duration_minutes, objective, mr_pharmacies(name, region)"
           )
           .eq("status", "SUBMITTED")
-          .order("check_in_time", { ascending: false })
-          .limit(200),
+          .order("check_in_time", { ascending: false }),
         supabase
           .from("mr_product_audits")
           .select("id, quantity_in_stock, mr_products(name)"),
@@ -117,7 +116,12 @@ export default async function MrReportsPage() {
 
     return (
       <div className="space-y-10">
-        
+        <MrReportsClient
+          mode="manager"
+          kpis={managerKpis}
+          chartData={chartData}
+          recentVisits={recentVisits}
+        />
         <MrAdvancedReports
           kpis={managerKpis}
           chartData={chartData}
@@ -135,8 +139,7 @@ export default async function MrReportsPage() {
     )
     .eq("mr_id", auth.user.id)
     .in("status", ["OPEN", "SUBMITTED"])
-    .order("check_in_time", { ascending: false })
-    .limit(100);
+    .order("check_in_time", { ascending: false });
 
   const submittedVisits =
     (visits ?? []).filter(

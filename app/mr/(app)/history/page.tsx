@@ -55,7 +55,7 @@ export default async function MrHistoryPage({
   const role = auth.profile.role as "MR" | "MANAGER" | "ADMIN";
 
   if (role === "MR") {
-    // MR sees only their own visits, no filters
+    // MR sees all of their own visits, no filters
     const { data: visits, error: visitsError } = await supabase
       .from("mr_visits")
       .select(`
@@ -68,8 +68,7 @@ export default async function MrHistoryPage({
         mr_pharmacies (name, region)
       `)
       .eq("mr_id", auth.user.id)
-      .order("check_in_time", { ascending: false })
-      .limit(50);
+      .order("check_in_time", { ascending: false });
 
     if (visitsError) {
       console.error("MR visits fetch error:", visitsError);
@@ -131,8 +130,7 @@ export default async function MrHistoryPage({
   let visitsQuery = supabase
     .from("mr_visits")
     .select(fullSelect)
-    .order("check_in_time", { ascending: false })
-    .limit(200);
+    .order("check_in_time", { ascending: false });
   if (mrId) visitsQuery = visitsQuery.eq("mr_id", mrId);
   if (status) visitsQuery = visitsQuery.eq("status", status);
   if (dateFrom) {
