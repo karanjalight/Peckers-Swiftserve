@@ -88,6 +88,25 @@ type ReportData = {
     mainRival: string;
   }>;
   supplyChainAttribution: Array<{ name: string; value: number }>;
+  regionCoverage: Array<{
+    region: string;
+    visits: number;
+    pharmacies: string[];
+  }>;
+  stockOutPharmacies: Array<{
+    pharmacy: string;
+    region: string;
+    oosAudits: number;
+    distinctProducts: number;
+    totalDaysOos: number;
+  }>;
+  vulnerableProducts: Array<{
+    product: string;
+    prescribed: number;
+    substituted: number;
+    rate: number;
+    mainRival: string;
+  }>;
 };
 
 type TimeRange = "30d" | "90d" | "12m" | "all";
@@ -314,6 +333,9 @@ export function MrAdvancedReports({
       pricing: "Comparative Pricing",
       substitutionRate: "Substitution Rate",
       supplyChain: "Supply Chain Attribution",
+      regionCoverage: "Region Coverage by Pharmacy",
+      stockOutPharmacies: "Stock-out Pharmacies",
+      vulnerableProducts: "Most Vulnerable Products",
     };
     reportTitle(reportTitles[reportKey] ?? reportKey);
 
@@ -478,6 +500,70 @@ export function MrAdvancedReports({
         );
         break;
       }
+      case "regionCoverage": {
+        drawBarChart(
+          data.regionCoverage
+            .slice()
+            .sort((a, b) => b.visits - a.visits)
+            .map((r) => ({ label: r.region.slice(0, 12), value: r.visits })),
+          { title: "Visits per region", barColor: [30, 64, 175] }
+        );
+        drawStyledTable(
+          ["Region", "Visits", "Pharmacies"],
+          data.regionCoverage.map((r) => [
+            r.region,
+            String(r.visits),
+            String(r.pharmacies.length),
+          ]),
+          [50, 30, 80],
+          { tableLabel: "Regions covered and pharmacies in each region" }
+        );
+        break;
+      }
+      case "stockOutPharmacies": {
+        const sorted = [...data.stockOutPharmacies].sort(
+          (a, b) => b.oosAudits - a.oosAudits
+        );
+        drawBarChart(
+          sorted.map((r) => ({ label: r.pharmacy.slice(0, 14), value: r.oosAudits })),
+          { title: "Stock-out audits per pharmacy", barColor: [217, 119, 6] }
+        );
+        drawStyledTable(
+          ["Pharmacy", "Region", "OOS audits", "Distinct products", "Total days OOS"],
+          sorted.map((r) => [
+            r.pharmacy,
+            r.region,
+            String(r.oosAudits),
+            String(r.distinctProducts),
+            String(r.totalDaysOos),
+          ]),
+          [46, 32, 26, 32, 37],
+          { tableLabel: "Stock-out pharmacy list" }
+        );
+        break;
+      }
+      case "vulnerableProducts": {
+        const sorted = [...data.vulnerableProducts].sort(
+          (a, b) => b.rate - a.rate
+        );
+        drawBarChart(
+          sorted.map((r) => ({ label: r.product.slice(0, 12), value: r.rate })),
+          { title: "Most vulnerable products (substitution rate %)", barColor: [185, 28, 28] }
+        );
+        drawStyledTable(
+          ["Product", "Prescribed", "Substituted", "Rate %", "Main rival"],
+          sorted.map((r) => [
+            r.product,
+            String(r.prescribed),
+            String(r.substituted),
+            `${r.rate}%`,
+            r.mainRival,
+          ]),
+          [40, 28, 30, 20, 49],
+          { tableLabel: "Most vulnerable products to substitution" }
+        );
+        break;
+      }
       default:
         doc.setFont("helvetica", "normal");
         doc.text("No data for this report.", margin, y);
@@ -503,6 +589,9 @@ export function MrAdvancedReports({
           pricing: "Comparative-Pricing",
           substitutionRate: "Substitution-Rate",
           supplyChain: "Supply-Chain-Attribution",
+          regionCoverage: "Region-Coverage-by-Pharmacy",
+          stockOutPharmacies: "Stock-out-Pharmacies",
+          vulnerableProducts: "Most-Vulnerable-Products",
         };
         doc.save(`${titles[reportKey] ?? reportKey}-${Date.now()}.pdf`);
       }
@@ -1227,6 +1316,61 @@ export function MrAdvancedReports({
                 )}
               </CardContent>
             </Card>
+
+            {/* Regions covered & pharmacies list */}
+            <Card className="lg:col-span-12 rounded-2xl border border-slate-100 bg-white dark:border-slate-700 dark:bg-slate-800/90">
+              <CardHeader>
+                <CardTitle className="text-sm font-semibold text-gray-900 dark:text-slate-50">
+                  Regions Covered &amp; Pharmacies
+                </CardTitle>
+                <CardDescription className="text-slate-800 dark:text-slate-300">
+                  Regions where you have submitted visits, and how many pharmacies you touch in each.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!data || data.regionCoverage.length === 0 ? (
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    No region coverage data yet.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/60">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-100/80 dark:bg-slate-900/60">
+                          <TableHead className="text-xs font-semibold text-slate-800 dark:text-slate-100">
+                            Region
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold text-slate-800 dark:text-slate-100">
+                            Pharmacies visited
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold text-slate-800 dark:text-slate-100">
+                            Visits
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.regionCoverage
+                          .slice()
+                          .sort((a, b) => b.visits - a.visits)
+                          .map((row) => (
+                            <TableRow key={row.region}>
+                              <TableCell className="text-sm text-slate-900 dark:text-slate-50">
+                                {row.region}
+                              </TableCell>
+                              <TableCell className="text-sm text-slate-800 dark:text-slate-200">
+                                {row.pharmacies.length}
+                              </TableCell>
+                              <TableCell className="text-sm text-slate-800 dark:text-slate-200">
+                                {row.visits}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
@@ -1801,59 +1945,57 @@ export function MrAdvancedReports({
               )}
             </CardContent>
           </Card>
-
             <Card className="lg:col-span-5 rounded-2xl border border-slate-100 bg-white  dark:border-slate-700 dark:bg-slate-800/90">
               <CardHeader>
                 <CardTitle className="text-sm font-semibold text-gray-900 dark:text-slate-50">
-                  Days Out of Stock
+                  Stock-out Pharmacies
                 </CardTitle>
                 <CardDescription className="text-slate-800 dark:text-slate-300">
-                  Per high-impact pharmacy
+                  Pharmacies that recorded at least one stock-out audit.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {data.lostSales.length === 0 ? (
-                  <div className="flex h-56 items-center justify-center rounded-xl border border-dashed border-slate-400 bg-slate-50/60 text-md text-slate-8
-00 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
-                    No OOS data yet.
+                {!data || data.stockOutPharmacies.length === 0 ? (
+                  <div className="flex h-56 items-center justify-center rounded-xl border border-dashed border-slate-400 bg-slate-50/60 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+                    No stock-out pharmacy data yet.
                   </div>
                 ) : (
-                  <div className="h-56">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={[...data.lostSales]
-                          .sort((a, b) => b.daysOos - a.daysOos)
-                          .slice(0, 10)}
-                        layout="vertical"
-                        margin={{ top: 8, right: 8, left: 80, bottom: 0 }}
-                      >
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          stroke="#e2e8f0"
-                          horizontal={false}
-                        />
-                        <XAxis
-                          type="number"
-                          tick={{ fontSize: 11, fill: "#64748b" }}
-                        />
-                        <YAxis
-                          type="category"
-                          dataKey="pharmacy"
-                          tick={{ fontSize: 11, fill: "#64748b" }}
-                          width={70}
-                        />
-                        <Tooltip />
-                        <Bar
-                          dataKey="daysOos"
-                          radius={[0, 6, 6, 0]}
-                          fill="#f97316"
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
+                  <div className="max-h-56 overflow-y-auto space-y-2">
+                    {data.stockOutPharmacies
+                      .slice()
+                      .sort((a, b) => b.oosAudits - a.oosAudits)
+                      .slice(0, 10)
+                      .map((row, idx, arr) => {
+                        const max = arr[0]?.oosAudits || 1;
+                        const pct = (row.oosAudits / max) * 100;
+                        return (
+                          <div key={`${row.pharmacy}-${row.region}`} className="space-y-1.5">
+                            <div className="flex items-center justify-between text-sm">
+                              <div className="space-y-0.5">
+                                <p className="font-medium text-gray-900 dark:text-slate-50">
+                                  {idx + 1}. {row.pharmacy}
+                                </p>
+                                <p className="text-[11px] text-slate-800 dark:text-slate-400">
+                                  {row.region}
+                                </p>
+                              </div>
+                              <p className="text-xs text-slate-700 dark:text-slate-200">
+                                {row.oosAudits} OOS audits · {row.distinctProducts} products
+                              </p>
+                            </div>
+                            <div className="h-3 w-full rounded-full bg-slate-100 dark:bg-slate-900">
+                              <div
+                                className="h-3 rounded-full bg-gradient-to-r from-amber-500 to-rose-500"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           <Card className="rounded-2xl border border-slate-100 bg-white  dark:border-slate-700 dark:bg-slate-800/90">
@@ -2325,6 +2467,30 @@ export function MrAdvancedReports({
                 description:
                   "Diagnose logistics, procurement, and distribution drivers of OOS.",
                 targetTab: "risk-revenue",
+              },
+              {
+                key: "regionCoverage",
+                icon: MapPin,
+                title: "Region Coverage",
+                description:
+                  "See which regions are active and how many pharmacies you reach in each.",
+                targetTab: "field-activity",
+              },
+              {
+                key: "stockOutPharmacies",
+                icon: PackageSearch,
+                title: "Stock-out Pharmacies",
+                description:
+                  "List of pharmacies with stock-outs, products affected, and total OOS days.",
+                targetTab: "risk-revenue",
+              },
+              {
+                key: "vulnerableProducts",
+                icon: ShieldAlert,
+                title: "Most Vulnerable Products",
+                description:
+                  "Products with the highest substitution rates and main rivals.",
+                targetTab: "product-insights",
               },
             ].map((card, index) => {
               const IconComponent = card.icon;
