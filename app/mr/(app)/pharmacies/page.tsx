@@ -62,12 +62,59 @@ export default async function MrPharmaciesPage() {
       return bTime - aTime;
     });
 
-    const totalPharmacies = sortedPharmacies.length;
-    const nairobiCount = sortedPharmacies.filter((p) => p.region === "Nairobi").length;
-    const highValue = sortedPharmacies.filter(
+    // Compute lost sales per pharmacy for this MR based on product audits
+    const { data: mrVisits } = await supabase
+      .from("mr_visits")
+      .select("id, pharmacy_id")
+      .eq("mr_id", auth.user.id)
+      .eq("status", "SUBMITTED");
+
+    const visitIds = (mrVisits ?? []).map((v: { id: string }) => v.id);
+    const lostSalesByPharmacy: Record<string, number> = {};
+    if (visitIds.length > 0) {
+      const { data: productAudits } = await supabase
+        .from("mr_product_audits")
+        .select("id, visit_id, days_oos, quantity_sold_good_month, price_per_pack")
+        .not("days_oos", "is", null)
+        .gte("days_oos", 0)
+        .in("visit_id", visitIds);
+
+      const visitToPharmacy = new Map(
+        (mrVisits ?? []).map((v: { id: string; pharmacy_id: string }) => [v.id, v.pharmacy_id])
+      );
+
+      for (const r of productAudits ?? []) {
+        const pa = r as {
+          visit_id: string;
+          days_oos: number | null;
+          quantity_sold_good_month: number | null;
+          price_per_pack: number | null;
+        };
+        const pharmacyId = visitToPharmacy.get(pa.visit_id);
+        if (!pharmacyId) continue;
+        const daysOos = Number(pa.days_oos) || 0;
+        const qtySoldGoodMonth = Number(pa.quantity_sold_good_month) || 0;
+        const pricePerPack =
+          pa.price_per_pack != null ? Number(pa.price_per_pack) : null;
+        if (daysOos <= 0 || qtySoldGoodMonth <= 0 || pricePerPack == null) continue;
+        const volumeLoss = (daysOos / 30) * qtySoldGoodMonth;
+        const revenueLoss = volumeLoss * pricePerPack;
+        lostSalesByPharmacy[pharmacyId] =
+          (lostSalesByPharmacy[pharmacyId] ?? 0) + revenueLoss;
+      }
+    }
+
+    const enrichedPharmacies = sortedPharmacies.map((p) => ({
+      ...p,
+      lost_sales_revenue: lostSalesByPharmacy[p.id] ?? null,
+    }));
+
+    const totalPharmacies = enrichedPharmacies.length;
+    const nairobiCount = enrichedPharmacies.filter((p) => p.region === "Nairobi").length;
+    const highValue = enrichedPharmacies.filter(
       (p) => (p.avg_order_value ?? 0) >= 200000
     ).length;
-    const withProcurementContact = sortedPharmacies.filter(
+    const withProcurementContact = enrichedPharmacies.filter(
       (p) => !!p.procurement_name || !!p.procurement_contact
     ).length;
 
@@ -174,7 +221,7 @@ export default async function MrPharmaciesPage() {
           </div>
         </div>
 
-        {sortedPharmacies.length === 0 ? (
+        {enrichedPharmacies.length === 0 ? (
           <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
             <CardContent className="flex min-h-[280px] flex-col items-center justify-center py-12">
               <div className="rounded-full bg-slate-200 p-4 dark:bg-slate-700">
@@ -191,7 +238,7 @@ export default async function MrPharmaciesPage() {
             </CardContent>
           </Card>
         ) : (
-          <MrPharmaciesTable pharmacies={sortedPharmacies} canDelete={false} />
+          <MrPharmaciesTable pharmacies={enrichedPharmacies} canDelete={false} />
         )}
       </div>
     );
@@ -205,19 +252,80 @@ export default async function MrPharmaciesPage() {
       )
       .order("created_at", { ascending: false });
 
-    const sortedPharmacies = pharmacies ?? [];
+    const sortedPharmacies = (pharmacies ?? []) as {
+      id: string;
+      name: string;
+      region: string;
+      sub_region?: string | null;
+      location_text?: string | null;
+      procurement_name?: string | null;
+      procurement_contact?: string | null;
+      created_at?: string | null;
+      avg_order_value?: number | null;
+    }[];
 
-    const totalPharmacies = sortedPharmacies.length;
-    const nairobiCount = sortedPharmacies.filter(
-      (p: { region?: string }) => p.region === "Nairobi"
+    // Lost sales across all visits for these pharmacies
+    const pharmacyIds = sortedPharmacies.map((p) => p.id);
+    const lostSalesByPharmacy: Record<string, number> = {};
+    if (pharmacyIds.length > 0) {
+      const { data: visits } = await supabase
+        .from("mr_visits")
+        .select("id, pharmacy_id")
+        .in("pharmacy_id", pharmacyIds)
+        .eq("status", "SUBMITTED");
+
+      const visitIds = (visits ?? []).map((v: { id: string }) => v.id);
+      if (visitIds.length > 0) {
+        const { data: productAudits } = await supabase
+          .from("mr_product_audits")
+          .select("id, visit_id, days_oos, quantity_sold_good_month, price_per_pack")
+          .not("days_oos", "is", null)
+          .gte("days_oos", 0)
+          .in("visit_id", visitIds);
+
+        const visitToPharmacy = new Map(
+          (visits ?? []).map((v: { id: string; pharmacy_id: string }) => [
+            v.id,
+            v.pharmacy_id,
+          ])
+        );
+
+        for (const r of productAudits ?? []) {
+          const pa = r as {
+            visit_id: string;
+            days_oos: number | null;
+            quantity_sold_good_month: number | null;
+            price_per_pack: number | null;
+          };
+          const pharmacyId = visitToPharmacy.get(pa.visit_id);
+          if (!pharmacyId) continue;
+          const daysOos = Number(pa.days_oos) || 0;
+          const qtySoldGoodMonth = Number(pa.quantity_sold_good_month) || 0;
+          const pricePerPack =
+            pa.price_per_pack != null ? Number(pa.price_per_pack) : null;
+          if (daysOos <= 0 || qtySoldGoodMonth <= 0 || pricePerPack == null) continue;
+          const volumeLoss = (daysOos / 30) * qtySoldGoodMonth;
+          const revenueLoss = volumeLoss * pricePerPack;
+          lostSalesByPharmacy[pharmacyId] =
+            (lostSalesByPharmacy[pharmacyId] ?? 0) + revenueLoss;
+        }
+      }
+    }
+
+    const enrichedPharmacies = sortedPharmacies.map((p) => ({
+      ...p,
+      lost_sales_revenue: lostSalesByPharmacy[p.id] ?? null,
+    }));
+
+    const totalPharmacies = enrichedPharmacies.length;
+    const nairobiCount = enrichedPharmacies.filter(
+      (p) => p.region === "Nairobi"
     ).length;
-    const highValue = sortedPharmacies.filter(
-      (p: { avg_order_value?: number | null }) =>
-        (p.avg_order_value ?? 0) >= 200000
+    const highValue = enrichedPharmacies.filter(
+      (p) => (p.avg_order_value ?? 0) >= 200000
     ).length;
-    const withProcurementContact = sortedPharmacies.filter(
-      (p: { procurement_name?: string | null; procurement_contact?: string | null }) =>
-        !!p.procurement_name || !!p.procurement_contact
+    const withProcurementContact = enrichedPharmacies.filter(
+      (p) => !!p.procurement_name || !!p.procurement_contact
     ).length;
 
     return (
@@ -238,7 +346,7 @@ export default async function MrPharmaciesPage() {
                 className="gap-2 text-center flex items-center justify-center rounded-full py-4 px-10 bg-blue-700 text-white hover:bg-blue-800 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-800"
               >
                 <Link href="/mr/visit/create">
-                  <Plus className="h-4 w-4 text-white" />
+                  <Plus className="h-4 w-4 text-white" />o
                   Create Pharmacy
                 </Link>
               </Button>
@@ -339,7 +447,7 @@ export default async function MrPharmaciesPage() {
             </CardContent>
           </Card>
         ) : (
-          <MrPharmaciesTable pharmacies={pharmacies} canDelete={true} />
+          <MrPharmaciesTable pharmacies={enrichedPharmacies} canDelete={true} />
         )}
       </div>
     );
