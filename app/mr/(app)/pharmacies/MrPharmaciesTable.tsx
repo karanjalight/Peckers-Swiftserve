@@ -26,6 +26,7 @@ import {
   Search,
   Eye,
   Calendar as CalendarIcon,
+  Download,
 } from "lucide-react";
 
 type PharmacyRow = {
@@ -38,9 +39,12 @@ type PharmacyRow = {
   procurement_contact?: string | null;
   created_at?: string | null;
   avg_order_value?: number | null;
+  lost_sales_revenue?: number | null;
 };
 
 type ValueSegment = "ALL" | "HIGH" | "MEDIUM" | "LOW_OR_UNKNOWN";
+
+type SortMode = "RECENT" | "NAME_ASC" | "NAME_DESC" | "REGION" | "LOST_SALES_DESC";
 
 interface MrPharmaciesTableProps {
   pharmacies: PharmacyRow[];
@@ -53,9 +57,23 @@ export function MrPharmaciesTable({ pharmacies, canDelete }: MrPharmaciesTablePr
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [segment, setSegment] = useState<ValueSegment>("ALL");
+  const [regionFilter, setRegionFilter] = useState<string>("ALL");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [sortMode, setSortMode] = useState<SortMode>("RECENT");
+
+  const regions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          pharmacies
+            .map((p) => p.region)
+            .filter((r): r is string => !!r && r.trim().length > 0)
+        )
+      ).sort(),
+    [pharmacies]
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -87,7 +105,10 @@ export function MrPharmaciesTable({ pharmacies, canDelete }: MrPharmaciesTablePr
       if (segment === "LOW_OR_UNKNOWN") return v < 50000;
       return true;
     });
-    const byDate = bySegment.filter((p) => {
+    const byRegion = bySegment.filter((p) =>
+      regionFilter === "ALL" ? true : p.region === regionFilter
+    );
+    const byDate = byRegion.filter((p) => {
       if (!from && !to) return true;
       if (!p.created_at) return false;
       const created = new Date(p.created_at);
@@ -96,12 +117,42 @@ export function MrPharmaciesTable({ pharmacies, canDelete }: MrPharmaciesTablePr
       if (to && created > to) return false;
       return true;
     });
-    return byDate;
-  }, [pharmacies, query, segment, dateRange]);
+    const sorted = [...byDate].sort((a, b) => {
+      if (sortMode === "NAME_ASC" || sortMode === "NAME_DESC") {
+        const na = (a.name || "").toLowerCase();
+        const nb = (b.name || "").toLowerCase();
+        if (na < nb) return sortMode === "NAME_ASC" ? -1 : 1;
+        if (na > nb) return sortMode === "NAME_ASC" ? 1 : -1;
+        return 0;
+      }
+      if (sortMode === "REGION") {
+        const ra = (a.region || "").toLowerCase();
+        const rb = (b.region || "").toLowerCase();
+        if (ra < rb) return -1;
+        if (ra > rb) return 1;
+        return 0;
+      }
+      if (sortMode === "LOST_SALES_DESC") {
+        const la = a.lost_sales_revenue ?? 0;
+        const lb = b.lost_sales_revenue ?? 0;
+        if (lb !== la) return lb - la;
+      }
+      // Default / RECENT: newest created_at first, fallback to name
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      if (tb !== ta) return tb - ta;
+      const na = (a.name || "").toLowerCase();
+      const nb = (b.name || "").toLowerCase();
+      if (na < nb) return -1;
+      if (na > nb) return 1;
+      return 0;
+    });
+    return sorted;
+  }, [pharmacies, query, segment, regionFilter, dateRange, sortMode]);
 
   useEffect(() => {
     setPage(1);
-  }, [query, segment, dateRange]);
+  }, [query, segment, regionFilter, dateRange, sortMode]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const startIndex = (page - 1) * pageSize;
@@ -128,6 +179,51 @@ export function MrPharmaciesTable({ pharmacies, canDelete }: MrPharmaciesTablePr
         minute: "2-digit",
       }),
     };
+  }
+
+  function handleExportCsv() {
+    if (!filtered.length) return;
+    const header = [
+      "Reference",
+      "Pharmacy",
+      "Region",
+      "Location",
+      "Procurement contact",
+      "Created at",
+      "Lost sales (KES)",
+    ];
+    const rows = filtered.map((p) => {
+      const dateParts = formatDate(p.created_at);
+      const createdAt = [dateParts.top, dateParts.bottom].filter(Boolean).join(" ");
+      const lostSales =
+        p.lost_sales_revenue != null ? Math.round(p.lost_sales_revenue).toString() : "";
+      const values = [
+        formatReference(p.id),
+        p.name ?? "",
+        [p.region, p.sub_region].filter(Boolean).join(" • "),
+        p.location_text ?? "",
+        p.procurement_contact || p.procurement_name || "",
+        createdAt,
+        lostSales,
+      ];
+      return values
+        .map((v) => {
+          const s = String(v ?? "");
+          const escaped = s.replace(/"/g, '""');
+          return `"${escaped}"`;
+        })
+        .join(",");
+    });
+    const csvContent = [header.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pharmacies.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   async function handleDelete(id: string) {
@@ -169,6 +265,44 @@ export function MrPharmaciesTable({ pharmacies, canDelete }: MrPharmaciesTablePr
                 className="h-9 lg:h-12 w-full rounded-2xl border-slate-500 bg-slate-50 pl-9 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-0 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
               />
             </div>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <select
+                value={regionFilter}
+                onChange={(e) => setRegionFilter(e.target.value)}
+                className="h-9 lg:h-12 w-full rounded-2xl border border-slate-500 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              >
+                <option value="ALL">All regions</option>
+                {regions.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <select
+                value={sortMode}
+                onChange={(e) => setSortMode(e.target.value as SortMode)}
+                className="h-9 lg:h-12 w-full rounded-2xl border border-slate-500 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              >
+                <option value="RECENT">Sort: Most recent</option>
+                <option value="NAME_ASC">Sort: Name A–Z</option>
+                <option value="NAME_DESC">Sort: Name Z–A</option>
+                <option value="REGION">Sort: Region</option>
+                <option value="LOST_SALES_DESC">Sort: Lost sales (high → low)</option>
+              </select>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              className="flex h-9 lg:h-12 items-center gap-2 rounded-2xl border-slate-500 bg-white px-4 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">CSV</span>
+            </Button>
             <Popover>
               <PopoverTrigger asChild>
                 <button
@@ -228,6 +362,9 @@ export function MrPharmaciesTable({ pharmacies, canDelete }: MrPharmaciesTablePr
                     <TableHead className="min-w-[220px] text-white border-none">
                       Procurement Contact
                     </TableHead>
+                    <TableHead className="min-w-[140px] text-white border-none text-right">
+                      Lost Sales (KES)
+                    </TableHead>
                     <TableHead className="min-w-[120px] text-white border-none">Date &amp; Time</TableHead>
                     <TableHead className="min-w-[120px] text-white border-none text-right">
                       Status
@@ -272,6 +409,11 @@ export function MrPharmaciesTable({ pharmacies, canDelete }: MrPharmaciesTablePr
                         </div>
                       </TableCell>
 
+                      <TableCell className="text-xs text-right text-slate-700 dark:text-slate-200">
+                        {p.lost_sales_revenue != null
+                          ? `KES ${Math.round(p.lost_sales_revenue).toLocaleString()}`
+                          : "—"}
+                      </TableCell>
                       <TableCell className="text-xs text-slate-700 dark:text-slate-200">
                         <div className="flex flex-col">
                           <span>{dateParts.top}</span>

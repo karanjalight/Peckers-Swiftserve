@@ -29,8 +29,14 @@ export const NAIROBI_SUB_REGIONS = [
 // Reason for Out of Stock - for Supply Chain Attribution Report
 export const REASON_FOR_OOS_OPTIONS = [
   "Wholesaler delayed",
+  "Supplier out of stock",
+  "Manufacturer stock-out",
   "Insufficient funds",
+  "Credit limit reached",
+  "Slow moving product",
+  "Short expiry / quality concern",
   "Forgot to order",
+  "Order placed but not delivered",
   "Import delay",
   "Demand spike",
   "Other",

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -300,7 +301,12 @@ export function MrProductsClient({
                         className="border-b border-slate-200 text-sm text-slate-800 hover:bg-slate-50/80 dark:border-slate-800 dark:text-slate-100 dark:hover:bg-slate-800/70"
                       >
                         <TableCell className="pl-4 font-medium text-slate-900 dark:text-white">
-                          {p.name}
+                          <Link
+                            href={`/mr/products/${p.id}`}
+                            className="text-blue-700 underline-offset-2 hover:underline dark:text-blue-300"
+                          >
+                            {p.name}
+                          </Link>
                         </TableCell>
                         <TableCell className="font-mono text-sm text-slate-600 dark:text-slate-300">
                           {p.sku ?? "—"}

@@ -47,6 +47,27 @@ export async function GET() {
   const prescriptionAudits = prescriptionAuditsRes.data ?? [];
   const competitorMarketing = competitorMarketingRes.data ?? [];
 
+  // Region coverage: which regions are active and which pharmacies in each
+  const regionCoverageMap: Record<string, { pharmacies: Set<string>; visits: number }> = {};
+  for (const v of visits) {
+    const row = v as {
+      mr_pharmacies?: { name?: string; region?: string } | null;
+    };
+    const ph = row.mr_pharmacies;
+    const region = ph?.region ?? "Unknown";
+    const pharmacyName = ph?.name ?? "Unknown";
+    if (!regionCoverageMap[region]) {
+      regionCoverageMap[region] = { pharmacies: new Set<string>(), visits: 0 };
+    }
+    regionCoverageMap[region].visits += 1;
+    regionCoverageMap[region].pharmacies.add(pharmacyName);
+  }
+  const regionCoverage = Object.entries(regionCoverageMap).map(([region, val]) => ({
+    region,
+    visits: val.visits,
+    pharmacies: Array.from(val.pharmacies),
+  }));
+
   // A. Lost Sales Opportunity
   const lostSales: Array<{
     pharmacy: string;
@@ -84,6 +105,48 @@ export async function GET() {
       }
     }
   }
+
+  // Stock-out pharmacy list (where at least one audited product was out of stock)
+  const stockOutByPharmacy: Record<
+    string,
+    { pharmacy: string; region: string; oosAudits: number; totalDaysOos: number; productSet: Set<string> }
+  > = {};
+  for (const pa of productAudits) {
+    const p = pa as unknown as {
+      quantity_in_stock: number;
+      days_oos?: number | null;
+      mr_products?: { name: string } | null;
+      mr_visits?: { mr_pharmacies?: { name?: string; region?: string } } | { mr_pharmacies?: { name?: string; region?: string } }[] | null;
+    };
+    if (p.quantity_in_stock !== 0) continue;
+    const vRaw = p.mr_visits;
+    const v = Array.isArray(vRaw) ? vRaw[0] : vRaw;
+    const ph = v?.mr_pharmacies;
+    const pharmacyName = ph?.name ?? "Unknown";
+    const region = ph?.region ?? "Unknown";
+    const key = `${pharmacyName}::${region}`;
+    if (!stockOutByPharmacy[key]) {
+      stockOutByPharmacy[key] = {
+        pharmacy: pharmacyName,
+        region,
+        oosAudits: 0,
+        totalDaysOos: 0,
+        productSet: new Set<string>(),
+      };
+    }
+    const days = p.days_oos ?? 0;
+    stockOutByPharmacy[key].oosAudits += 1;
+    stockOutByPharmacy[key].totalDaysOos += days;
+    const prod = (Array.isArray(p.mr_products) ? p.mr_products[0] : p.mr_products)?.name;
+    if (prod) stockOutByPharmacy[key].productSet.add(prod);
+  }
+  const stockOutPharmacies = Object.values(stockOutByPharmacy).map((row) => ({
+    pharmacy: row.pharmacy,
+    region: row.region,
+    oosAudits: row.oosAudits,
+    distinctProducts: row.productSet.size,
+    totalDaysOos: row.totalDaysOos,
+  }));
 
   // B. Substitution Threat Index
   const substitutionThreat: Record<string, { count: number; competitors: Record<string, number> }> = {};
@@ -265,6 +328,12 @@ export async function GET() {
     };
   });
 
+  // Most vulnerable products to substitution (highest substitution rate with meaningful Rx)
+  const vulnerableProducts = substitutionRateReport
+    .filter((p) => p.prescribed > 0)
+    .sort((a, b) => b.rate - a.rate)
+    .slice(0, 20);
+
   // I. Supply Chain Attribution
   const oosReasons: Record<string, number> = {};
   for (const pa of productAudits) {
@@ -286,5 +355,8 @@ export async function GET() {
     comparativePricing,
     substitutionRateReport,
     supplyChainAttribution,
+    regionCoverage,
+    stockOutPharmacies,
+    vulnerableProducts,
   });
 }
