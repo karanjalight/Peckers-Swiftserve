@@ -55,6 +55,9 @@ type CompetitorEntry = {
   pricePerPack: string;
   daysOut: string;
   reasonOutOfStock: string;
+  doctorPrescribing: string;
+  doctorLocation: string;
+  rxPerMonth: string;
   activity1Description: string;
   activity1Reason: string;
   activity2Description: string;
@@ -206,6 +209,9 @@ export function MrVisitProductCycleForm({
         pricePerPack: c.price_per_pack != null ? String(c.price_per_pack) : "",
         daysOut: c.days_out != null ? String(c.days_out) : "",
         reasonOutOfStock: c.reason_out_of_stock ?? "",
+        doctorPrescribing: c.doctor_prescribing ?? "",
+        doctorLocation: c.doctor_location ?? "",
+        rxPerMonth: c.rx_per_month != null ? String(c.rx_per_month) : "",
         activity1Description: "",
         activity1Reason: "",
         activity2Description: "",
@@ -289,8 +295,10 @@ export function MrVisitProductCycleForm({
 
   async function handleSaveAll() {
     if (!selectedProduct) return;
-    // Basic validation to ensure rich data for analytics
-    if (objective === "AUDIT") {
+    // For new product audits only: require full AUDIT data (competitor, prescription, marketing).
+    // When updating an existing audit, allow direct save so users can change quantity/stock/etc without re-entering everything.
+    const isUpdate = !!activeProductAuditId;
+    if (objective === "AUDIT" && !isUpdate) {
       const hasCompetitor = competitors.length > 0;
       const hasPrescription = prescriptions.length > 0;
       const hasMarketing = competitors.some((c) => {
@@ -329,6 +337,9 @@ export function MrVisitProductCycleForm({
         pricePerPack: c.pricePerPack ? parseFloat(c.pricePerPack) : undefined,
         daysOut: c.daysOut ? parseInt(c.daysOut, 10) : undefined,
         reasonOutOfStock: c.reasonOutOfStock.trim() || undefined,
+        doctorPrescribing: c.doctorPrescribing.trim() || undefined,
+        doctorLocation: c.doctorLocation.trim() || undefined,
+        rxPerMonth: c.rxPerMonth ? parseInt(c.rxPerMonth, 10) : undefined,
       }));
 
       let productResult:
@@ -1047,6 +1058,9 @@ function CompetitorModal({
   const [pricePerPack, setPricePerPack] = useState("");
   const [daysOut, setDaysOut] = useState("");
   const [reasonOutOfStock, setReasonOutOfStock] = useState("");
+  const [doctorPrescribing, setDoctorPrescribing] = useState("");
+  const [doctorLocation, setDoctorLocation] = useState("");
+  const [rxPerMonth, setRxPerMonth] = useState("");
   const [activity1Description, setActivity1Description] = useState("");
   const [activity1Reason, setActivity1Reason] = useState("");
   const [activity2Description, setActivity2Description] = useState("");
@@ -1062,6 +1076,9 @@ function CompetitorModal({
       setPricePerPack(editing.pricePerPack);
       setDaysOut(editing.daysOut);
       setReasonOutOfStock(editing.reasonOutOfStock);
+      setDoctorPrescribing(editing.doctorPrescribing);
+      setDoctorLocation(editing.doctorLocation);
+      setRxPerMonth(editing.rxPerMonth);
       setActivity1Description(editing.activity1Description);
       setActivity1Reason(editing.activity1Reason);
       setActivity2Description(editing.activity2Description);
@@ -1075,6 +1092,9 @@ function CompetitorModal({
       setPricePerPack("");
       setDaysOut("");
       setReasonOutOfStock("");
+      setDoctorPrescribing("");
+      setDoctorLocation("");
+      setRxPerMonth("");
       setActivity1Description("");
       setActivity1Reason("");
       setActivity2Description("");
@@ -1093,6 +1113,9 @@ function CompetitorModal({
       pricePerPack,
       daysOut,
       reasonOutOfStock,
+      doctorPrescribing,
+      doctorLocation,
+      rxPerMonth,
       activity1Description,
       activity1Reason,
       activity2Description,
@@ -1199,6 +1222,39 @@ function CompetitorModal({
             />
           </div>
           <div className="border-t pt-3 space-y-3">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Doctor prescribing this competitor</p>
+            <div>
+              <Label className="mb-1.5">Doctor prescribing</Label>
+              <Input
+                value={doctorPrescribing}
+                onChange={(e) => setDoctorPrescribing(e.target.value)}
+                placeholder="e.g. Dr. Jane Mwangi"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <Label className="mb-1.5">Doctor location</Label>
+              <Input
+                value={doctorLocation}
+                onChange={(e) => setDoctorLocation(e.target.value)}
+                placeholder="e.g. Kenyatta Hospital"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <Label className="mb-1.5">Rx per month</Label>
+              <Input
+                type="number"
+                min={0}
+                value={rxPerMonth}
+                onChange={(e) => setRxPerMonth(e.target.value)}
+                placeholder="Prescriptions per month"
+                className={inputClass}
+              />
+            </div>
+          </div>
+          <div className="border-t pt-3 space-y-3">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Competitor activity</p>
             <div>
               <Label className="mb-1.5">Activity 1 (why do you dispense)</Label>
               <Input

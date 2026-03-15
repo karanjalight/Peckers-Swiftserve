@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   MapPin,
+  Map,
   PlusCircle,
   History,
   FileBarChart,
@@ -49,6 +50,7 @@ const mainMenuItems: NavItem[] = [
 ];
 
 const managementItems: NavItem[] = [
+  { title: "Maps", url: "/mr/maps", icon: Map, roles: ["MANAGER", "ADMIN"] },
   { title: "Products", url: "/mr/products", icon: Package, roles: ["MANAGER", "ADMIN"] },
   { title: "Reports", url: "/mr/reports", icon: FileBarChart },
   { title: "Lost Sales", url: "/mr/reports/lost-sales", icon: TrendingDown, roles: ["MANAGER", "ADMIN"] },

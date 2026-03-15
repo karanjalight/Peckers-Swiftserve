@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getMrAuth } from "@/lib/mr/supabase-server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const auth = await getMrAuth();
   if (auth.error) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
@@ -12,40 +12,85 @@ export async function GET() {
   }
 
   const { supabase } = auth;
+  const searchParams = request.nextUrl.searchParams;
+  const statusParam = searchParams.get("status") ?? undefined;
+  const dateFrom = searchParams.get("dateFrom") ?? undefined;
+  const dateTo = searchParams.get("dateTo") ?? undefined;
+  const regionParam = searchParams.get("region") ?? undefined;
+  const mrIdParam = searchParams.get("mrId") ?? undefined;
 
-  const [visitsRes, productAuditsRes, competitorAuditsRes, prescriptionAuditsRes, competitorMarketingRes] =
+  const DAYS_OPEN_PER_MONTH = 26;
+
+  // Visits query — same filters as Visit History page (status, dateFrom, dateTo, mrId)
+  let visitsQuery = supabase
+    .from("mr_visits")
+    .select(
+      "id, mr_id, check_in_time, check_out_time, visit_duration_minutes, patients_per_day, basket_value_per_patient, mr_pharmacies(name, region), mr_profiles!mr_id(full_name)"
+    )
+    .order("check_in_time", { ascending: false });
+  if (statusParam && statusParam !== "ALL") visitsQuery = visitsQuery.eq("status", statusParam);
+  else if (!statusParam) visitsQuery = visitsQuery.eq("status", "SUBMITTED");
+  if (mrIdParam) visitsQuery = visitsQuery.eq("mr_id", mrIdParam);
+  if (dateFrom) {
+    const from = new Date(dateFrom);
+    from.setHours(0, 0, 0, 0);
+    visitsQuery = visitsQuery.gte("check_in_time", from.toISOString());
+  }
+  if (dateTo) {
+    const to = new Date(dateTo);
+    to.setHours(23, 59, 59, 999);
+    visitsQuery = visitsQuery.lte("check_in_time", to.toISOString());
+  }
+
+  const role = auth.profile.role as string;
+  const [visitsRes, productAuditsRes, competitorAuditsRes, prescriptionAuditsRes, competitorMarketingRes, catalogProductsRes, pharmaciesRes, mrProfilesRes] =
     await Promise.all([
-      supabase
-        .from("mr_visits")
-        .select(
-          "id, mr_id, check_in_time, check_out_time, visit_duration_minutes, patients_per_day, basket_value_per_patient, mr_pharmacies(name, region), mr_profiles!mr_id(full_name)"
-        )
-        .eq("status", "SUBMITTED")
-        .order("check_in_time", { ascending: false })
-        .limit(500),
+      visitsQuery,
       supabase
         .from("mr_product_audits")
-        .select("id, visit_id, quantity_in_stock, reason_why_stock, supplier, do_substitute, substitute_with_and_why, reason_for_oos, days_oos, price_per_pack, mr_products(name), mr_visits(patients_per_day, basket_value_per_patient, mr_pharmacies(name, region))")
-        .limit(1000),
+        .select("id, visit_id, quantity_in_stock, reason_why_stock, supplier, do_substitute, substitute_with_and_why, reason_for_oos, days_oos, price_per_pack, mr_products(name), mr_visits(patients_per_day, basket_value_per_patient, mr_pharmacies(id, name, region))"),
       supabase
         .from("mr_competitor_audits")
-        .select("competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock, mr_product_audits(mr_products(name), mr_visits(mr_pharmacies(region)))")
+        .select("competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock, doctor_prescribing, doctor_location, rx_per_month, mr_product_audits(mr_products(name), mr_visits(mr_pharmacies(region)))")
         .limit(1000),
       supabase
         .from("mr_prescription_audits")
-        .select("product_name, rx_per_month, mr_doctors(name, location), mr_visits(mr_pharmacies(region), mr_profiles!mr_id(full_name))")
-        .limit(1000),
+        .select("visit_id, product_name, rx_per_month, mr_doctors(name, location), mr_visits(mr_pharmacies(region), mr_profiles!mr_id(full_name))"),
       supabase
         .from("mr_competitor_marketing")
         .select("competitor_name, activity_description, reason_it_works, activity_2_description, activity_2_reason")
         .limit(500),
+      supabase.from("mr_products").select("id, name"),
+      supabase
+        .from("mr_pharmacies")
+        .select("id, name, region, avg_attendants_per_day, avg_order_value"),
+      role === "ADMIN"
+        ? supabase.from("mr_profiles").select("id, full_name").eq("role", "MR").order("full_name")
+        : supabase.from("mr_profiles").select("id, full_name").eq("role", "MR").eq("manager_id", auth.user.id).order("full_name"),
     ]);
 
-  const visits = visitsRes.data ?? [];
+  let visits = (visitsRes.data ?? []) as Array<{
+    mr_pharmacies?: { name?: string; region?: string } | null;
+    [k: string]: unknown;
+  }>;
+  if (regionParam && visits.length > 0) {
+    visits = visits.filter((v) => {
+      const ph = Array.isArray(v.mr_pharmacies) ? v.mr_pharmacies[0] : v.mr_pharmacies;
+      return (ph as { region?: string } | null)?.region === regionParam;
+    });
+  }
+  const pharmacies = (pharmaciesRes.data ?? []) as Array<{
+    id: string;
+    name: string;
+    region: string | null;
+    avg_attendants_per_day?: number | null;
+    avg_order_value?: number | null;
+  }>;
   const productAudits = productAuditsRes.data ?? [];
   const competitorAudits = competitorAuditsRes.data ?? [];
   const prescriptionAudits = prescriptionAuditsRes.data ?? [];
   const competitorMarketing = competitorMarketingRes.data ?? [];
+  const catalogProducts = (catalogProductsRes.data ?? []) as Array<{ id: string; name: string }>;
 
   // Region coverage: which regions are active and which pharmacies in each
   const regionCoverageMap: Record<string, { pharmacies: Set<string>; visits: number }> = {};
@@ -71,6 +116,7 @@ export async function GET() {
   // A. Lost Sales Opportunity
   const lostSales: Array<{
     pharmacy: string;
+    pharmacyId: string | null;
     region: string;
     product: string;
     daysOos: number;
@@ -83,7 +129,7 @@ export async function GET() {
       quantity_in_stock: number;
       days_oos?: number | null;
       mr_products?: { name: string } | null;
-      mr_visits?: { patients_per_day?: number; basket_value_per_patient?: number; mr_pharmacies?: { name?: string; region?: string } };
+      mr_visits?: { patients_per_day?: number; basket_value_per_patient?: number; mr_pharmacies?: { id?: string; name?: string; region?: string } };
     };
     if (p.quantity_in_stock === 0 && (p.days_oos ?? 0) > 0) {
       const vRaw = p.mr_visits;
@@ -95,6 +141,7 @@ export async function GET() {
       if (patients > 0 && basket > 0) {
         lostSales.push({
           pharmacy: ph?.name ?? "Unknown",
+          pharmacyId: ph?.id ?? null,
           region: ph?.region ?? "Unknown",
           product: (Array.isArray(p.mr_products) ? p.mr_products[0] : p.mr_products)?.name ?? "Unknown",
           daysOos: days,
@@ -109,25 +156,27 @@ export async function GET() {
   // Stock-out pharmacy list (where at least one audited product was out of stock)
   const stockOutByPharmacy: Record<
     string,
-    { pharmacy: string; region: string; oosAudits: number; totalDaysOos: number; productSet: Set<string> }
+    { pharmacy: string; pharmacyId: string | null; region: string; oosAudits: number; totalDaysOos: number; productSet: Set<string> }
   > = {};
   for (const pa of productAudits) {
     const p = pa as unknown as {
       quantity_in_stock: number;
       days_oos?: number | null;
       mr_products?: { name: string } | null;
-      mr_visits?: { mr_pharmacies?: { name?: string; region?: string } } | { mr_pharmacies?: { name?: string; region?: string } }[] | null;
+      mr_visits?: { mr_pharmacies?: { id?: string; name?: string; region?: string } | Array<{ id?: string; name?: string; region?: string }> } | { mr_pharmacies?: { id?: string; name?: string; region?: string } }[] | null;
     };
     if (p.quantity_in_stock !== 0) continue;
     const vRaw = p.mr_visits;
     const v = Array.isArray(vRaw) ? vRaw[0] : vRaw;
-    const ph = v?.mr_pharmacies;
+    const phRaw = v?.mr_pharmacies;
+    const ph = Array.isArray(phRaw) ? phRaw[0] : phRaw;
     const pharmacyName = ph?.name ?? "Unknown";
     const region = ph?.region ?? "Unknown";
     const key = `${pharmacyName}::${region}`;
     if (!stockOutByPharmacy[key]) {
       stockOutByPharmacy[key] = {
         pharmacy: pharmacyName,
+        pharmacyId: ph?.id ?? null,
         region,
         oosAudits: 0,
         totalDaysOos: 0,
@@ -142,6 +191,7 @@ export async function GET() {
   }
   const stockOutPharmacies = Object.values(stockOutByPharmacy).map((row) => ({
     pharmacy: row.pharmacy,
+    pharmacyId: row.pharmacyId,
     region: row.region,
     oosAudits: row.oosAudits,
     distinctProducts: row.productSet.size,
@@ -183,45 +233,74 @@ export async function GET() {
     }))
     .sort((a, b) => b.prescribed - a.prescribed);
 
-  // D. MR Productivity
+  // D. MR Productivity — one row per visit so "Visits per MR" matches Visit History (count all visits; duration optional)
   const mrProductivity = (visits as Array<{ visit_duration_minutes?: number | null; mr_profiles?: { full_name?: string }; mr_pharmacies?: { name?: string }; check_in_time?: string }>)
-    .filter((v) => v.visit_duration_minutes != null)
     .map((v) => ({
       mr: v.mr_profiles?.full_name ?? "Unknown",
       pharmacy: v.mr_pharmacies?.name ?? "Unknown",
       checkIn: v.check_in_time,
       duration: v.visit_duration_minutes ?? 0,
     }))
-    .sort((a, b) => b.duration - a.duration)
-    .slice(0, 50);
+    .sort((a, b) => (b.checkIn ?? "").localeCompare(a.checkIn ?? ""));
 
-  // E. Top Doctors
+  // E. Top Doctors — join prescription_audits to product via MR visit flow.
+  // Build visit -> product names from product_audits (products reviewed at that visit).
+  const visitToProductNames: Record<string, Map<string, string>> = {};
+  for (const pa of productAudits) {
+    const row = pa as { visit_id?: string; mr_products?: { name: string }[] | { name: string } | null };
+    const visitId = row.visit_id;
+    if (!visitId) continue;
+    const name = (Array.isArray(row.mr_products) ? row.mr_products[0] : row.mr_products)?.name?.trim();
+    if (!name) continue;
+    if (!visitToProductNames[visitId]) visitToProductNames[visitId] = new Map();
+    visitToProductNames[visitId].set(name.toLowerCase(), name);
+  }
+  const catalogNameByLower: Map<string, string> = new Map();
+  for (const prod of catalogProducts) {
+    const n = (prod.name ?? "").trim();
+    if (n) catalogNameByLower.set(n.toLowerCase(), n);
+  }
+  const resolveProductForPrescription = (visitId: string | undefined, productNameRaw: string): string => {
+    const t = (productNameRaw ?? "").trim();
+    if (!t) return "";
+    const keyLower = t.toLowerCase();
+    if (visitId && visitToProductNames[visitId]) {
+      const canonical = visitToProductNames[visitId].get(keyLower);
+      if (canonical) return canonical;
+    }
+    return catalogNameByLower.get(keyLower) ?? t;
+  };
   const doctorRx: Record<string, { doctor: string; location: string; totalRx: number; products: Set<string>; region?: string }> = {};
   for (const pr of prescriptionAudits) {
-    const p = pr as {
-      product_name: string;
-      rx_per_month?: number | null;
-      mr_doctors?: { name?: string; location?: string } | null;
-      mr_visits?: { mr_pharmacies?: { region?: string } };
-    };
-    const key = `${p.mr_doctors?.name ?? "—"}|${p.mr_doctors?.location ?? "—"}`;
+    const p = pr as Record<string, unknown>;
+    const visitId = (p.visit_id as string) ?? undefined;
+    const rawProductName = typeof p.product_name === "string" ? p.product_name : (p.product_name != null ? String(p.product_name) : "");
+    const productName = resolveProductForPrescription(visitId, rawProductName) || rawProductName.trim() || "Product (not specified)";
+    const doc = (Array.isArray(p.mr_doctors) ? p.mr_doctors[0] : p.mr_doctors) as { name?: string; location?: string } | null | undefined;
+    const visits = (Array.isArray(p.mr_visits) ? p.mr_visits[0] : p.mr_visits) as { mr_pharmacies?: { region?: string } } | null | undefined;
+    const key = `${doc?.name ?? "—"}|${doc?.location ?? "—"}`;
     if (!doctorRx[key]) {
       doctorRx[key] = {
-        doctor: p.mr_doctors?.name ?? "—",
-        location: p.mr_doctors?.location ?? "—",
+        doctor: doc?.name ?? "—",
+        location: doc?.location ?? "—",
         totalRx: 0,
         products: new Set(),
-        region: p.mr_visits?.mr_pharmacies?.region,
+        region: visits?.mr_pharmacies?.region,
       };
     }
-    doctorRx[key].totalRx += p.rx_per_month ?? 0;
-    doctorRx[key].products.add(p.product_name);
+    doctorRx[key].totalRx += (p.rx_per_month as number) ?? 0;
+    doctorRx[key].products.add(productName);
   }
   const topDoctorsList = Object.values(doctorRx)
-    .map((d) => ({ ...d, productCount: d.products.size }))
-    .sort((a, b) => b.totalRx - a.totalRx)
-    .slice(0, 20)
-    .map(({ products, ...rest }) => ({ ...rest }));
+    .map((d) => ({
+      doctor: d.doctor,
+      location: d.location,
+      region: d.region,
+      totalRx: d.totalRx,
+      productCount: d.products.size,
+      products: Array.from(d.products).sort(),
+    }))
+    .sort((a, b) => b.totalRx - a.totalRx);
 
   // F. Marketing Insights
   const marketingByCompetitor: Record<string, Array<{ activity: string; reason: string }>> = {};
@@ -345,6 +424,31 @@ export async function GET() {
   }
   const supplyChainAttribution = Object.entries(oosReasons).map(([name, value]) => ({ name, value }));
 
+  // Pharmacy value from master data (people attended per day × average order value × 26 days)
+  const pharmacyValuesFromMaster = pharmacies
+    .filter(
+      (p) =>
+        p.avg_attendants_per_day != null &&
+        p.avg_attendants_per_day > 0 &&
+        p.avg_order_value != null &&
+        p.avg_order_value > 0
+    )
+    .map((p) => ({
+      pharmacyId: p.id,
+      pharmacy: p.name,
+      region: p.region ?? "—",
+      avgAttendantsPerDay: p.avg_attendants_per_day!,
+      avgOrderValue: p.avg_order_value!,
+      estimatedMonthlyValue:
+        (p.avg_attendants_per_day ?? 0) * (p.avg_order_value ?? 0) * DAYS_OPEN_PER_MONTH,
+    }))
+    .sort((a, b) => b.estimatedMonthlyValue - a.estimatedMonthlyValue);
+
+  const pharmacyList = pharmacies as Array<{ region?: string | null }>;
+  const regionSet = new Set(pharmacyList.map((p) => p.region).filter(Boolean));
+  const regionOptions = Array.from(regionSet).sort() as string[];
+  const mrOptions = (mrProfilesRes?.data ?? []).map((p: { id: string; full_name: string }) => ({ id: p.id, full_name: p.full_name }));
+
   return NextResponse.json({
     lostSales,
     substitutionThreat: substitutionThreatList,
@@ -358,5 +462,8 @@ export async function GET() {
     regionCoverage,
     stockOutPharmacies,
     vulnerableProducts,
+    pharmacyValuesFromMaster,
+    regionOptions,
+    mrOptions,
   });
 }

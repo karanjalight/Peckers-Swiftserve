@@ -319,6 +319,9 @@ export async function createProductAudit(input: {
     pricePerPack?: number;
     daysOut?: number;
     reasonOutOfStock?: string;
+    doctorPrescribing?: string;
+    doctorLocation?: string;
+    rxPerMonth?: number;
   }>;
 }) {
   const auth = await getMrAuth();
@@ -377,6 +380,9 @@ export async function createProductAudit(input: {
       price_per_pack: c.pricePerPack ?? null,
       days_out: c.daysOut ?? null,
       reason_out_of_stock: c.reasonOutOfStock ?? null,
+      doctor_prescribing: c.doctorPrescribing ?? null,
+      doctor_location: c.doctorLocation ?? null,
+      rx_per_month: c.rxPerMonth ?? null,
     }));
 
     const { error: caError } = await supabase
@@ -420,7 +426,7 @@ export async function getVisitAudits(visitId: string) {
         reason_why_stock, supplier, quantity_sold_good_month, price_per_pack, days_oos, reason_for_oos,
         do_substitute, substitute_with_and_why,
         mr_products (id, name),
-        mr_competitor_audits (id, competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock)
+        mr_competitor_audits (id, competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock, doctor_prescribing, doctor_location, rx_per_month)
       `)
       .eq("visit_id", visitId),
     supabase
@@ -471,6 +477,9 @@ export async function updateProductAudit(
       pricePerPack?: number;
       daysOut?: number;
       reasonOutOfStock?: string;
+      doctorPrescribing?: string;
+      doctorLocation?: string;
+      rxPerMonth?: number;
     }>;
   }
 ) {
@@ -538,6 +547,9 @@ export async function updateProductAudit(
       price_per_pack: c.pricePerPack ?? null,
       days_out: c.daysOut ?? null,
       reason_out_of_stock: c.reasonOutOfStock ?? null,
+      doctor_prescribing: c.doctorPrescribing ?? null,
+      doctor_location: c.doctorLocation ?? null,
+      rx_per_month: c.rxPerMonth ?? null,
     }));
     const { error: insError } = await supabase.from("mr_competitor_audits").insert(rows);
     if (insError) return { success: false, error: insError.message };

@@ -38,6 +38,9 @@ type ProductAudit = {
     price_per_pack?: number | null;
     days_out?: number | null;
     reason_out_of_stock?: string | null;
+    doctor_prescribing?: string | null;
+    doctor_location?: string | null;
+    rx_per_month?: number | null;
   }>;
 };
 
@@ -207,18 +210,28 @@ export function MrVisitProductDetailTabs({
                         {competitors.map((c, i) => (
                           <li
                             key={i}
-                            className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900/40"
+                            className="flex flex-wrap items-start gap-x-3 gap-y-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900/40"
                           >
-                            <span className="font-medium text-slate-900 dark:text-slate-100">{c.competitor_name}</span>
-                            {c.supplier && <span className="text-slate-600 dark:text-slate-400">{c.supplier}</span>}
-                            {c.competitor_stock != null && (
-                              <span className="text-slate-600 dark:text-slate-400">Stock: {c.competitor_stock}</span>
-                            )}
-                            {c.stock_sold_per_month != null && (
-                              <span className="text-slate-600 dark:text-slate-400">{c.stock_sold_per_month}/mo</span>
-                            )}
-                            {c.price_per_pack != null && (
-                              <span className="text-slate-600 dark:text-slate-400">KES {c.price_per_pack}</span>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                              <span className="font-medium text-slate-900 dark:text-slate-100">{c.competitor_name}</span>
+                              {c.supplier && <span className="text-slate-600 dark:text-slate-400">{c.supplier}</span>}
+                              {c.competitor_stock != null && (
+                                <span className="text-slate-600 dark:text-slate-400">Stock: {c.competitor_stock}</span>
+                              )}
+                              {c.stock_sold_per_month != null && (
+                                <span className="text-slate-600 dark:text-slate-400">{c.stock_sold_per_month}/mo</span>
+                              )}
+                              {c.price_per_pack != null && (
+                                <span className="text-slate-600 dark:text-slate-400">KES {c.price_per_pack}</span>
+                              )}
+                            </div>
+                            {(c.doctor_prescribing || c.doctor_location != null || c.rx_per_month != null) && (
+                              <div className="w-full border-t border-slate-100 pt-2 mt-1 dark:border-slate-700">
+                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Doctor prescribing: </span>
+                                <span className="text-slate-700 dark:text-slate-300">{c.doctor_prescribing ?? "—"}</span>
+                                {c.doctor_location && <span className="text-slate-600 dark:text-slate-400"> · {c.doctor_location}</span>}
+                                {c.rx_per_month != null && <span className="text-slate-600 dark:text-slate-400"> · {c.rx_per_month} Rx/mo</span>}
+                              </div>
                             )}
                           </li>
                         ))}

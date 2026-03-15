@@ -33,6 +33,9 @@ const EMPTY_COMPETITOR = {
   pricePerPack: "",
   daysOut: "",
   reasonOutOfStock: "",
+  doctorPrescribing: "",
+  doctorLocation: "",
+  rxPerMonth: "",
 };
 
 type ProductAuditRow = {
@@ -60,6 +63,9 @@ type ProductAuditRow = {
     price_per_pack?: number | null;
     days_out?: number | null;
     reason_out_of_stock?: string | null;
+    doctor_prescribing?: string | null;
+    doctor_location?: string | null;
+    rx_per_month?: number | null;
   }>;
 };
 
@@ -438,6 +444,9 @@ function EditProductAuditDialog({
           pricePerPack: c.price_per_pack?.toString() ?? "",
           daysOut: c.days_out?.toString() ?? "",
           reasonOutOfStock: c.reason_out_of_stock ?? "",
+          doctorPrescribing: c.doctor_prescribing ?? "",
+          doctorLocation: c.doctor_location ?? "",
+          rxPerMonth: c.rx_per_month != null ? String(c.rx_per_month) : "",
         };
       }
     });
@@ -459,6 +468,9 @@ function EditProductAuditDialog({
         pricePerPack: c.pricePerPack ? parseFloat(c.pricePerPack) : undefined,
         daysOut: c.daysOut ? parseInt(c.daysOut, 10) : undefined,
         reasonOutOfStock: c.reasonOutOfStock.trim() || undefined,
+        doctorPrescribing: c.doctorPrescribing?.trim() || undefined,
+        doctorLocation: c.doctorLocation?.trim() || undefined,
+        rxPerMonth: c.rxPerMonth ? parseInt(c.rxPerMonth, 10) : undefined,
       }));
     const result = await updateProductAudit(row.id, visitId, {
       productId,
@@ -648,6 +660,35 @@ function EditProductAuditDialog({
                   onChange={(e) => {
                     const next = [...competitors];
                     next[i] = { ...next[i], pricePerPack: e.target.value };
+                    setCompetitors(next);
+                  }}
+                />
+                <Input
+                  placeholder="Doctor prescribing"
+                  value={c.doctorPrescribing}
+                  onChange={(e) => {
+                    const next = [...competitors];
+                    next[i] = { ...next[i], doctorPrescribing: e.target.value };
+                    setCompetitors(next);
+                  }}
+                />
+                <Input
+                  placeholder="Doctor location"
+                  value={c.doctorLocation}
+                  onChange={(e) => {
+                    const next = [...competitors];
+                    next[i] = { ...next[i], doctorLocation: e.target.value };
+                    setCompetitors(next);
+                  }}
+                />
+                <Input
+                  placeholder="Rx per month"
+                  type="number"
+                  min={0}
+                  value={c.rxPerMonth}
+                  onChange={(e) => {
+                    const next = [...competitors];
+                    next[i] = { ...next[i], rxPerMonth: e.target.value };
                     setCompetitors(next);
                   }}
                 />

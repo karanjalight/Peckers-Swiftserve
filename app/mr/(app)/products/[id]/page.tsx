@@ -19,6 +19,12 @@ type PrescriberRow = {
   mrName: string | null;
 };
 
+type CompetitorDoctor = {
+  doctorName: string;
+  location: string | null;
+  rxPerMonth: number | null;
+};
+
 type CompetitorRow = {
   competitorName: string;
   supplier: string | null;
@@ -26,7 +32,8 @@ type CompetitorRow = {
   avgPricePerPack: number | null;
   pressure: "High" | "Medium" | "Low";
   notesSample?: string | null;
-   marketingEvents: number;
+  marketingEvents: number;
+  doctorsPrescribing: CompetitorDoctor[];
 };
 
 type StockLocationRow = {
@@ -166,6 +173,9 @@ export default async function MrProductDetailIntelligencePage({
         price_per_pack,
         days_out,
         reason_out_of_stock,
+        doctor_prescribing,
+        doctor_location,
+        rx_per_month,
         mr_product_audits(
           id,
           mr_products(name),
@@ -238,6 +248,9 @@ export default async function MrProductDetailIntelligencePage({
     price_per_pack: number | null;
     days_out: number | null;
     reason_out_of_stock: string | null;
+    doctor_prescribing: string | null;
+    doctor_location: string | null;
+    rx_per_month: number | null;
     mr_product_audits: {
       id: string;
       mr_products: { name: string | null } | null;
@@ -392,6 +405,7 @@ export default async function MrProductDetailIntelligencePage({
       prices: number[];
       notes: string | null;
       marketingEvents: number;
+      doctors: CompetitorDoctor[];
     }
   > = {};
   for (const c of competitorAuditsForProduct) {
@@ -403,11 +417,19 @@ export default async function MrProductDetailIntelligencePage({
         prices: [],
         notes: c.substitution_reason,
         marketingEvents: 0,
+        doctors: [],
       };
     }
     competitorMap[key].mentions += 1;
     if (c.price_per_pack != null) {
       competitorMap[key].prices.push(c.price_per_pack);
+    }
+    if (c.doctor_prescribing?.trim()) {
+      competitorMap[key].doctors.push({
+        doctorName: c.doctor_prescribing.trim(),
+        location: c.doctor_location?.trim() ?? null,
+        rxPerMonth: c.rx_per_month ?? null,
+      });
     }
   }
 
@@ -424,6 +446,7 @@ export default async function MrProductDetailIntelligencePage({
         prices: [],
         notes: null,
         marketingEvents: 0,
+        doctors: [],
       };
     }
     if (
@@ -441,6 +464,14 @@ export default async function MrProductDetailIntelligencePage({
           : null;
       const pressure: "High" | "Medium" | "Low" =
         data.mentions >= 10 ? "High" : data.mentions >= 4 ? "Medium" : "Low";
+      // Dedupe doctors by name+location
+      const seen = new Set<string>();
+      const doctorsPrescribing = data.doctors.filter((d) => {
+        const k = `${d.doctorName}|${d.location ?? ""}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
       return {
         competitorName: name,
         supplier: data.supplier ?? null,
@@ -449,6 +480,7 @@ export default async function MrProductDetailIntelligencePage({
         pressure,
         notesSample: data.notes,
         marketingEvents: data.marketingEvents,
+        doctorsPrescribing,
       };
     }
   );

@@ -433,7 +433,7 @@ export function MrProductIntelligenceClient({
               </Card>
 
               {/* Visit feedback timeline */}
-              <Card className="border-slate-200 bg-white/95 shadow-sm dark:border-slate-700 dark:bg-slate-900/90">
+              <Card className="border-slate-200 hidden bg-white/95 shadow-sm dark:border-slate-700 dark:bg-slate-900/90">
                 <CardHeader>
                   <CardTitle className="text-base text-slate-900 dark:text-slate-50">
                     Latest visit reviews & feedback
@@ -541,86 +541,7 @@ export function MrProductIntelligenceClient({
 
             {/* Right column: competitors + stock + activity */}
             <div className="space-y-6">
-              <Card className="border-slate-200 bg-white/95 shadow-sm dark:border-slate-700 dark:bg-slate-900/90">
-                <CardHeader>
-                  <CardTitle className="text-sm text-slate-900 dark:text-slate-50">
-                    Competitor pressure
-                  </CardTitle>
-                  <CardDescription className="text-xs text-slate-600 dark:text-slate-400">
-                    Top molecules doctors mention instead of this product.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="h-28 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/40">
-                    <div className="flex h-full items-center justify-center text-xs text-slate-400">
-                      Bar chart placeholder – competitor mentions (
-                      {data.competitors.length} rows)
-                    </div>
-                  </div>
-                  <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-200">
-                    {data.competitors.length === 0 ? (
-                      <li className="text-slate-500 dark:text-slate-400">
-                        No competitor audits captured for this product in the
-                        selected period.
-                      </li>
-                    ) : (
-                      data.competitors.slice(0, 3).map((c) => (
-                        <li
-                          key={c.competitorName}
-                          className="flex items-center justify-between gap-2"
-                        >
-                          <span>
-                            {c.competitorName}
-                            {c.supplier ? ` (${c.supplier})` : ""}
-                          </span>
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                              c.pressure === "High"
-                                ? "bg-rose-50 text-rose-800 dark:bg-rose-900/40 dark:text-rose-100"
-                                : c.pressure === "Medium"
-                                ? "bg-amber-50 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100"
-                                : "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-100"
-                            }`}
-                          >
-                            {c.pressure} pressure
-                          </span>
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                </CardContent>
-              </Card>
-
-              <Card className="border-slate-200 bg-white/95 shadow-sm dark:border-slate-700 dark:bg-slate-900/90">
-                <CardHeader>
-                  <CardTitle className="text-sm text-slate-900 dark:text-slate-50">
-                    Stock availability
-                  </CardTitle>
-                  <CardDescription className="text-xs text-slate-600 dark:text-slate-400">
-                    Stock-outs reported across pharmacies where this product is
-                    audited.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="h-24 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/40">
-                    <div className="flex h-full items-center justify-center text-xs text-slate-400">
-                      Timeline placeholder – days out of stock
-                    </div>
-                  </div>
-                  <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-200">
-                    <li className="flex items-center justify-between gap-2">
-                      <span>Highest OOS region</span>
-                      <span>
-                        {data.stock.mostAffectedRegion ?? "No stock-outs"}
-                      </span>
-                    </li>
-                    <li className="flex items-center justify-between gap-2">
-                      <span>Doctors reporting OOS</span>
-                      <span>{data.stock.doctorsReportingOos}</span>
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
+            
 
               <Card className="border-slate-200 bg-white/95 shadow-sm dark:border-slate-700 dark:bg-slate-900/90">
                 <CardHeader>
@@ -699,43 +620,47 @@ export function MrProductIntelligenceClient({
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
+            <CardContent className="p-0 sm:p-6">
+              <div className="max-h-[420px] overflow-auto rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/5 dark:border-slate-700 dark:bg-slate-900/50 dark:ring-white/5">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50/80 dark:bg-slate-900/40">
-                      <TableHead className="text-xs font-semibold">
+                    <TableRow className="border-0 bg-slate-100/90 dark:bg-slate-800/90">
+                      <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">
                         Doctor
                       </TableHead>
-                      <TableHead className="text-xs font-semibold">
-                        Specialty
-                      </TableHead>
-                      <TableHead className="text-xs font-semibold">
+                      <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                         Hospital / Clinic
                       </TableHead>
-                      <TableHead className="text-xs font-semibold text-right">
+                      <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                         Rx / month
                       </TableHead>
-                      <TableHead className="text-xs font-semibold">
+                      <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                         Last visit
                       </TableHead>
-                      <TableHead className="text-xs font-semibold">
+                      <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                         MR
                       </TableHead>
-                      <TableHead className="text-xs font-semibold text-right">
+                      <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">
                         Segment
                       </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.prescribers.length === 0 ? (
-                      <TableRow>
+                      <TableRow className="hover:bg-transparent">
                         <TableCell
-                          colSpan={7}
-                          className="py-8 text-center text-xs text-slate-500 dark:text-slate-400"
+                          colSpan={6}
+                          className="py-14 text-center text-sm text-slate-500 dark:text-slate-400"
                         >
-                          No prescription audits captured for this product in
-                          the selected period.
+                          <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                              <Users className="h-5 w-5 text-slate-400" />
+                            </div>
+                            <span>
+                              No prescription audits captured for this product in
+                              the selected period.
+                            </span>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -749,43 +674,40 @@ export function MrProductIntelligenceClient({
                         return (
                           <TableRow
                             key={`${row.doctorName}-${row.hospital}-${row.lastVisit}`}
-                            className="hover:bg-slate-50 dark:hover:bg-slate-900/60"
+                            className="border-b border-slate-100 transition-colors duration-150 last:border-0 hover:bg-slate-50/80 dark:border-slate-800/80 dark:hover:bg-slate-800/50"
                           >
-                            <TableCell className="text-xs font-medium text-slate-900 dark:text-slate-50">
+                            <TableCell className="whitespace-nowrap py-3.5 pl-5 text-sm font-medium text-slate-900 dark:text-slate-50">
                               {row.doctorName}
                             </TableCell>
-                            <TableCell className="text-xs text-slate-700 dark:text-slate-200">
-                              {row.specialty ?? "—"}
-                            </TableCell>
-                            <TableCell className="text-xs text-slate-700 dark:text-slate-200">
+                            <TableCell className="whitespace-nowrap py-3.5 px-4 text-sm text-slate-700 dark:text-slate-200">
                               {row.hospital}
                             </TableCell>
-                            <TableCell className="text-xs text-right text-slate-900 dark:text-slate-50">
+                            <TableCell className="tabular-nums py-3.5 px-4 text-right text-sm font-medium text-slate-900 dark:text-slate-50">
                               {row.rxPerMonth ?? "—"}
                             </TableCell>
-                            <TableCell className="text-xs text-slate-700 dark:text-slate-200">
+                            <TableCell className="whitespace-nowrap py-3.5 px-4 text-sm text-slate-700 dark:text-slate-200">
                               {row.lastVisit
                                 ? new Date(
                                     row.lastVisit
                                   ).toLocaleDateString()
                                 : "—"}
                             </TableCell>
-                            <TableCell className="text-xs text-slate-700 dark:text-slate-200">
+                            <TableCell className="whitespace-nowrap py-3.5 px-4 text-sm text-slate-700 dark:text-slate-200">
                               {row.mrName ?? "—"}
                             </TableCell>
-                            <TableCell className="text-xs text-right">
+                            <TableCell className="py-3.5 pr-5 text-right">
                               {segment === "High prescriber" && (
-                                <Badge className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
+                                <Badge className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 shadow-none dark:bg-emerald-900/40 dark:text-emerald-200">
                                   High prescriber
                                 </Badge>
                               )}
                               {segment === "New adopter" && (
-                                <Badge className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
+                                <Badge className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-800 shadow-none dark:bg-blue-900/40 dark:text-blue-200">
                                   New adopter
                                 </Badge>
                               )}
                               {segment === "Declining" && (
-                                <Badge className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-100">
+                                <Badge className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800 shadow-none dark:bg-amber-900/40 dark:text-amber-100">
                                   Declining
                                 </Badge>
                               )}
@@ -966,15 +888,20 @@ export function MrProductIntelligenceClient({
                   size="sm"
                   className="hidden rounded-full border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 sm:inline-flex"
                   onClick={() => {
-                    const rows = data.competitors.map((c) => ({
-                      competitor_name: c.competitorName,
-                      supplier: c.supplier ?? "",
-                      mentions: c.mentions,
-                      avg_price_per_pack: c.avgPricePerPack ?? "",
-                      pressure: c.pressure,
-                      marketing_events: c.marketingEvents,
-                      notes_sample: c.notesSample ?? "",
-                    }));
+                    const rows = data.competitors.map((c) => {
+                      const doctors = (c as { doctorsPrescribing?: Array<{ doctorName: string; location: string | null; rxPerMonth: number | null }> }).doctorsPrescribing ?? [];
+                      const doctorsStr = doctors.map((d) => `${d.doctorName}${d.location ? ` (${d.location})` : ""}${d.rxPerMonth != null ? ` - ${d.rxPerMonth} Rx/mo` : ""}`).join("; ");
+                      return {
+                        competitor_name: c.competitorName,
+                        supplier: c.supplier ?? "",
+                        doctors_prescribing: doctorsStr,
+                        mentions: c.mentions,
+                        avg_price_per_pack: c.avgPricePerPack ?? "",
+                        pressure: c.pressure,
+                        marketing_events: c.marketingEvents,
+                        notes_sample: c.notesSample ?? "",
+                      };
+                    });
                     downloadCsv("product-competitors.csv", rows);
                   }}
                 >
@@ -982,60 +909,87 @@ export function MrProductIntelligenceClient({
                   Export
                 </Button>
               </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
+              <CardContent className="p-0 sm:p-6">
+                <div className="max-h-[420px] overflow-auto rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/5 dark:border-slate-700 dark:bg-slate-900/50 dark:ring-white/5">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-slate-50/80 dark:bg-slate-900/40">
-                        <TableHead className="text-xs font-semibold">
+                      <TableRow className="border-0 bg-slate-100/90 dark:bg-slate-800/90">
+                        <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">
                           Competitor product
                         </TableHead>
-                        <TableHead className="text-xs font-semibold">
+                        <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                           Manufacturer
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-right">
-                          Doctors mentioning
+                        <TableHead className="h-12 min-w-[180px] px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                          Doctors prescribing
                         </TableHead>
-                        <TableHead className="text-xs font-semibold">
+                        <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                          Mentions
+                        </TableHead>
+                        <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                           MR notes
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-right">
+                        <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">
                           Pressure
                         </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {data.competitors.length === 0 ? (
-                        <TableRow>
+                        <TableRow className="hover:bg-transparent">
                           <TableCell
-                            colSpan={5}
-                            className="py-8 text-center text-xs text-slate-500 dark:text-slate-400"
+                            colSpan={6}
+                            className="py-14 text-center text-sm text-slate-500 dark:text-slate-400"
                           >
-                            No competitor audits captured for this product in
-                            the selected period.
+                            <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                                <Activity className="h-5 w-5 text-slate-400" />
+                              </div>
+                              <span>
+                                No competitor audits captured for this product in
+                                the selected period.
+                              </span>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ) : (
-                        data.competitors.map((c) => (
+                        data.competitors.map((c) => {
+                          const doctors = (c as { doctorsPrescribing?: Array<{ doctorName: string; location: string | null; rxPerMonth: number | null }> }).doctorsPrescribing ?? [];
+                          return (
                           <TableRow
                             key={c.competitorName}
-                            className="hover:bg-slate-50 dark:hover:bg-slate-900/60"
+                            className="border-b border-slate-100 transition-colors duration-150 last:border-0 hover:bg-slate-50/80 dark:border-slate-800/80 dark:hover:bg-slate-800/50"
                           >
-                            <TableCell className="text-xs font-medium text-slate-900 dark:text-slate-50">
+                            <TableCell className="whitespace-nowrap py-3.5 pl-5 text-sm font-medium text-slate-900 dark:text-slate-50">
                               {c.competitorName}
                             </TableCell>
-                            <TableCell className="text-xs text-slate-700 dark:text-slate-200">
+                            <TableCell className="whitespace-nowrap py-3.5 px-4 text-sm text-slate-700 dark:text-slate-200">
                               {c.supplier ?? "—"}
                             </TableCell>
-                            <TableCell className="text-xs text-right text-slate-900 dark:text-slate-50">
+                            <TableCell className="min-w-[180px] align-top py-3.5 px-4 text-sm text-slate-700 dark:text-slate-200">
+                              {doctors.length === 0 ? (
+                                <span className="text-slate-400">—</span>
+                              ) : (
+                                <ul className="space-y-1.5">
+                                  {doctors.map((d, i) => (
+                                    <li key={`${d.doctorName}-${d.location ?? ""}-${i}`} className="leading-tight">
+                                      <span className="font-medium text-slate-900 dark:text-slate-100">{d.doctorName}</span>
+                                      {d.location && <span className="block text-[11px] text-slate-500 dark:text-slate-400">{d.location}</span>}
+                                      {d.rxPerMonth != null && <span className="text-[11px] text-slate-600 dark:text-slate-300">{d.rxPerMonth} Rx/mo</span>}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </TableCell>
+                            <TableCell className="tabular-nums py-3.5 px-4 text-right text-sm font-medium text-slate-900 dark:text-slate-50">
                               {c.mentions}
                             </TableCell>
-                            <TableCell className="text-xs text-slate-700 dark:text-slate-200">
-                              {c.notesSample ?? "—"}
+                            <TableCell className="max-w-[220px] py-3.5 px-4 text-sm text-slate-700 dark:text-slate-200">
+                              <span className="line-clamp-2">{c.notesSample ?? "—"}</span>
                             </TableCell>
-                            <TableCell className="text-xs text-right">
+                            <TableCell className="py-3.5 pr-5 text-right">
                               <Badge
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-none ${
                                   c.pressure === "High"
                                     ? "bg-rose-50 text-rose-800 dark:bg-rose-900/40 dark:text-rose-100"
                                     : c.pressure === "Medium"
@@ -1047,7 +1001,8 @@ export function MrProductIntelligenceClient({
                               </Badge>
                             </TableCell>
                           </TableRow>
-                        ))
+                          );
+                        })
                       )}
                     </TableBody>
                   </Table>
@@ -1188,34 +1143,41 @@ export function MrProductIntelligenceClient({
                 </CardHeader>
                 <CardContent className="p-0">
                   {data.stock.locationsWithOos.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-xs text-slate-500 dark:text-slate-400 sm:px-6">
-                      No out-of-stock events with sales baselines recorded for
-                      this product in the selected period.
+                    <div className="px-4 py-14 text-center text-sm text-slate-500 dark:text-slate-400 sm:px-6">
+                      <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                          <FileText className="h-5 w-5 text-slate-400" />
+                        </div>
+                        <span>
+                          No out-of-stock events with sales baselines recorded for
+                          this product in the selected period.
+                        </span>
+                      </div>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto rounded-b-2xl border-t border-slate-200 dark:border-slate-700">
+                    <div className="max-h-[420px] overflow-auto rounded-b-2xl border-t border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900/50">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-slate-50/80 dark:bg-slate-900/40">
-                            <TableHead className="text-xs font-semibold">
+                          <TableRow className="border-0 bg-slate-100/90 dark:bg-slate-800/90">
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">
                               Pharmacy
                             </TableHead>
-                            <TableHead className="text-xs font-semibold">
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                               Region
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-right">
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                               Days OOS
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-right">
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                               Qty sold (good month)
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-right">
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                               Price/pack (KES)
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-right">
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                               Volume loss (packs)
                             </TableHead>
-                            <TableHead className="text-xs font-semibold text-right">
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">
                               Revenue loss (KES)
                             </TableHead>
                           </TableRow>
@@ -1224,31 +1186,31 @@ export function MrProductIntelligenceClient({
                           {data.stock.locationsWithOos.map((loc) => (
                             <TableRow
                               key={`${loc.pharmacyName}-${loc.region}-lost`}
-                              className="hover:bg-slate-50 dark:hover:bg-slate-900/60"
+                              className="border-b border-slate-100 transition-colors duration-150 last:border-0 hover:bg-slate-50/80 dark:border-slate-800/80 dark:hover:bg-slate-800/50"
                             >
-                              <TableCell className="text-xs font-medium text-slate-900 dark:text-slate-50">
+                              <TableCell className="whitespace-nowrap py-3.5 pl-5 text-sm font-medium text-slate-900 dark:text-slate-50">
                                 {loc.pharmacyName}
                               </TableCell>
-                              <TableCell className="text-xs text-slate-700 dark:text-slate-200">
+                              <TableCell className="whitespace-nowrap py-3.5 px-4 text-sm text-slate-700 dark:text-slate-200">
                                 {loc.region}
                               </TableCell>
-                              <TableCell className="text-xs text-right text-slate-900 dark:text-slate-50">
+                              <TableCell className="tabular-nums py-3.5 px-4 text-right text-sm font-medium text-slate-900 dark:text-slate-50">
                                 {loc.totalDaysOos}
                               </TableCell>
-                              <TableCell className="text-xs text-right text-slate-900 dark:text-slate-50">
+                              <TableCell className="tabular-nums py-3.5 px-4 text-right text-sm text-slate-900 dark:text-slate-50">
                                 {loc.avgQtyGoodMonth != null
                                   ? Math.round(loc.avgQtyGoodMonth)
                                   : "—"}
                               </TableCell>
-                              <TableCell className="text-xs text-right text-slate-900 dark:text-slate-50">
+                              <TableCell className="tabular-nums py-3.5 px-4 text-right text-sm text-slate-900 dark:text-slate-50">
                                 {loc.avgPricePerPack != null
                                   ? Math.round(loc.avgPricePerPack).toLocaleString()
                                   : "—"}
                               </TableCell>
-                              <TableCell className="text-xs text-right text-slate-900 dark:text-slate-50">
+                              <TableCell className="tabular-nums py-3.5 px-4 text-right text-sm text-slate-900 dark:text-slate-50">
                                 {Math.round(loc.volumeLoss).toLocaleString()}
                               </TableCell>
-                              <TableCell className="text-xs text-right font-semibold text-amber-700 dark:text-amber-300">
+                              <TableCell className="tabular-nums py-3.5 pr-5 text-right text-sm font-semibold text-amber-700 dark:text-amber-300">
                                 {Math.round(loc.revenueLoss).toLocaleString()}
                               </TableCell>
                             </TableRow>

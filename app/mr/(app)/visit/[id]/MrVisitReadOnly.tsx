@@ -67,7 +67,7 @@ export async function MrVisitReadOnly({
         do_substitute,
         substitute_with_and_why,
         mr_products (name),
-        mr_competitor_audits (competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock)
+        mr_competitor_audits (competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock, doctor_prescribing, doctor_location, rx_per_month)
       `)
       .eq("visit_id", visitId),
     supabase
