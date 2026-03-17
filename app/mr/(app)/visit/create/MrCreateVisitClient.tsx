@@ -90,7 +90,11 @@ export function MrCreateVisitClient({ pharmacies }: MrCreateVisitClientProps) {
 
     setExistingLoading(false);
     if (result.success && result.visitId) {
-      router.push(`/mr/visit/${result.visitId}/edit`);
+      const href =
+        existingObjective === "CAMPAIGN"
+          ? `/mr/visit/${result.visitId}/campaign`
+          : `/mr/visit/${result.visitId}/edit`;
+      router.push(href);
       router.refresh();
     } else {
       setError(result.error ?? "Failed to start visit");
@@ -122,6 +126,8 @@ export function MrCreateVisitClient({ pharmacies }: MrCreateVisitClientProps) {
       }
     }
 
+    const objective = (formData.get("objective") as Objective) || newObjective;
+
     const result = await mrCreatePharmacyAndCheckIn({
       name: (formData.get("name") as string) || "",
       region: (formData.get("region") as string) || "",
@@ -140,7 +146,7 @@ export function MrCreateVisitClient({ pharmacies }: MrCreateVisitClientProps) {
         const n = parseFloat(v);
         return Number.isNaN(n) ? null : n;
       })(),
-      objective: (formData.get("objective") as Objective) || newObjective,
+      objective,
       gpsLat,
       gpsLng,
     });
@@ -150,7 +156,11 @@ export function MrCreateVisitClient({ pharmacies }: MrCreateVisitClientProps) {
       form.reset();
       setRegion("");
       setSubRegion("");
-      router.push(`/mr/visit/${result.visitId}/edit`);
+      const href =
+        objective === "CAMPAIGN"
+          ? `/mr/visit/${result.visitId}/campaign`
+          : `/mr/visit/${result.visitId}/edit`;
+      router.push(href);
       router.refresh();
     } else {
       setError(result.error ?? "Failed to start visit");

@@ -91,15 +91,17 @@ function genId() {
 
 type Product = { id: string; name: string; price?: number | null; owned_by?: string | null };
 
-const STEPS = ["product", "audit", "prescription"] as const;
+const STEPS = ["product", "audit", "prescription", "order"] as const;
 const STEP_LABELS: Record<(typeof STEPS)[number], string> = {
   product: "Choose product",
   audit: "Stock & pharmacy",
   prescription: "Prescription",
+  order: "Orders",
   // marketing: "Competitor marketing",
 };
 
 const MAX_COMPETITORS = 3;
+const MAX_CAMPAIGN_PRODUCTS = 10;
 
 export function MrVisitProductCycleForm({
   visitId,
@@ -519,7 +521,12 @@ export function MrVisitProductCycleForm({
     <div className="space-y-5">
       {/* Stepper - pills, minimal border */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
-        {STEPS.map((s, i) => (
+        {STEPS.map((s, i) => {
+          const label =
+            s === "prescription" && objective === "CAMPAIGN"
+              ? "Financial impact"
+              : STEP_LABELS[s];
+          return (
           <div key={s} className="flex shrink-0 items-center">
             <button
               type="button"
@@ -532,7 +539,7 @@ export function MrVisitProductCycleForm({
                     : "bg-white dark:bg-card text-muted-foreground shadow-sm ring-1 ring-black/5 dark:ring-white/10"
               }`}
             >
-              <span className="hidden sm:inline">{STEP_LABELS[s]}</span>
+              <span className="hidden sm:inline">{label}</span>
               <span className="sm:hidden">{i + 1}</span>
               {i < stepIndex && <Check className="h-3.5 w-3.5" />}
             </button>
@@ -540,7 +547,8 @@ export function MrVisitProductCycleForm({
               <ChevronRight className="mx-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-muted-foreground/50" />
             )}
           </div>
-        ))}
+        );
+        })}
       </div>
 
       {message && (
@@ -583,6 +591,13 @@ export function MrVisitProductCycleForm({
                     : "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/60 dark:text-slate-200 dark:ring-slate-700/70";
 
                   const goToAudit = () => {
+                    if (objective === "CAMPAIGN" && !isComplete && completedProductIds.length >= MAX_CAMPAIGN_PRODUCTS) {
+                      setMessage({
+                        type: "error",
+                        text: `You can record a maximum of ${MAX_CAMPAIGN_PRODUCTS} key products for a campaign visit.`,
+                      });
+                      return;
+                    }
                     setSelectedProduct(p);
                     setStepIndex(1);
 
@@ -667,182 +682,271 @@ export function MrVisitProductCycleForm({
           )}
 
           {step === "audit" && selectedProduct && (
-            <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label className="mb-1.5 flex items-center gap-2 text-slate-900 dark:text-foreground">
-                    <Layers className="h-4 w-4" />
-                    Quantity stocked (packs)
-                  </Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={qty}
-                    onChange={(e) => setQty(parseInt(e.target.value, 10) || 0)}
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <Label className="mb-1.5 flex items-center gap-2 text-slate-900 dark:text-foreground">
-                    <TrendingUp className="h-4 w-4" />
-                    Reason they stock
-                  </Label>
-                  <select
-                    value={reasonWhyStock}
-                    onChange={(e) => setReasonWhyStock(e.target.value)}
-                    className={`${inputClass} w-full appearance-none px-4`}
-                  >
-                    <option value="">Optional</option>
-                    {REASON_WHY_STOCK_OPTIONS.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label className="mb-1.5 flex items-center gap-2 text-foreground">
-                    <Building2 className="h-4 w-4" />
-                    Supplier
-                  </Label>
-                  <Input
-                    value={supplier}
-                    onChange={(e) => setSupplier(e.target.value)}
-                    placeholder="e.g. DK Pharma"
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <Label className="mb-1.5 flex items-center gap-2 text-foreground">
-                    <TrendingUp className="h-4 w-4" />
-                    Quantity sold in a good month
-                  </Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={quantitySoldGoodMonth}
-                    onChange={(e) => setQuantitySoldGoodMonth(e.target.value)}
-                    placeholder="Packs"
-                    className={inputClass}
-                  />
-                </div>
-              </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label className="mb-1.5 flex items-center gap-2 text-slate-900 dark:text-foreground">
-                        <Hash className="h-4 w-4" />
-                        Price per pack (KES)
-                      </Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={pricePerPack}
-                        onChange={(e) => setPricePerPack(e.target.value)}
-                        placeholder="Optional"
-                        className={inputClass}
-                      />
-                    </div>
-                    <div>
-                      <Label className="mb-1.5 flex items-center gap-2 text-foreground">
-                        <AlertCircle className="h-4 w-4" />
-                        Reason for out of stock
-                      </Label>
-                      <select
-                        value={reasonForOos}
-                        onChange={(e) => setReasonForOos(e.target.value)}
-                        className={`${inputClass} w-full appearance-none px-4`}
-                      >
-                        <option value="">Optional</option>
-                        {REASON_FOR_OOS_OPTIONS.map((r) => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+            objective === "CAMPAIGN" ? (
+              <CampaignStockForm
+                qty={qty}
+                setQty={setQty}
+                quantitySoldGoodMonth={quantitySoldGoodMonth}
+                setQuantitySoldGoodMonth={setQuantitySoldGoodMonth}
+                pricePerPack={pricePerPack}
+                setPricePerPack={setPricePerPack}
+                daysOos={daysOos}
+                setDaysOos={setDaysOos}
+                inputClass={inputClass}
+                productName={selectedProduct.name}
+              />
+            ) : (
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <Label className="mb-1.5 text-slate-900 dark:text-foreground">Days out of stock</Label>
+                    <Label className="mb-1.5 flex items-center gap-2 text-slate-900 dark:text-foreground">
+                      <Layers className="h-4 w-4" />
+                      Quantity stocked (packs)
+                    </Label>
                     <Input
                       type="number"
                       min={0}
-                      value={daysOos}
-                      onChange={(e) => setDaysOos(e.target.value)}
+                      value={qty}
+                      onChange={(e) => setQty(parseInt(e.target.value, 10) || 0)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <Label className="mb-1.5 flex items-center gap-2 text-slate-900 dark:text-foreground">
+                      <TrendingUp className="h-4 w-4" />
+                      Reason they stock
+                    </Label>
+                    <select
+                      value={reasonWhyStock}
+                      onChange={(e) => setReasonWhyStock(e.target.value)}
+                      className={`${inputClass} w-full appearance-none px-4`}
+                    >
+                      <option value="">Optional</option>
+                      {REASON_WHY_STOCK_OPTIONS.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="mb-1.5 flex items-center gap-2 text-foreground">
+                      <Building2 className="h-4 w-4" />
+                      Supplier
+                    </Label>
+                    <Input
+                      value={supplier}
+                      onChange={(e) => setSupplier(e.target.value)}
+                      placeholder="e.g. DK Pharma"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <Label className="mb-1.5 flex items-center gap-2 text-foreground">
+                      <TrendingUp className="h-4 w-4" />
+                      Quantity sold in a good month
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={quantitySoldGoodMonth}
+                      onChange={(e) => setQuantitySoldGoodMonth(e.target.value)}
+                      placeholder="Packs"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="mb-1.5 flex items-center gap-2 text-slate-900 dark:text-foreground">
+                      <Hash className="h-4 w-4" />
+                      Price per pack (KES)
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={pricePerPack}
+                      onChange={(e) => setPricePerPack(e.target.value)}
                       placeholder="Optional"
                       className={inputClass}
                     />
                   </div>
-                  <div className="flex items-center gap-3 rounded-2xl bg-muted/50 p-3">
-                    <input
-                      type="checkbox"
-                      id="doSubstitute"
-                      checked={doSubstitute}
-                      onChange={(e) => setDoSubstitute(e.target.checked)}
-                      className="h-5 w-5 rounded-lg"
-                    />
-                    <Label htmlFor="doSubstitute" className="flex cursor-pointer items-center gap-2 text-slate-900 dark:text-foreground">
-                      <Replace className="h-4 w-4" />
-                      Do you substitute prescriptions?
+                  <div>
+                    <Label className="mb-1.5 flex items-center gap-2 text-foreground">
+                      <AlertCircle className="h-4 w-4" />
+                      Reason for out of stock
                     </Label>
+                    <select
+                      value={reasonForOos}
+                      onChange={(e) => setReasonForOos(e.target.value)}
+                      className={`${inputClass} w-full appearance-none px-4`}
+                    >
+                      <option value="">Optional</option>
+                      {REASON_FOR_OOS_OPTIONS.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
                   </div>
-                  {doSubstitute && (
-                    <div>
-                      <Label className="mb-1.5 text-slate-900 dark:text-foreground">Substitute with and why</Label>
-                      <Input
-                        value={substituteWithAndWhy}
-                        onChange={(e) => setSubstituteWithAndWhy(e.target.value)}
-                        placeholder="Product and reason"
-                        className={inputClass}
-                      />
-                    </div>
-                  )}
-              <div className="flex items-center gap-3 rounded-2xl bg-muted/50 p-3">
-                <input
-                  type="checkbox"
-                  id="usp"
-                  checked={uspUnderstood}
-                  onChange={(e) => setUspUnderstood(e.target.checked)}
-                  className="h-5 w-5 rounded-lg"
-                />
-                <Label htmlFor="usp" className="flex cursor-pointer items-center gap-2 text-slate-900 dark:text-foreground">
-                  <Check className="h-4 w-4" />
-                  Staff understand product USP?
-                </Label>
-              </div>
-
-              {/* Dynamic competitors */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <Label className="flex items-center gap-2 text-slate-900 dark:text-foreground">
-                    <Megaphone className="h-4 w-4" />
-                    Competitors
+                </div>
+                <div>
+                  <Label className="mb-1.5 text-slate-900 dark:text-foreground">Days out of stock</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={daysOos}
+                    onChange={(e) => setDaysOos(e.target.value)}
+                    placeholder="Optional"
+                    className={inputClass}
+                  />
+                </div>
+                <div className="flex items-center gap-3 rounded-2xl bg-muted/50 p-3">
+                  <input
+                    type="checkbox"
+                    id="doSubstitute"
+                    checked={doSubstitute}
+                    onChange={(e) => setDoSubstitute(e.target.checked)}
+                    className="h-5 w-5 rounded-lg"
+                  />
+                  <Label htmlFor="doSubstitute" className="flex cursor-pointer items-center gap-2 text-slate-900 dark:text-foreground">
+                    <Replace className="h-4 w-4" />
+                    Do you substitute prescriptions?
                   </Label>
+                </div>
+                {doSubstitute && (
+                  <div>
+                    <Label className="mb-1.5 text-slate-900 dark:text-foreground">Substitute with and why</Label>
+                    <Input
+                      value={substituteWithAndWhy}
+                      onChange={(e) => setSubstituteWithAndWhy(e.target.value)}
+                      placeholder="Product and reason"
+                      className={inputClass}
+                    />
+                  </div>
+                )}
+                <div className="flex items-center gap-3 rounded-2xl bg-muted/50 p-3">
+                  <input
+                    type="checkbox"
+                    id="usp"
+                    checked={uspUnderstood}
+                    onChange={(e) => setUspUnderstood(e.target.checked)}
+                    className="h-5 w-5 rounded-lg"
+                  />
+                  <Label htmlFor="usp" className="flex cursor-pointer items-center gap-2 text-slate-900 dark:text-foreground">
+                    <Check className="h-4 w-4" />
+                    Staff understand product USP?
+                  </Label>
+                </div>
+
+                {/* Dynamic competitors */}
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <Label className="flex items-center gap-2 text-slate-900 dark:text-foreground">
+                      <Megaphone className="h-4 w-4" />
+                      Competitors
+                    </Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full"
+                      onClick={() => {
+                        setEditingCompetitorId(null);
+                        setCompetitorModalOpen(true);
+                      }}
+                      disabled={competitors.length >= MAX_COMPETITORS}
+                    >
+                      <Plus className="mr-1 h-4 w-4" />
+                      Add
+                    </Button>
+                  </div>
+                  {competitors.length >= MAX_COMPETITORS && (
+                    <p className="mb-2 text-xs text-slate-600 dark:text-muted-foreground">Max {MAX_COMPETITORS} competitors.</p>
+                  )}
+                  <ul className="space-y-2">
+                    {competitors.map((c) => (
+                      <li
+                        key={c.id}
+                        className="flex items-center justify-between gap-2 rounded-2xl bg-muted/40 px-3 py-2"
+                      >
+                        <span className="truncate font-medium text-slate-900 dark:text-foreground">
+                          {c.name.trim() || c.supplier.trim() || "Competitor"}
+                        </span>
+                        <div className="flex shrink-0 gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => {
+                              setEditingCompetitorId(c.id);
+                              setCompetitorModalOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full text-destructive"
+                            onClick={() => setCompetitors((prev) => prev.filter((x) => x.id !== c.id))}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )
+          )}
+
+          {step === "prescription" && selectedProduct && (
+            objective === "CAMPAIGN" ? (
+              <CampaignFinancialImpactStep
+                productName={selectedProduct.name}
+                qty={qty}
+                quantitySoldGoodMonth={quantitySoldGoodMonth}
+                pricePerPack={pricePerPack}
+                daysOos={daysOos}
+                inputClass={inputClass}
+              />
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 rounded-2xl bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm text-blue-800 dark:text-blue-200">
+                  <FileText className="h-4 w-4 shrink-0" />
+                  Product: <strong>{selectedProduct.name}</strong>
+                </div>
+                <div className="flex justify-end">
                   <Button
                     type="button"
                     size="sm"
-                    variant="outline"
-                    className="rounded-full"
+                    className="rounded-full cta-gradient"
                     onClick={() => {
-                      setEditingCompetitorId(null);
-                      setCompetitorModalOpen(true);
+                      setEditingPrescriptionId(null);
+                      setPrescriptionModalOpen(true);
                     }}
-                    disabled={competitors.length >= MAX_COMPETITORS}
                   >
                     <Plus className="mr-1 h-4 w-4" />
-                    Add
+                    Add prescription
                   </Button>
                 </div>
-                {competitors.length >= MAX_COMPETITORS && (
-                  <p className="mb-2 text-xs text-slate-600 dark:text-muted-foreground">Max {MAX_COMPETITORS} competitors.</p>
-                )}
                 <ul className="space-y-2">
-                  {competitors.map((c) => (
+                  {prescriptions.map((p) => (
                     <li
-                      key={c.id}
+                      key={p.id}
                       className="flex items-center justify-between gap-2 rounded-2xl bg-muted/40 px-3 py-2"
                     >
-                      <span className="truncate font-medium text-slate-900 dark:text-foreground">
-                        {c.name.trim() || c.supplier.trim() || "Competitor"}
-                      </span>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Stethoscope className="h-4 w-4 shrink-0 text-slate-600 dark:text-muted-foreground" />
+                        <span className="truncate font-medium">{p.doctorName || "No doctor"}</span>
+                        {p.rxPerMonth && (
+                          <span className="text-sm text-slate-600 dark:text-muted-foreground">{p.rxPerMonth} Rx/mo</span>
+                        )}
+                      </div>
                       <div className="flex shrink-0 gap-1">
                         <Button
                           type="button"
@@ -850,8 +954,8 @@ export function MrVisitProductCycleForm({
                           size="icon"
                           className="h-8 w-8 rounded-full"
                           onClick={() => {
-                            setEditingCompetitorId(c.id);
-                            setCompetitorModalOpen(true);
+                            setEditingPrescriptionId(p.id);
+                            setPrescriptionModalOpen(true);
                           }}
                         >
                           <Pencil className="h-4 w-4" />
@@ -861,7 +965,7 @@ export function MrVisitProductCycleForm({
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 rounded-full text-destructive"
-                          onClick={() => setCompetitors((prev) => prev.filter((x) => x.id !== c.id))}
+                          onClick={() => setPrescriptions((prev) => prev.filter((x) => x.id !== p.id))}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -870,69 +974,7 @@ export function MrVisitProductCycleForm({
                   ))}
                 </ul>
               </div>
-            </div>
-          )}
-
-          {step === "prescription" && selectedProduct && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 rounded-2xl bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm text-blue-800 dark:text-blue-200">
-                <FileText className="h-4 w-4 shrink-0" />
-                Product: <strong>{selectedProduct.name}</strong>
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  size="sm"
-                  className="rounded-full cta-gradient"
-                  onClick={() => {
-                    setEditingPrescriptionId(null);
-                    setPrescriptionModalOpen(true);
-                  }}
-                >
-                  <Plus className="mr-1 h-4 w-4" />
-                  Add prescription
-                </Button>
-              </div>
-              <ul className="space-y-2">
-                {prescriptions.map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex items-center justify-between gap-2 rounded-2xl bg-muted/40 px-3 py-2"
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Stethoscope className="h-4 w-4 shrink-0 text-slate-600 dark:text-muted-foreground" />
-                      <span className="truncate font-medium">{p.doctorName || "No doctor"}</span>
-                      {p.rxPerMonth && (
-                        <span className="text-sm text-slate-600 dark:text-muted-foreground">{p.rxPerMonth} Rx/mo</span>
-                      )}
-                    </div>
-                    <div className="flex shrink-0 gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full"
-                        onClick={() => {
-                          setEditingPrescriptionId(p.id);
-                          setPrescriptionModalOpen(true);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full text-destructive"
-                        onClick={() => setPrescriptions((prev) => prev.filter((x) => x.id !== p.id))}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            )
           )}
         </div>
       </div>
@@ -1028,6 +1070,281 @@ export function MrVisitProductCycleForm({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function CampaignFinancialPanel({
+  qty,
+  quantitySoldGoodMonth,
+  pricePerPack,
+  daysOos,
+  productName,
+}: {
+  qty: number;
+  quantitySoldGoodMonth: string;
+  pricePerPack: string;
+  daysOos: string;
+  productName: string;
+}) {
+  const goodMonth = Number(quantitySoldGoodMonth) || 0;
+  const price = Number(pricePerPack) || 0;
+  const daysOut = Number(daysOos) || 0;
+  const daily = goodMonth ? goodMonth / 30 : 0;
+  const daysCover = daily ? Math.round((qty / daily) * 10) / 10 : 0;
+  const lostRevenue = daily && price && daysOut ? Math.round(daily * daysOut * price) : 0;
+
+  if (!goodMonth && !price && !daysOut && !qty) return null;
+
+  return (
+    <div className="mt-1 grid gap-3 rounded-2xl bg-slate-50 px-3 py-3 text-xs ring-1 ring-slate-200/70 dark:bg-slate-900/50 dark:ring-slate-700/80 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)]">
+      <div className="space-y-1.5">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Campaign impact snapshot
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Days current stock can last
+            </p>
+            <p className="mt-0.5 text-base font-semibold text-slate-900 dark:text-slate-50">
+              {daysCover ? `${daysCover} days` : "—"}
+            </p>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40">
+            <p className="text-[11px] text-amber-900 dark:text-amber-200">
+              Estimated lost revenue (KES)
+            </p>
+            <p className="mt-0.5 text-base font-semibold text-amber-900 dark:text-amber-100">
+              {lostRevenue ? `~${lostRevenue.toLocaleString()}` : "add OOS days & price"}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Story to tell the outlet
+        </p>
+        <p className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          {lostRevenue && daysOut
+            ? `I noticed ${productName} has been out of stock for about ${daysOut} day${
+                daysOut === 1 ? "" : "s"
+              }. Based on your average sales, that means you may have lost around KES ${lostRevenue.toLocaleString()} in revenue. Let’s increase your order slightly so you don’t lose that opportunity again.`
+            : "Once you fill in good month sales, days out of stock and price, we will generate a financial impact story you can use in your campaign discussion."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function CampaignFinancialImpactStep({
+  productName,
+  qty,
+  quantitySoldGoodMonth,
+  pricePerPack,
+  daysOos,
+  inputClass,
+}: {
+  productName: string;
+  qty: number;
+  quantitySoldGoodMonth: string;
+  pricePerPack: string;
+  daysOos: string;
+  inputClass: string;
+}) {
+  const goodMonth = Number(quantitySoldGoodMonth) || 0;
+  const price = Number(pricePerPack) || 0;
+  const daysOut = Number(daysOos) || 0;
+  const daily = goodMonth ? goodMonth / 30 : 0;
+  const daysCover = daily ? Math.round((qty / daily) * 10) / 10 : 0;
+  const lostRevenue = daily && price && daysOut ? Math.round(daily * daysOut * price) : 0;
+
+  const lineValue = qty * price;
+
+  const story =
+    lostRevenue && daysOut
+      ? `I noticed ${productName} has been out of stock for about ${daysOut} day${
+          daysOut === 1 ? "" : "s"
+        }. Based on your average sales, that means you may have lost around KES ${lostRevenue.toLocaleString()} in revenue. Let’s increase your order slightly so you don’t lose that opportunity again.`
+      : "Fill in good‑month sales, days out of stock and price to generate a financial impact story you can use with the outlet.";
+
+  const summaryText = [
+    `Product: ${productName}`,
+    `Current stock: ${qty} packs`,
+    goodMonth ? `Good month: ${goodMonth} packs` : undefined,
+    price ? `Price/pack: KES ${price.toLocaleString()}` : undefined,
+    daysOut ? `Days out of stock: ${daysOut}` : undefined,
+    daysCover ? `Days current stock can last: ${daysCover}` : undefined,
+    lineValue ? `Order value (if ordered now): KES ${lineValue.toLocaleString()}` : undefined,
+    "",
+    story,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 rounded-2xl bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm text-blue-800 dark:text-blue-200">
+        <FileText className="h-4 w-4 shrink-0" />
+        Financial impact for <strong>{productName}</strong>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)]">
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Calculated impact
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-900">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Days current stock can last
+              </p>
+              <p className="mt-0.5 text-base font-semibold text-slate-900 dark:text-slate-50">
+                {daysCover ? `${daysCover} days` : "—"}
+              </p>
+            </div>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs dark:border-amber-800 dark:bg-amber-950/40">
+              <p className="text-[11px] text-amber-900 dark:text-amber-200">
+                Estimated lost revenue (KES)
+              </p>
+              <p className="mt-0.5 text-base font-semibold text-amber-900 dark:text-amber-100">
+                {lostRevenue ? `~${lostRevenue.toLocaleString()}` : "add OOS days & price"}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Story you can say
+          </p>
+          <p className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+            {story}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Shareable summary (per product)
+        </p>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-900">
+          <pre className="max-h-40 whitespace-pre-wrap break-words text-[11px] leading-relaxed">
+            {summaryText}
+          </pre>
+        </div>
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            size="sm"
+            className="h-8 rounded-2xl bg-blue-900 px-3 text-[11px] font-semibold text-white hover:bg-blue-800 dark:bg-blue-700 dark:hover:bg-blue-600"
+            onClick={() => {
+              if (!summaryText) return;
+              if (typeof navigator !== "undefined" && navigator.clipboard) {
+                navigator.clipboard.writeText(summaryText).catch(() => undefined);
+              }
+            }}
+          >
+            Copy text for WhatsApp / email
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+function CampaignStockForm({
+  qty,
+  setQty,
+  quantitySoldGoodMonth,
+  setQuantitySoldGoodMonth,
+  pricePerPack,
+  setPricePerPack,
+  daysOos,
+  setDaysOos,
+  inputClass,
+  productName,
+}: {
+  qty: number;
+  setQty: (v: number) => void;
+  quantitySoldGoodMonth: string;
+  setQuantitySoldGoodMonth: (v: string) => void;
+  pricePerPack: string;
+  setPricePerPack: (v: string) => void;
+  daysOos: string;
+  setDaysOos: (v: string) => void;
+  inputClass: string;
+  productName: string;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <Label className="mb-1.5 flex items-center gap-2 text-slate-900 dark:text-foreground">
+            <Layers className="h-4 w-4" />
+            Current stock level (packs)
+          </Label>
+          <Input
+            type="number"
+            min={0}
+            value={qty}
+            onChange={(e) => setQty(parseInt(e.target.value, 10) || 0)}
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <Label className="mb-1.5 flex items-center gap-2 text-foreground">
+            <TrendingUp className="h-4 w-4" />
+            Quantity sold in a good month
+          </Label>
+          <Input
+            type="number"
+            min={0}
+            value={quantitySoldGoodMonth}
+            onChange={(e) => setQuantitySoldGoodMonth(e.target.value)}
+            placeholder="Packs in a good month"
+            className={inputClass}
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <Label className="mb-1.5 flex items-center gap-2 text-slate-900 dark:text-foreground">
+            <Hash className="h-4 w-4" />
+            Price per pack (KES)
+          </Label>
+          <Input
+            type="number"
+            min={0}
+            step="0.01"
+            value={pricePerPack}
+            onChange={(e) => setPricePerPack(e.target.value)}
+            placeholder="KES"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <Label className="mb-1.5 flex items-center gap-2 text-foreground">
+            <AlertCircle className="h-4 w-4" />
+            Days out of stock
+          </Label>
+          <Input
+            type="number"
+            min={0}
+            value={daysOos}
+            onChange={(e) => setDaysOos(e.target.value)}
+            placeholder="If stock is 0"
+            className={inputClass}
+          />
+        </div>
+      </div>
+
+      <CampaignFinancialPanel
+        qty={qty}
+        quantitySoldGoodMonth={quantitySoldGoodMonth}
+        pricePerPack={pricePerPack}
+        daysOos={daysOos}
+        productName={productName}
+      />
     </div>
   );
 }
