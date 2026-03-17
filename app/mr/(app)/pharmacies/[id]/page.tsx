@@ -292,7 +292,7 @@ export default async function MrPharmacyDetailPage({
             {pharmacy.avg_order_value != null && (
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                  Average order value
+                  Basket value
                 </dt>
                 <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">
                   KES {pharmacy.avg_order_value.toLocaleString()}

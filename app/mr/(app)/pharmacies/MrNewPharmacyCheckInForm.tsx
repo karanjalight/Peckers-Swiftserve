@@ -193,7 +193,7 @@ export function MrNewPharmacyCheckInForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="avgOrderValue">Average order value (KES)</Label>
+            <Label htmlFor="avgOrderValue">Basket value (KES)</Label>
             <Input
               id="avgOrderValue"
               name="avgOrderValue"

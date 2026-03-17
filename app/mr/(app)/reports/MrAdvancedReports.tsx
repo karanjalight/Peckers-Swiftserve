@@ -2339,7 +2339,7 @@ export function MrAdvancedReports({
                             <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">Pharmacy</TableHead>
                             <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Region</TableHead>
                             <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Attendants/day</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Avg order (KES)</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Basket value (KES)</TableHead>
                             <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Est. monthly (KES)</TableHead>
                             <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Tier</TableHead>
                             <TableHead className="h-12 px-4 py-0 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">Action</TableHead>

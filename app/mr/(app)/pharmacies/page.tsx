@@ -195,7 +195,7 @@ export default async function MrPharmaciesPage() {
                 </div>
               </CardHeader>
               <CardContent className="relative pt-0 text-xs text-indigo-900/80">
-                Avg order value ≥ 200,000 KES.
+                Basket value ≥ 200,000 KES.
               </CardContent>
             </Card>
 
@@ -404,7 +404,7 @@ export default async function MrPharmaciesPage() {
                 </div>
               </CardHeader>
               <CardContent className="relative pt-0 text-xs text-indigo-900/80">
-                Avg order value ≥ 200,000 KES.
+                Basket value ≥ 200,000 KES.
               </CardContent>
             </Card>
 
