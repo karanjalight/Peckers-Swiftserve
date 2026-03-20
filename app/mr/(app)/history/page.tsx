@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { fetchAllByRange } from "@/lib/mr/fetch-all-paginated";
 import { getMrAuth } from "@/lib/mr/supabase-server";
 import Link from "next/link";
 import {
@@ -56,9 +57,10 @@ export default async function MrHistoryPage({
 
   if (role === "MR") {
     // MR sees all of their own visits, no filters
-    const { data: visits, error: visitsError } = await supabase
-      .from("mr_visits")
-      .select(`
+    const visitsResult = await fetchAllByRange((from, to) =>
+      supabase
+        .from("mr_visits")
+        .select(`
         id,
         check_in_time,
         check_out_time,
@@ -67,11 +69,13 @@ export default async function MrHistoryPage({
         status,
         mr_pharmacies (name, region)
       `)
-      .eq("mr_id", auth.user.id)
-      .order("check_in_time", { ascending: false });
-
-    if (visitsError) {
-      console.error("MR visits fetch error:", visitsError);
+        .eq("mr_id", auth.user.id)
+        .order("check_in_time", { ascending: false })
+        .range(from, to)
+    );
+    const visits = visitsResult.data;
+    if (visitsResult.error) {
+      console.error("MR visits fetch error:", visitsResult.error);
     }
 
     return (
@@ -127,47 +131,40 @@ export default async function MrHistoryPage({
     mr_profiles (full_name)
   `;
 
-  let visitsQuery = supabase
-    .from("mr_visits")
-    .select(fullSelect)
-    .order("check_in_time", { ascending: false });
-  if (mrId) visitsQuery = visitsQuery.eq("mr_id", mrId);
-  if (status) visitsQuery = visitsQuery.eq("status", status);
-  if (dateFrom) {
-    const from = new Date(dateFrom);
-    from.setHours(0, 0, 0, 0);
-    visitsQuery = visitsQuery.gte("check_in_time", from.toISOString());
-  }
-  if (dateTo) {
-    const to = new Date(dateTo);
-    to.setHours(23, 59, 59, 999);
-    visitsQuery = visitsQuery.lte("check_in_time", to.toISOString());
-  }
-
-  const visitsRes = await visitsQuery;
-
-  // If full select fails (e.g. notes/patients_per_day columns not yet migrated), fall back to minimal
-  let visitsData: VisitRow[] = (visitsRes.data ?? []) as unknown as VisitRow[];
-  if (visitsRes.error) {
-    let fallbackQuery = supabase
+  const buildManagerVisitsQuery = (select: string, rangeFrom: number, rangeTo: number) => {
+    let q = supabase
       .from("mr_visits")
-      .select(minimalSelect)
+      .select(select)
       .order("check_in_time", { ascending: false })
-      .limit(200);
-    if (mrId) fallbackQuery = fallbackQuery.eq("mr_id", mrId);
-    if (status) fallbackQuery = fallbackQuery.eq("status", status);
+      .range(rangeFrom, rangeTo);
+    if (mrId) q = q.eq("mr_id", mrId);
+    if (status) q = q.eq("status", status);
     if (dateFrom) {
       const from = new Date(dateFrom);
       from.setHours(0, 0, 0, 0);
-      fallbackQuery = fallbackQuery.gte("check_in_time", from.toISOString());
+      q = q.gte("check_in_time", from.toISOString());
     }
     if (dateTo) {
       const to = new Date(dateTo);
       to.setHours(23, 59, 59, 999);
-      fallbackQuery = fallbackQuery.lte("check_in_time", to.toISOString());
+      q = q.lte("check_in_time", to.toISOString());
     }
-    const fallbackRes = await fallbackQuery;
-    visitsData = (fallbackRes.data ?? []) as unknown as VisitRow[];
+    return q;
+  };
+
+  // If full select fails (e.g. notes/patients_per_day columns not yet migrated), fall back to minimal
+  let visitsData: VisitRow[];
+  const fullRes = await fetchAllByRange((from, to) => buildManagerVisitsQuery(fullSelect, from, to));
+  if (fullRes.error) {
+    const minimalRes = await fetchAllByRange((from, to) =>
+      buildManagerVisitsQuery(minimalSelect, from, to)
+    );
+    visitsData = minimalRes.data as unknown as VisitRow[];
+    if (minimalRes.error) {
+      console.error("MR visits (manager) fetch error:", minimalRes.error);
+    }
+  } else {
+    visitsData = fullRes.data as unknown as VisitRow[];
   }
 
   const [mrProfilesRes, regionsRes] = await Promise.all([

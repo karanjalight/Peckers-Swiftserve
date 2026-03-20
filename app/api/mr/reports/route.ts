@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMrAuth } from "@/lib/mr/supabase-server";
+import { fetchAllByRange } from "@/lib/mr/fetch-all-paginated";
 
 export async function GET(request: NextRequest) {
   const auth = await getMrAuth();
@@ -21,45 +22,66 @@ export async function GET(request: NextRequest) {
 
   const DAYS_OPEN_PER_MONTH = 26;
 
-  // Visits query — same filters as Visit History page (status, dateFrom, dateTo, mrId)
-  let visitsQuery = supabase
-    .from("mr_visits")
-    .select(
-      "id, mr_id, check_in_time, check_out_time, visit_duration_minutes, patients_per_day, basket_value_per_patient, mr_pharmacies(name, region), mr_profiles!mr_id(full_name)"
-    )
-    .order("check_in_time", { ascending: false });
-  if (statusParam && statusParam !== "ALL") visitsQuery = visitsQuery.eq("status", statusParam);
-  else if (!statusParam) visitsQuery = visitsQuery.eq("status", "SUBMITTED");
-  if (mrIdParam) visitsQuery = visitsQuery.eq("mr_id", mrIdParam);
-  if (dateFrom) {
-    const from = new Date(dateFrom);
-    from.setHours(0, 0, 0, 0);
-    visitsQuery = visitsQuery.gte("check_in_time", from.toISOString());
-  }
-  if (dateTo) {
-    const to = new Date(dateTo);
-    to.setHours(23, 59, 59, 999);
-    visitsQuery = visitsQuery.lte("check_in_time", to.toISOString());
-  }
+  const buildVisitsQuery = (rangeFrom: number, rangeTo: number) => {
+    let visitsQuery = supabase
+      .from("mr_visits")
+      .select(
+        "id, mr_id, check_in_time, check_out_time, visit_duration_minutes, patients_per_day, basket_value_per_patient, mr_pharmacies(name, region), mr_profiles!mr_id(full_name)"
+      )
+      .order("check_in_time", { ascending: false })
+      .range(rangeFrom, rangeTo);
+    if (statusParam && statusParam !== "ALL") visitsQuery = visitsQuery.eq("status", statusParam);
+    else if (!statusParam) visitsQuery = visitsQuery.eq("status", "SUBMITTED");
+    if (mrIdParam) visitsQuery = visitsQuery.eq("mr_id", mrIdParam);
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      from.setHours(0, 0, 0, 0);
+      visitsQuery = visitsQuery.gte("check_in_time", from.toISOString());
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      visitsQuery = visitsQuery.lte("check_in_time", to.toISOString());
+    }
+    return visitsQuery;
+  };
 
   const role = auth.profile.role as string;
   const [visitsRes, productAuditsRes, competitorAuditsRes, prescriptionAuditsRes, competitorMarketingRes, catalogProductsRes, pharmaciesRes, mrProfilesRes] =
     await Promise.all([
-      visitsQuery,
-      supabase
-        .from("mr_product_audits")
-        .select("id, visit_id, quantity_in_stock, reason_why_stock, supplier, do_substitute, substitute_with_and_why, reason_for_oos, days_oos, price_per_pack, mr_products(name), mr_visits(patients_per_day, basket_value_per_patient, mr_pharmacies(id, name, region))"),
-      supabase
-        .from("mr_competitor_audits")
-        .select("competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock, doctor_prescribing, doctor_location, rx_per_month, mr_product_audits(mr_products(name), mr_visits(mr_pharmacies(region)))")
-        .limit(1000),
-      supabase
-        .from("mr_prescription_audits")
-        .select("visit_id, product_name, rx_per_month, mr_doctors(name, location), mr_visits(mr_pharmacies(region), mr_profiles!mr_id(full_name))"),
-      supabase
-        .from("mr_competitor_marketing")
-        .select("competitor_name, activity_description, reason_it_works, activity_2_description, activity_2_reason")
-        .limit(500),
+      fetchAllByRange((from, to) => buildVisitsQuery(from, to)),
+      fetchAllByRange((from, to) =>
+        supabase
+          .from("mr_product_audits")
+          .select(
+            "id, visit_id, quantity_in_stock, reason_why_stock, supplier, do_substitute, substitute_with_and_why, reason_for_oos, days_oos, price_per_pack, mr_products(name), mr_visits(patients_per_day, basket_value_per_patient, mr_pharmacies(id, name, region))"
+          )
+          .range(from, to)
+      ),
+      fetchAllByRange((from, to) =>
+        supabase
+          .from("mr_competitor_audits")
+          .select(
+            "competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock, doctor_prescribing, doctor_location, rx_per_month, mr_product_audits(mr_products(name), mr_visits(mr_pharmacies(region)))"
+          )
+          .range(from, to)
+      ),
+      fetchAllByRange((from, to) =>
+        supabase
+          .from("mr_prescription_audits")
+          .select(
+            "visit_id, product_name, rx_per_month, mr_doctors(name, location), mr_visits(mr_pharmacies(region), mr_profiles!mr_id(full_name))"
+          )
+          .range(from, to)
+      ),
+      fetchAllByRange((from, to) =>
+        supabase
+          .from("mr_competitor_marketing")
+          .select(
+            "competitor_name, activity_description, reason_it_works, activity_2_description, activity_2_reason"
+          )
+          .range(from, to)
+      ),
       supabase.from("mr_products").select("id, name"),
       supabase
         .from("mr_pharmacies")

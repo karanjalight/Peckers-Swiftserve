@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { fetchAllByRange } from "@/lib/mr/fetch-all-paginated";
 import { getMrAuth } from "@/lib/mr/supabase-server";
 import { MrReportsClient } from "./MrReportsClient";
 import { MrAdvancedReports } from "./MrAdvancedReports";
@@ -15,17 +16,25 @@ export default async function MrReportsPage() {
     // Managers/Admins see full analytics reports
     const [visitsRes, productAuditsRes, competitorAuditsRes] = await Promise.all(
       [
-        supabase
-          .from("mr_visits")
-          .select(
-            "id, check_in_time, visit_duration_minutes, objective, mr_pharmacies(name, region)"
-          )
-          .eq("status", "SUBMITTED")
-          .order("check_in_time", { ascending: false }),
-        supabase
-          .from("mr_product_audits")
-          .select("id, quantity_in_stock, mr_products(name)"),
-        supabase.from("mr_competitor_audits").select("id"),
+        fetchAllByRange((from, to) =>
+          supabase
+            .from("mr_visits")
+            .select(
+              "id, check_in_time, visit_duration_minutes, objective, mr_pharmacies(name, region)"
+            )
+            .eq("status", "SUBMITTED")
+            .order("check_in_time", { ascending: false })
+            .range(from, to)
+        ),
+        fetchAllByRange((from, to) =>
+          supabase
+            .from("mr_product_audits")
+            .select("id, quantity_in_stock, mr_products(name)")
+            .range(from, to)
+        ),
+        fetchAllByRange((from, to) =>
+          supabase.from("mr_competitor_audits").select("id").range(from, to)
+        ),
       ]
     );
 
@@ -132,14 +141,18 @@ export default async function MrReportsPage() {
   }
 
   // MR sees their personal visit stats
-  const { data: visits } = await supabase
-    .from("mr_visits")
-    .select(
-      "id, check_in_time, visit_duration_minutes, objective, status, mr_pharmacies(name)"
-    )
-    .eq("mr_id", auth.user.id)
-    .in("status", ["OPEN", "SUBMITTED"])
-    .order("check_in_time", { ascending: false });
+  const visitsRes = await fetchAllByRange((from, to) =>
+    supabase
+      .from("mr_visits")
+      .select(
+        "id, check_in_time, visit_duration_minutes, objective, status, mr_pharmacies(name)"
+      )
+      .eq("mr_id", auth.user.id)
+      .in("status", ["OPEN", "SUBMITTED"])
+      .order("check_in_time", { ascending: false })
+      .range(from, to)
+  );
+  const visits = visitsRes.data;
 
   const submittedVisits =
     (visits ?? []).filter(

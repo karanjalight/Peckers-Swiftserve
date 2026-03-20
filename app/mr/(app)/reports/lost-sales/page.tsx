@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { fetchAllByRange } from "@/lib/mr/fetch-all-paginated";
 import { getMrAuth } from "@/lib/mr/supabase-server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -43,9 +44,10 @@ export default async function MrLostSalesReportPage() {
 
   const { supabase } = auth;
 
-  const { data: productAuditsData, error: productAuditsError } = await supabase
-    .from("mr_product_audits")
-    .select(`
+  const productAuditsResult = await fetchAllByRange((from, to) =>
+    supabase
+      .from("mr_product_audits")
+      .select(`
       id,
       visit_id,
       days_oos,
@@ -53,8 +55,12 @@ export default async function MrLostSalesReportPage() {
       price_per_pack,
       mr_products (name)
     `)
-    .not("days_oos", "is", null)
-    .gte("days_oos", 0);
+      .not("days_oos", "is", null)
+      .gte("days_oos", 0)
+      .range(from, to)
+  );
+  const productAuditsData = productAuditsResult.data;
+  const productAuditsError = productAuditsResult.error;
 
   if (productAuditsError) {
     return (

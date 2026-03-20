@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { fetchAllByRange } from "@/lib/mr/fetch-all-paginated";
 import { requireManagerOrAdmin } from "@/lib/mr/supabase-server";
 import { MrProductIntelligenceClient } from "./MrProductIntelligenceClient";
 
@@ -124,10 +125,11 @@ export default async function MrProductDetailIntelligencePage({
     competitorAuditsRes,
     competitorMarketingRes,
   ] = await Promise.all([
-    supabase
-      .from("mr_product_audits")
-      .select(
-        `
+    fetchAllByRange((from, to) =>
+      supabase
+        .from("mr_product_audits")
+        .select(
+          `
         id,
         visit_id,
         quantity_in_stock,
@@ -141,12 +143,15 @@ export default async function MrProductDetailIntelligencePage({
           mr_profiles!mr_id(full_name)
         )
       `
-      )
-      .eq("product_id", id),
-    supabase
-      .from("mr_prescription_audits")
-      .select(
-        `
+        )
+        .eq("product_id", id)
+        .range(from, to)
+    ),
+    fetchAllByRange((from, to) =>
+      supabase
+        .from("mr_prescription_audits")
+        .select(
+          `
         id,
         visit_id,
         product_name,
@@ -158,12 +163,15 @@ export default async function MrProductDetailIntelligencePage({
           mr_profiles!mr_id(full_name)
         )
       `
-      )
-      .ilike("product_name", product.name),
-    supabase
-      .from("mr_competitor_audits")
-      .select(
-        `
+        )
+        .ilike("product_name", product.name)
+        .range(from, to)
+    ),
+    fetchAllByRange((from, to) =>
+      supabase
+        .from("mr_competitor_audits")
+        .select(
+          `
         id,
         competitor_name,
         supplier,
@@ -185,12 +193,14 @@ export default async function MrProductDetailIntelligencePage({
           )
         )
       `
-      )
-      .limit(1000),
-    supabase
-      .from("mr_competitor_marketing")
-      .select(
-        `
+        )
+        .range(from, to)
+    ),
+    fetchAllByRange((from, to) =>
+      supabase
+        .from("mr_competitor_marketing")
+        .select(
+          `
         id,
         visit_id,
         competitor_name,
@@ -204,8 +214,9 @@ export default async function MrProductDetailIntelligencePage({
           mr_profiles!mr_id(full_name)
         )
       `
-      )
-      .limit(500),
+        )
+        .range(from, to)
+    ),
   ]);
 
   const productAudits = (productAuditsRes.data ?? []) as unknown as Array<{

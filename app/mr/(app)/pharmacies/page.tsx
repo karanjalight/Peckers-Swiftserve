@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { fetchAllByRange } from "@/lib/mr/fetch-all-paginated";
 import { getMrAuth } from "@/lib/mr/supabase-server";
 import Link from "next/link";
 import { MapPin, Building2, Package, ClipboardList, Plus } from "lucide-react";
@@ -63,11 +64,15 @@ export default async function MrPharmaciesPage() {
     });
 
     // Compute lost sales per pharmacy for this MR based on product audits
-    const { data: mrVisits } = await supabase
-      .from("mr_visits")
-      .select("id, pharmacy_id")
-      .eq("mr_id", auth.user.id)
-      .eq("status", "SUBMITTED");
+    const mrVisitsRes = await fetchAllByRange((from, to) =>
+      supabase
+        .from("mr_visits")
+        .select("id, pharmacy_id")
+        .eq("mr_id", auth.user.id)
+        .eq("status", "SUBMITTED")
+        .range(from, to)
+    );
+    const mrVisits = mrVisitsRes.data;
 
     const visitIds = (mrVisits ?? []).map((v: { id: string }) => v.id);
     const lostSalesByPharmacy: Record<string, number> = {};
@@ -195,7 +200,7 @@ export default async function MrPharmaciesPage() {
                 </div>
               </CardHeader>
               <CardContent className="relative pt-0 text-xs text-indigo-900/80">
-                Basket value ≥ 200,000 KES.
+                Avg order value ≥ 200,000 KES.
               </CardContent>
             </Card>
 
@@ -268,11 +273,15 @@ export default async function MrPharmaciesPage() {
     const pharmacyIds = sortedPharmacies.map((p) => p.id);
     const lostSalesByPharmacy: Record<string, number> = {};
     if (pharmacyIds.length > 0) {
-      const { data: visits } = await supabase
-        .from("mr_visits")
-        .select("id, pharmacy_id")
-        .in("pharmacy_id", pharmacyIds)
-        .eq("status", "SUBMITTED");
+      const visitsRes = await fetchAllByRange((from, to) =>
+        supabase
+          .from("mr_visits")
+          .select("id, pharmacy_id")
+          .in("pharmacy_id", pharmacyIds)
+          .eq("status", "SUBMITTED")
+          .range(from, to)
+      );
+      const visits = visitsRes.data;
 
       const visitIds = (visits ?? []).map((v: { id: string }) => v.id);
       if (visitIds.length > 0) {
@@ -404,7 +413,7 @@ export default async function MrPharmaciesPage() {
                 </div>
               </CardHeader>
               <CardContent className="relative pt-0 text-xs text-indigo-900/80">
-                Basket value ≥ 200,000 KES.
+                Avg order value ≥ 200,000 KES.
               </CardContent>
             </Card>
 

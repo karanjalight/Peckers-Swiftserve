@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { fetchAllByRange } from "@/lib/mr/fetch-all-paginated";
 import { getMrAuth } from "@/lib/mr/supabase-server";
 
 export type MapVisit = {
@@ -27,20 +28,23 @@ export async function GET() {
 
   const { supabase } = auth;
 
-  const { data: visits, error } = await supabase
-    .from("mr_visits")
-    .select(
-      "id, gps_lat, gps_lng, check_in_time, check_out_time, visit_duration_minutes, status, objective, mr_pharmacies(name, region), mr_profiles!mr_id(full_name)"
-    )
-    .not("gps_lat", "is", null)
-    .not("gps_lng", "is", null)
-    .order("check_in_time", { ascending: false })
-    .limit(2000);
+  const visitsRes = await fetchAllByRange((from, to) =>
+    supabase
+      .from("mr_visits")
+      .select(
+        "id, gps_lat, gps_lng, check_in_time, check_out_time, visit_duration_minutes, status, objective, mr_pharmacies(name, region), mr_profiles!mr_id(full_name)"
+      )
+      .not("gps_lat", "is", null)
+      .not("gps_lng", "is", null)
+      .order("check_in_time", { ascending: false })
+      .range(from, to)
+  );
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (visitsRes.error) {
+    return NextResponse.json({ error: visitsRes.error.message }, { status: 500 });
   }
 
+  const visits = visitsRes.data;
   const list: MapVisit[] = (visits ?? []).map((v: Record<string, unknown>) => {
     const ph = Array.isArray(v.mr_pharmacies) ? v.mr_pharmacies[0] : v.mr_pharmacies;
     const mr = Array.isArray(v.mr_profiles) ? v.mr_profiles[0] : v.mr_profiles;

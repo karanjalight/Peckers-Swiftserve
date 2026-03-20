@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { fetchAllByRange } from "@/lib/mr/fetch-all-paginated";
 import { getMrAuth } from "@/lib/mr/supabase-server";
 import { MrDashboardClient } from "./MrDashboardClient";
 
@@ -10,19 +11,27 @@ export default async function MrDashboardPage() {
 
   const [visitsRes, productAuditsRes, competitorAuditsRes, pharmaciesRes] =
     await Promise.all([
-      supabase
-        .from("mr_visits")
-        .select(
-          "id, pharmacy_id, check_in_time, visit_duration_minutes, objective, mr_pharmacies(region, sub_region, name)"
-        )
-        .eq("status", "SUBMITTED")
-        .order("check_in_time", { ascending: false }),
-      supabase
-        .from("mr_product_audits")
-        .select(
-          "id, quantity_in_stock, visit_id, product_id, mr_products(name)"
-        ),
-      supabase.from("mr_competitor_audits").select("id"),
+      fetchAllByRange((from, to) =>
+        supabase
+          .from("mr_visits")
+          .select(
+            "id, pharmacy_id, check_in_time, visit_duration_minutes, objective, mr_pharmacies(region, sub_region, name)"
+          )
+          .eq("status", "SUBMITTED")
+          .order("check_in_time", { ascending: false })
+          .range(from, to)
+      ),
+      fetchAllByRange((from, to) =>
+        supabase
+          .from("mr_product_audits")
+          .select(
+            "id, quantity_in_stock, visit_id, product_id, mr_products(name)"
+          )
+          .range(from, to)
+      ),
+      fetchAllByRange((from, to) =>
+        supabase.from("mr_competitor_audits").select("id").range(from, to)
+      ),
       supabase.from("mr_pharmacies").select("id"),
     ]);
 
