@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { requireManagerOrAdmin } from "@/lib/mr/supabase-server";
+import { MR_SUPABASE_MAX_ROWS } from "@/lib/mr/supabase-limits";
 import { MrProductIntelligenceClient } from "./MrProductIntelligenceClient";
 
 type KpiSummary = {
@@ -142,7 +143,8 @@ export default async function MrProductDetailIntelligencePage({
         )
       `
       )
-      .eq("product_id", id),
+      .eq("product_id", id)
+      .limit(MR_SUPABASE_MAX_ROWS),
     supabase
       .from("mr_prescription_audits")
       .select(
@@ -159,7 +161,8 @@ export default async function MrProductDetailIntelligencePage({
         )
       `
       )
-      .ilike("product_name", product.name),
+      .ilike("product_name", product.name)
+      .limit(MR_SUPABASE_MAX_ROWS),
     supabase
       .from("mr_competitor_audits")
       .select(
@@ -186,7 +189,7 @@ export default async function MrProductDetailIntelligencePage({
         )
       `
       )
-      .limit(1000),
+      .limit(MR_SUPABASE_MAX_ROWS),
     supabase
       .from("mr_competitor_marketing")
       .select(
@@ -205,7 +208,7 @@ export default async function MrProductDetailIntelligencePage({
         )
       `
       )
-      .limit(500),
+      .limit(MR_SUPABASE_MAX_ROWS),
   ]);
 
   const productAudits = (productAuditsRes.data ?? []) as unknown as Array<{

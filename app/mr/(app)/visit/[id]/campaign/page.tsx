@@ -2,10 +2,9 @@ import { redirect, notFound } from "next/navigation";
 import { getMrAuth } from "@/lib/mr/supabase-server";
 import Link from "next/link";
 import { MrVisitProductCycleForm } from "../MrVisitProductCycleForm";
-import { MrVisitEditExistingData } from "../MrVisitEditExistingData";
+import { MrCampaignVisitClient } from "./MrCampaignVisitClient";
 import { MrDeleteVisitButton } from "../MrDeleteVisitButton";
 import { MrVisitFinishButton } from "../MrVisitFinishButton";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, Eye } from "lucide-react";
 
@@ -26,7 +25,7 @@ export default async function MrVisitEditPage({
 
   const { data: visit, error: visitError } = await supabase
     .from("mr_visits")
-    .select("id, status, objective, mr_id, mr_pharmacies(name)")
+    .select("id, status, objective, mr_id, pharmacy_id, mr_pharmacies(id, name, region, sub_region, location_text, procurement_name, procurement_contact)")
     .eq("id", id)
     .maybeSingle();
 
@@ -63,7 +62,20 @@ export default async function MrVisitEditPage({
   }
 
   const pharmacyRow = Array.isArray(visit.mr_pharmacies) ? visit.mr_pharmacies[0] : visit.mr_pharmacies;
-  const pharmacyName = (pharmacyRow as { name?: string } | null)?.name ?? "Pharmacy";
+  const pharmacy = pharmacyRow as { id?: string; name?: string; region?: string; sub_region?: string | null; location_text?: string | null; procurement_name?: string | null; procurement_contact?: string | null } | null;
+  const pharmacyName = pharmacy?.name ?? "Pharmacy";
+  const pharmacyId = (visit as { pharmacy_id?: string }).pharmacy_id ?? pharmacy?.id ?? "";
+  const pharmacyForClient = pharmacy
+    ? {
+        name: pharmacy.name ?? "Pharmacy",
+        region: [pharmacy.region, pharmacy.sub_region].filter(Boolean).join(pharmacy.region && pharmacy.sub_region ? " – " : "") || "—",
+        location: pharmacy.location_text ?? undefined,
+        procurement_name: pharmacy.procurement_name ?? undefined,
+        procurement_contact: pharmacy.procurement_contact ?? undefined,
+      }
+    : { name: "Pharmacy", region: "—", location: undefined, procurement_name: undefined, procurement_contact: undefined };
+  const mrName = auth.profile.full_name ?? "MR";
+  const mrContact = (auth.profile as { email?: string | null }).email ?? "";
 
   return (
     <div className="min-h-svh bg-white dark:bg-black/90">
@@ -89,11 +101,19 @@ export default async function MrVisitEditPage({
          
         </div>
 
-        {/* Product cycles first */}
+        {/* Key products – add/edit product audits (stock, qty sold, price, days OOS) */}
         <MrVisitProductCycleForm visitId={id} objective={visit.objective ?? "AUDIT"} />
 
-        {/* Edit any existing audits, prescriptions, or competitor marketing */}
-        <MrVisitEditExistingData visitId={id} objective={visit.objective ?? "AUDIT"} />
+        {/* Products table, order modal, marketing (redesigned) */}
+        {pharmacyId && (
+          <MrCampaignVisitClient
+            visitId={id}
+            pharmacyId={pharmacyId}
+            pharmacy={pharmacyForClient}
+            mrName={mrName}
+            mrContact={mrContact}
+          />
+        )}
 
         {/* Finish/submit block */}
         {isMr && isOpen && (

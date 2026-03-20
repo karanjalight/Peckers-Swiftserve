@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMrAuth } from "@/lib/mr/supabase-server";
+import { MR_SUPABASE_MAX_ROWS } from "@/lib/mr/supabase-limits";
 
 export type MapVisit = {
   id: string;
@@ -35,7 +36,7 @@ export async function GET() {
     .not("gps_lat", "is", null)
     .not("gps_lng", "is", null)
     .order("check_in_time", { ascending: false })
-    .limit(2000);
+    .limit(MR_SUPABASE_MAX_ROWS);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

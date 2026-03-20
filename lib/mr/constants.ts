@@ -57,8 +57,16 @@ export const REASON_WHY_STOCK_OPTIONS = [
 // Visit objectives (client labels)
 export const VISIT_OBJECTIVES = [
   { value: "AUDIT", label: "Prescription Audit" },
-  { value: "SALES", label: "Sales" },
-  { value: "CAMPAIGN", label: "Campaign" },
+  { value: "SALES", label: "Sales and campaigns" },
+  { value: "CAMPAIGN", label: "Sales and campaigns" },
+] as const;
+
+// Distributors for order placement (Sales & Campaign)
+export const MR_DISTRIBUTORS = [
+  "Surgipharm",
+  "MediLink",
+  "PharmaWorld",
+  "Other",
 ] as const;
 
 export type MrRegion = (typeof MR_REGIONS)[number];

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getMrAuth } from "@/lib/mr/supabase-server";
+import { MR_SUPABASE_MAX_ROWS } from "@/lib/mr/supabase-limits";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -98,7 +99,8 @@ export default async function MrLostSalesReportPage() {
     const { data: visitsData, error: visitsError } = await supabase
       .from("mr_visits")
       .select("id, mr_pharmacies(name)")
-      .in("id", visitIds);
+      .in("id", visitIds)
+      .limit(MR_SUPABASE_MAX_ROWS);
     if (visitsError) {
       return (
         <div className="mx-auto space-y-4">

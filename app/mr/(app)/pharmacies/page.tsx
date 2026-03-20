@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMrAuth } from "@/lib/mr/supabase-server";
+import { MR_SUPABASE_MAX_ROWS } from "@/lib/mr/supabase-limits";
 import Link from "next/link";
 import { MapPin, Building2, Package, ClipboardList, Plus } from "lucide-react";
 import { MrCreatePharmacyForm } from "./MrCreatePharmacyForm";
@@ -67,7 +68,8 @@ export default async function MrPharmaciesPage() {
       .from("mr_visits")
       .select("id, pharmacy_id")
       .eq("mr_id", auth.user.id)
-      .eq("status", "SUBMITTED");
+      .eq("status", "SUBMITTED")
+      .limit(MR_SUPABASE_MAX_ROWS);
 
     const visitIds = (mrVisits ?? []).map((v: { id: string }) => v.id);
     const lostSalesByPharmacy: Record<string, number> = {};
@@ -272,7 +274,8 @@ export default async function MrPharmaciesPage() {
         .from("mr_visits")
         .select("id, pharmacy_id")
         .in("pharmacy_id", pharmacyIds)
-        .eq("status", "SUBMITTED");
+        .eq("status", "SUBMITTED")
+        .limit(MR_SUPABASE_MAX_ROWS);
 
       const visitIds = (visits ?? []).map((v: { id: string }) => v.id);
       if (visitIds.length > 0) {

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMrAuth } from "@/lib/mr/supabase-server";
+import { MR_SUPABASE_MAX_ROWS } from "@/lib/mr/supabase-limits";
 import { MrDashboardClient } from "./MrDashboardClient";
 
 export default async function MrDashboardPage() {
@@ -16,14 +17,16 @@ export default async function MrDashboardPage() {
           "id, pharmacy_id, check_in_time, visit_duration_minutes, objective, mr_pharmacies(region, sub_region, name)"
         )
         .eq("status", "SUBMITTED")
-        .order("check_in_time", { ascending: false }),
+        .order("check_in_time", { ascending: false })
+        .limit(MR_SUPABASE_MAX_ROWS),
       supabase
         .from("mr_product_audits")
         .select(
           "id, quantity_in_stock, visit_id, product_id, mr_products(name)"
-        ),
-      supabase.from("mr_competitor_audits").select("id"),
-      supabase.from("mr_pharmacies").select("id"),
+        )
+        .limit(MR_SUPABASE_MAX_ROWS),
+      supabase.from("mr_competitor_audits").select("id").limit(MR_SUPABASE_MAX_ROWS),
+      supabase.from("mr_pharmacies").select("id").limit(MR_SUPABASE_MAX_ROWS),
     ]);
 
   if (visitsRes.error) {

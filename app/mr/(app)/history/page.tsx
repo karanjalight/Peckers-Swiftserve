@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMrAuth } from "@/lib/mr/supabase-server";
+import { MR_SUPABASE_MAX_ROWS } from "@/lib/mr/supabase-limits";
 import Link from "next/link";
 import {
   Card,
@@ -68,7 +69,8 @@ export default async function MrHistoryPage({
         mr_pharmacies (name, region)
       `)
       .eq("mr_id", auth.user.id)
-      .order("check_in_time", { ascending: false });
+      .order("check_in_time", { ascending: false })
+      .limit(MR_SUPABASE_MAX_ROWS);
 
     if (visitsError) {
       console.error("MR visits fetch error:", visitsError);
@@ -88,7 +90,9 @@ export default async function MrHistoryPage({
         <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
           <CardHeader>
             <CardTitle className="text-base text-slate-900 dark:text-white">Recent Visits</CardTitle>
-            <CardDescription className="text-slate-600 dark:text-slate-400">Last 50 visits</CardDescription>
+            <CardDescription className="text-slate-600 dark:text-slate-400">
+              Your visits (up to {MR_SUPABASE_MAX_ROWS} most recent)
+            </CardDescription>
           </CardHeader>
         <CardContent>
           {!visits || visits.length === 0 ? (
@@ -144,6 +148,8 @@ export default async function MrHistoryPage({
     visitsQuery = visitsQuery.lte("check_in_time", to.toISOString());
   }
 
+  visitsQuery = visitsQuery.limit(MR_SUPABASE_MAX_ROWS);
+
   const visitsRes = await visitsQuery;
 
   // If full select fails (e.g. notes/patients_per_day columns not yet migrated), fall back to minimal
@@ -153,7 +159,7 @@ export default async function MrHistoryPage({
       .from("mr_visits")
       .select(minimalSelect)
       .order("check_in_time", { ascending: false })
-      .limit(200);
+      .limit(MR_SUPABASE_MAX_ROWS);
     if (mrId) fallbackQuery = fallbackQuery.eq("mr_id", mrId);
     if (status) fallbackQuery = fallbackQuery.eq("status", status);
     if (dateFrom) {

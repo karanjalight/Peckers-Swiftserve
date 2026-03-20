@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMrAuth } from "@/lib/mr/supabase-server";
+import { MR_SUPABASE_MAX_ROWS } from "@/lib/mr/supabase-limits";
 import { MrReportsClient } from "./MrReportsClient";
 import { MrAdvancedReports } from "./MrAdvancedReports";
 
@@ -21,11 +22,13 @@ export default async function MrReportsPage() {
             "id, check_in_time, visit_duration_minutes, objective, mr_pharmacies(name, region)"
           )
           .eq("status", "SUBMITTED")
-          .order("check_in_time", { ascending: false }),
+          .order("check_in_time", { ascending: false })
+          .limit(MR_SUPABASE_MAX_ROWS),
         supabase
           .from("mr_product_audits")
-          .select("id, quantity_in_stock, mr_products(name)"),
-        supabase.from("mr_competitor_audits").select("id"),
+          .select("id, quantity_in_stock, mr_products(name)")
+          .limit(MR_SUPABASE_MAX_ROWS),
+        supabase.from("mr_competitor_audits").select("id").limit(MR_SUPABASE_MAX_ROWS),
       ]
     );
 
@@ -139,7 +142,8 @@ export default async function MrReportsPage() {
     )
     .eq("mr_id", auth.user.id)
     .in("status", ["OPEN", "SUBMITTED"])
-    .order("check_in_time", { ascending: false });
+    .order("check_in_time", { ascending: false })
+    .limit(MR_SUPABASE_MAX_ROWS);
 
   const submittedVisits =
     (visits ?? []).filter(

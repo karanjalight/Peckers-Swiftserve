@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMrAuth } from "@/lib/mr/supabase-server";
+import { MR_SUPABASE_MAX_ROWS } from "@/lib/mr/supabase-limits";
 
 export async function GET(request: NextRequest) {
   const auth = await getMrAuth();
@@ -42,24 +43,28 @@ export async function GET(request: NextRequest) {
     visitsQuery = visitsQuery.lte("check_in_time", to.toISOString());
   }
 
+  visitsQuery = visitsQuery.limit(MR_SUPABASE_MAX_ROWS);
+
   const role = auth.profile.role as string;
   const [visitsRes, productAuditsRes, competitorAuditsRes, prescriptionAuditsRes, competitorMarketingRes, catalogProductsRes, pharmaciesRes, mrProfilesRes] =
     await Promise.all([
       visitsQuery,
       supabase
         .from("mr_product_audits")
-        .select("id, visit_id, quantity_in_stock, reason_why_stock, supplier, do_substitute, substitute_with_and_why, reason_for_oos, days_oos, price_per_pack, mr_products(name), mr_visits(patients_per_day, basket_value_per_patient, mr_pharmacies(id, name, region))"),
+        .select("id, visit_id, quantity_in_stock, reason_why_stock, supplier, do_substitute, substitute_with_and_why, reason_for_oos, days_oos, price_per_pack, mr_products(name), mr_visits(patients_per_day, basket_value_per_patient, mr_pharmacies(id, name, region))")
+        .limit(MR_SUPABASE_MAX_ROWS),
       supabase
         .from("mr_competitor_audits")
         .select("competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock, doctor_prescribing, doctor_location, rx_per_month, mr_product_audits(mr_products(name), mr_visits(mr_pharmacies(region)))")
-        .limit(1000),
+        .limit(MR_SUPABASE_MAX_ROWS),
       supabase
         .from("mr_prescription_audits")
-        .select("visit_id, product_name, rx_per_month, mr_doctors(name, location), mr_visits(mr_pharmacies(region), mr_profiles!mr_id(full_name))"),
+        .select("visit_id, product_name, rx_per_month, mr_doctors(name, location), mr_visits(mr_pharmacies(region), mr_profiles!mr_id(full_name))")
+        .limit(MR_SUPABASE_MAX_ROWS),
       supabase
         .from("mr_competitor_marketing")
         .select("competitor_name, activity_description, reason_it_works, activity_2_description, activity_2_reason")
-        .limit(500),
+        .limit(MR_SUPABASE_MAX_ROWS),
       supabase.from("mr_products").select("id, name"),
       supabase
         .from("mr_pharmacies")
