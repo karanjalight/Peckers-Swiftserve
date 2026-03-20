@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { fetchAllByRange } from "@/lib/mr/fetch-all-paginated";
 import { getMrAuth } from "@/lib/mr/supabase-server";
+import { MR_SUPABASE_IN_CHUNK } from "@/lib/mr/supabase-limits";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -44,7 +45,7 @@ export default async function MrLostSalesReportPage() {
 
   const { supabase } = auth;
 
-  const productAuditsResult = await fetchAllByRange((from, to) =>
+  const productAuditsResult = await fetchAllByRange((rangeFrom, rangeTo) =>
     supabase
       .from("mr_product_audits")
       .select(`
@@ -57,7 +58,8 @@ export default async function MrLostSalesReportPage() {
     `)
       .not("days_oos", "is", null)
       .gte("days_oos", 0)
-      .range(from, to)
+      .order("id", { ascending: true })
+      .range(rangeFrom, rangeTo)
   );
   const productAuditsData = productAuditsResult.data;
   const productAuditsError = productAuditsResult.error;
@@ -101,41 +103,44 @@ export default async function MrLostSalesReportPage() {
   const visitIds = [...new Set(list.map((r) => r.visit_id))].filter(Boolean);
   const pharmacyByVisitId: Record<string, string> = {};
   if (visitIds.length > 0) {
-    const { data: visitsData, error: visitsError } = await supabase
-      .from("mr_visits")
-      .select("id, mr_pharmacies(name)")
-      .in("id", visitIds);
-    if (visitsError) {
-      return (
-        <div className="mx-auto space-y-4">
-          <Button variant="ghost" size="sm" className="-ml-1 w-fit" asChild>
-            <Link href="/mr/reports" className="gap-1.5">
-              <ChevronLeft className="h-4 w-4" />
-              Back to Reports
-            </Link>
-          </Button>
-          <Card className="border-red-200 dark:border-red-900">
-            <CardHeader>
-              <CardTitle className="text-red-700 dark:text-red-400">Failed to load pharmacy names</CardTitle>
-              <CardDescription>{visitsError.message}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild>
-                <Link href="/mr/reports">Back to Reports</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-    const visits = (visitsData ?? []) as Array<{
-      id: string;
-      mr_pharmacies: { name: string } | { name: string }[] | null;
-    }>;
-    for (const v of visits) {
-      const ph = v.mr_pharmacies;
-      const name = (Array.isArray(ph) ? ph[0] : ph)?.name ?? "—";
-      pharmacyByVisitId[v.id] = name;
+    for (let i = 0; i < visitIds.length; i += MR_SUPABASE_IN_CHUNK) {
+      const batch = visitIds.slice(i, i + MR_SUPABASE_IN_CHUNK);
+      const { data: visitsData, error: visitsError } = await supabase
+        .from("mr_visits")
+        .select("id, mr_pharmacies(name)")
+        .in("id", batch);
+      if (visitsError) {
+        return (
+          <div className="mx-auto space-y-4">
+            <Button variant="ghost" size="sm" className="-ml-1 w-fit" asChild>
+              <Link href="/mr/reports" className="gap-1.5">
+                <ChevronLeft className="h-4 w-4" />
+                Back to Reports
+              </Link>
+            </Button>
+            <Card className="border-red-200 dark:border-red-900">
+              <CardHeader>
+                <CardTitle className="text-red-700 dark:text-red-400">Failed to load pharmacy names</CardTitle>
+                <CardDescription>{visitsError.message}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild>
+                  <Link href="/mr/reports">Back to Reports</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
+      const visits = (visitsData ?? []) as Array<{
+        id: string;
+        mr_pharmacies: { name: string } | { name: string }[] | null;
+      }>;
+      for (const v of visits) {
+        const ph = v.mr_pharmacies;
+        const name = (Array.isArray(ph) ? ph[0] : ph)?.name ?? "—";
+        pharmacyByVisitId[v.id] = name;
+      }
     }
   }
 
