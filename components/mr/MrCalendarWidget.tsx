@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 
 const dayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const monthLabels = [
@@ -28,11 +28,15 @@ const monthLabels = [
   "December",
 ];
 
-type Visit = { id: string; checkIn: string; region?: string };
-
-function formatKey(date: Date) {
-  return date.toISOString().slice(0, 10);
+/** Local calendar day key (avoids UTC off-by-one from toISOString). */
+function dayKey(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
+
+type Visit = { id: string; checkIn: string; region?: string };
 
 function formatFullDate(date: Date) {
   return date.toLocaleDateString(undefined, {
@@ -43,19 +47,22 @@ function formatFullDate(date: Date) {
   });
 }
 
+const NAVY = "#0b1b53";
+const DOT_COLORS = ["bg-teal-500", "bg-sky-400", "bg-fuchsia-500"] as const;
+
 export function MrCalendarWidget({ visits }: { visits: Visit[] }) {
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const todayKey = formatKey(new Date());
+  const todayKey = dayKey(new Date());
 
   const visitsByDay = useMemo(() => {
     const map = new Map<string, Visit[]>();
     for (const visit of visits) {
       const d = new Date(visit.checkIn);
       if (Number.isNaN(d.getTime())) continue;
-      const key = formatKey(d);
+      const key = dayKey(d);
       const existing = map.get(key);
       if (existing) {
         existing.push(visit);
@@ -78,18 +85,15 @@ export function MrCalendarWidget({ visits }: { visits: Visit[] }) {
 
     const cells: { date: Date; isCurrentMonth: boolean }[] = [];
 
-    // Previous month tail
     for (let i = prevMonthDays - 1; i >= 0; i--) {
       const day = prevMonthLastDay - i;
       cells.push({ date: new Date(year, month - 1, day), isCurrentMonth: false });
     }
 
-    // Current month
     for (let d = 1; d <= daysInMonth; d++) {
       cells.push({ date: new Date(year, month, d), isCurrentMonth: true });
     }
 
-    // Next month head to fill complete weeks
     const totalCells = Math.ceil(cells.length / 7) * 7;
     let nextDay = 1;
     while (cells.length < totalCells) {
@@ -111,8 +115,11 @@ export function MrCalendarWidget({ visits }: { visits: Visit[] }) {
   const headerDate = selectedDate ?? new Date();
   const headerLabel = formatFullDate(headerDate);
 
-  const selectedKey = selectedDate ? formatKey(selectedDate) : null;
+  const selectedKey = selectedDate ? dayKey(selectedDate) : null;
   const selectedVisits = selectedKey ? visitsByDay.get(selectedKey) ?? [] : [];
+
+  /** Navy highlight: explicit selection, else today when nothing picked yet. */
+  const primaryKey = selectedDate ? dayKey(selectedDate) : todayKey;
 
   const handlePrevMonth = () => {
     setViewDate(
@@ -144,128 +151,167 @@ export function MrCalendarWidget({ visits }: { visits: Visit[] }) {
     setDialogOpen(true);
   };
 
+  const selectClass =
+    "h-8 w-full min-w-0 cursor-pointer appearance-none rounded-full border border-gray-200 bg-white pl-3 pr-8 text-xs font-medium text-gray-900 shadow-sm transition-colors hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/80 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:hover:border-gray-500 dark:focus-visible:ring-gray-600";
+
   return (
-    <div className="bg-white dark:bg-card rounded-3xl border-2 border-gray-400 dark:border-gray-600 p-4 sm:p-5 space-y-4 shadow-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2.5">
-        <h2 className="text-[14px] sm:text-[16px] font-semibold text-slate-900 dark:text-slate-50">
-          {headerLabel}
-        </h2>
-        <Button
-          type="button"
-          size="sm"
-          className="rounded-full !bg-[#0b1b53] hover:!bg-[#0b1b53]/90 dark:!bg-blue-600 dark:hover:!bg-blue-600/90 !text-white px-3.5 sm:px-4 h-8 text-[11px] sm:text-[12px] font-medium"
-        >
-          Full calendar
-        </Button>
-      </div>
-
-      {/* Controls */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="grid grid-cols-2 gap-2.5 sm:w-auto">
-          <select
-            value={String(currentYear)}
-            onChange={handleYearChange}
-            className="rounded-full border-2 border-gray-300 dark:border-gray-500 h-9 px-3 text-[12px] sm:text-[13px] font-medium bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
-          >
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={currentMonthName}
-            onChange={handleMonthChange}
-            className="rounded-full border-2 border-gray-300 dark:border-gray-500 h-9 px-3 text-[12px] sm:text-[13px] font-medium bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
-          >
-            {monthLabels.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2 self-end sm:self-auto">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+      <div className="space-y-3">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="min-w-0 text-sm font-semibold leading-snug text-[#0a1628] dark:text-gray-50">
+            {headerLabel}
+          </h2>
           <Button
             type="button"
-            size="icon"
-            className="h-8 w-8 flex items-center justify-center rounded-full text-white"
-            onClick={handlePrevMonth}
+            size="sm"
+            className="h-8 shrink-0 rounded-full px-3 text-xs font-medium text-white shadow-sm"
+            style={{ backgroundColor: NAVY }}
           >
-            {"<"}
-            <ChevronLeft className="h-4 w-4 text-white" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-full"
-            onClick={handleNextMonth}
-          >
-            {">"}
-            {/* <ChevronRight className="h-4 w-4" /> */}
+            Full calendar
           </Button>
         </div>
-      </div>
 
-      {/* Calendar grid */}
-      <div className="space-y-2">
-        <div className="grid grid-cols-7 gap-[3px] sm:gap-1 mb-1">
-          {dayLabels.map((day) => (
-            <div
-              key={day}
-              className="text-center text-[10px] sm:text-[11px] font-semibold text-slate-600 dark:text-slate-300 py-1.5"
-            >
-              {day}
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 gap-[3px] sm:gap-1">
-          {calendarCells.map((cell) => {
-            const key = formatKey(cell.date);
-            const hasVisits = (visitsByDay.get(key)?.length ?? 0) > 0;
-            const isToday = key === todayKey;
-
-            return (
-              <div
-                key={key}
-                className="relative h-16 aspect-square flex items-center justify-center"
+        {/* Year / month + month nav */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="relative grid flex-1 grid-cols-2 gap-2">
+            <div className="relative">
+              <select
+                value={String(currentYear)}
+                onChange={handleYearChange}
+                aria-label="Year"
+                className={selectClass}
               >
-                <button
-                  type="button"
-                  onClick={() => handleDayClick(cell.date)}
-                  className={[
-                    "w-full h-20 rounded-lg  text-[11px] sm:text-[12px] font-medium transition-colors border border-transparent",
-                    cell.isCurrentMonth
-                      ? "text-slate-900 dark:text-slate-50"
-                      : "text-slate-400 dark:text-slate-500",
-                    isToday
-                      ? "bg-[#0b1b53] dark:bg-blue-600 text-white font-semibold"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-800",
-                    hasVisits && !isToday
-                      ? "border-slate-300 dark:border-slate-600 bg-slate-50/70 dark:bg-slate-900/30"
-                      : "",
-                  ].join(" ")}
-                >
-                  {cell.date.getDate()}
-                </button>
-                {hasVisits && !isToday && (
-                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex gap-0.5">
-                    <div className="w-1 h-1 rounded-full bg-sky-500" />
-                    <div className="w-1 h-1 rounded-full bg-pink-500" />
-                  </div>
-                )}
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+                aria-hidden
+              />
+            </div>
+            <div className="relative">
+              <select
+                value={currentMonthName}
+                onChange={handleMonthChange}
+                aria-label="Month"
+                className={selectClass}
+              >
+                {monthLabels.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+                aria-hidden
+              />
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center justify-end gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7 rounded-full border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+              onClick={handlePrevMonth}
+              aria-label="Previous month"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7 rounded-full border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+              onClick={handleNextMonth}
+              aria-label="Next month"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Calendar grid — compact */}
+        <div className="pt-0.5">
+          <div className="mb-1 grid grid-cols-7 gap-0.5">
+            {dayLabels.map((day) => (
+              <div
+                key={day}
+                className="py-1 text-center text-[10px] font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300"
+              >
+                {day}
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-0.5">
+            {calendarCells.map((cell, idx) => {
+              const key = dayKey(cell.date);
+              const visitList = visitsByDay.get(key);
+              const hasVisits = (visitList?.length ?? 0) > 0;
+              const isPrimary = key === primaryKey;
+
+              return (
+                <div
+                  key={`${key}-${idx}`}
+                  className="flex aspect-square max-h-9 min-h-0 items-center justify-center p-0"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleDayClick(cell.date)}
+                    className={
+                      isPrimary
+                        ? "flex h-full w-full max-h-9 min-h-[2rem] flex-col items-center justify-center gap-0.5 rounded-md px-0.5 py-0.5 text-[11px] font-semibold text-white shadow-sm transition-colors"
+                        : [
+                            "flex h-full w-full max-h-9 min-h-[2rem] flex-col items-center justify-center gap-0.5 rounded-md px-0.5 py-0.5 text-[11px] font-medium transition-colors hover:bg-gray-100 dark:hover:bg-gray-800/80",
+                            cell.isCurrentMonth
+                              ? "text-gray-900 dark:text-gray-50"
+                              : "text-gray-400 dark:text-gray-500",
+                            hasVisits ? "bg-gray-50 dark:bg-gray-900/50" : "",
+                          ].join(" ")
+                    }
+                    style={isPrimary ? { backgroundColor: NAVY } : undefined}
+                  >
+                    <span className="leading-none">{cell.date.getDate()}</span>
+                    {hasVisits ? (
+                      <span className="flex gap-px" aria-hidden>
+                        <span
+                          className={
+                            isPrimary
+                              ? "h-1 w-1 rounded-full bg-teal-200"
+                              : `h-1 w-1 rounded-full ${DOT_COLORS[0]}`
+                          }
+                        />
+                        <span
+                          className={
+                            isPrimary
+                              ? "h-1 w-1 rounded-full bg-sky-200"
+                              : `h-1 w-1 rounded-full ${DOT_COLORS[1]}`
+                          }
+                        />
+                        <span
+                          className={
+                            isPrimary
+                              ? "h-1 w-1 rounded-full bg-fuchsia-200"
+                              : `h-1 w-1 rounded-full ${DOT_COLORS[2]}`
+                          }
+                        />
+                      </span>
+                    ) : null}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Day overview dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="rounded-2xl sm:max-w-lg">
           <DialogHeader>
@@ -278,30 +324,30 @@ export function MrCalendarWidget({ visits }: { visits: Visit[] }) {
           </DialogHeader>
 
           {selectedVisits.length === 0 ? (
-            <div className="mt-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-6 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-300">
+            <div className="mt-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/80 px-4 py-6 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-300">
               No visits recorded for this date.
             </div>
           ) : (
-            <div className="mt-3 space-y-3 max-h-80 overflow-y-auto">
+            <div className="mt-3 max-h-80 space-y-3 overflow-y-auto">
               {selectedVisits.map((visit) => {
                 const d = new Date(visit.checkIn);
                 return (
                   <div
                     key={visit.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-900/60"
                   >
                     <div>
-                      <p className="font-medium text-slate-900 dark:text-slate-50">
+                      <p className="font-medium text-gray-900 dark:text-gray-50">
                         {d.toLocaleTimeString(undefined, {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </p>
-                      <p className="text-xs text-slate-600 dark:text-slate-300">
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
                         Region: {visit.region || "—"}
                       </p>
                     </div>
-                    {visit.id && (
+                    {visit.id ? (
                       <Button
                         asChild
                         variant="outline"
@@ -313,7 +359,7 @@ export function MrCalendarWidget({ visits }: { visits: Visit[] }) {
                           View
                         </Link>
                       </Button>
-                    )}
+                    ) : null}
                   </div>
                 );
               })}
@@ -324,4 +370,3 @@ export function MrCalendarWidget({ visits }: { visits: Visit[] }) {
     </div>
   );
 }
-

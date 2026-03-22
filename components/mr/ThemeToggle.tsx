@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+
 const STORAGE_KEY = "mr-theme";
 
 export function ThemeToggle() {
@@ -12,7 +14,8 @@ export function ThemeToggle() {
   useEffect(() => {
     setMounted(true);
     const stored = localStorage.getItem(STORAGE_KEY) as "light" | "dark" | null;
-    const prefersDark = typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const prefersDark =
+      typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
     const initial = stored ?? (prefersDark ? "dark" : "light");
     setThemeState(initial);
     apply(initial);
@@ -38,22 +41,42 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-1 border-slate-500 bg-slate-50 dark:border-slate-600 dark:bg-slate-700"
+        className="h-8 w-14 shrink-0 rounded-full bg-slate-900/80 p-1 dark:bg-slate-800"
         aria-hidden
       >
-        <Sun className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
+          <Sun className="size-3.5 text-amber-500" />
+        </span>
       </div>
     );
   }
 
+  const isDark = theme === "dark";
+
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={isDark}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       onClick={toggle}
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-1 border-slate-500 bg-slate-50 text-slate-800 -sm transition hover:border-slate-400 hover:bg-slate-200 hover:text-slate-900 dark:border-slate-500 dark:bg-slate-700 dark:text-white dark:hover:border-slate-400 dark:hover:bg-slate-600"
-      aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+      className={cn(
+        "relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center rounded-full border border-slate-200/80 bg-slate-900 p-1 transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-800"
+      )}
     >
-      {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+      <span
+        className={cn(
+          "pointer-events-none flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ease-out",
+          isDark ? "translate-x-6" : "translate-x-0"
+        )}
+      >
+        {isDark ? (
+          <Moon className="size-3.5 text-slate-700" />
+        ) : (
+          <Sun className="size-3.5 text-amber-500" />
+        )}
+      </span>
     </button>
   );
 }

@@ -55,6 +55,13 @@ import {
   Target,
   CalendarCheck,
 } from "lucide-react";
+import {
+  MR_VISIT_TABLE_BODY_ROW,
+  MR_VISIT_TABLE_HEAD,
+  MR_VISIT_TABLE_HEADER_ROW,
+  MR_VISIT_TABLE_INNER_SCROLL,
+  MR_VISIT_TABLE_SHELL,
+} from "@/components/mr/mr-visit-table-classes";
 import type { ManagerChartData, ManagerKpis, RecentVisit } from "./MrReportsTypes";
 
 const CHART_COLORS = ["#0ea5e9", "#14b8a6", "#8b5cf6", "#f97316", "#ec4899", "#eab308", "#22c55e", "#f43f5e"];
@@ -75,6 +82,18 @@ type ReportData = {
   mrProductivity: Array<{ mr: string; pharmacy: string; checkIn: string; duration: number }>;
   topDoctors: Array<{ doctor: string; location: string; region?: string; totalRx: number; productCount: number; products: string[] }>;
   marketingByCompetitor: Record<string, Array<{ activity: string; reason: string }>>;
+  marketingInsightRows: Array<{
+    id: string;
+    visitId: string;
+    competitorName: string;
+    slot: "Activity 1" | "Activity 2";
+    activity: string;
+    reason: string;
+    pharmacyName: string;
+    region: string;
+    visitDate: string;
+  }>;
+  marketingCompetitorMentions: Array<{ competitor: string; mentions: number }>;
   comparativePricing: Array<{
     product: string;
     region: string;
@@ -500,32 +519,64 @@ export function MrAdvancedReports({
         break;
       }
       case "marketing": {
-        Object.entries(data.marketingByCompetitor).forEach(([competitor, activities]) => {
-          if (y + 20 > contentBottom) pushPage();
-          doc.setFillColor(...HEADER_BLUE);
-          doc.rect(margin, y, pageWidth - margin * 2, 8, "F");
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(10);
-          doc.setFont("helvetica", "bold");
-          doc.text(competitor, margin + 3, y + 5.5);
-          doc.setTextColor(0, 0, 0);
-          y += 10;
-          activities.forEach((a) => {
-            if (y + 6 > contentBottom) pushPage();
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(9);
-            doc.text(`• ${a.activity}`, margin + 4, y + 5);
-            y += 5;
-            if (a.reason) {
-              doc.setFontSize(8);
-              doc.setTextColor(FOOTER_GRAY[0], FOOTER_GRAY[1], FOOTER_GRAY[2]);
-              doc.text(a.reason, margin + 6, y + 4);
-              doc.setTextColor(0, 0, 0);
+        const insightRows = data.marketingInsightRows ?? [];
+        const mentions = data.marketingCompetitorMentions ?? [];
+        if (insightRows.length > 0) {
+          drawBarChart(
+            mentions.slice(0, 10).map((m) => ({
+              label: m.competitor.slice(0, 14),
+              value: m.mentions,
+            })),
+            { title: "Competitor mentions (activity slots)" }
+          );
+          drawStyledTable(
+            ["Date", "Competitor", "Slot", "Activity", "Pharmacy", "Region"],
+            insightRows.slice(0, 45).map((r) => {
+              const d = r.visitDate ? new Date(r.visitDate) : null;
+              const dateStr =
+                d && !Number.isNaN(d.getTime())
+                  ? d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+                  : "—";
+              return [
+                dateStr,
+                r.competitorName,
+                r.slot,
+                r.activity.length > 48 ? `${r.activity.slice(0, 46)}…` : r.activity,
+                r.pharmacyName,
+                r.region,
+              ];
+            }),
+            [22, 28, 22, 52, 32, 22],
+            { tableLabel: "Marketing insights by visit" }
+          );
+        } else {
+          Object.entries(data.marketingByCompetitor).forEach(([competitor, activities]) => {
+            if (y + 20 > contentBottom) pushPage();
+            doc.setFillColor(...HEADER_BLUE);
+            doc.rect(margin, y, pageWidth - margin * 2, 8, "F");
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.text(competitor, margin + 3, y + 5.5);
+            doc.setTextColor(0, 0, 0);
+            y += 10;
+            activities.forEach((a) => {
+              if (y + 6 > contentBottom) pushPage();
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(9);
+              doc.text(`• ${a.activity}`, margin + 4, y + 5);
               y += 5;
-            }
+              if (a.reason) {
+                doc.setFontSize(8);
+                doc.setTextColor(FOOTER_GRAY[0], FOOTER_GRAY[1], FOOTER_GRAY[2]);
+                doc.text(a.reason, margin + 6, y + 4);
+                doc.setTextColor(0, 0, 0);
+                y += 5;
+              }
+            });
+            y += 4;
           });
-          y += 4;
-        });
+        }
         break;
       }
       case "pricing":
@@ -779,6 +830,31 @@ export function MrAdvancedReports({
     return { label: "High risk", color: "bg-red-400 text-red-700" };
   }, [totalLostRevenue]);
 
+  const marketingSnapshot = useMemo(() => {
+    if (!data) return null;
+    const rows = data.marketingInsightRows ?? [];
+    const mentions = data.marketingCompetitorMentions ?? [];
+    const uniquePharmacies = new Set(
+      rows.map((r) => r.pharmacyName).filter((n) => n && n !== "—")
+    ).size;
+    const uniqueCompetitors = new Set(rows.map((r) => r.competitorName)).size;
+    return {
+      activityCount: rows.length,
+      uniqueCompetitors,
+      uniquePharmacies,
+      topCompetitor: mentions[0] ?? null,
+    };
+  }, [data]);
+
+  const marketingBarChartData = useMemo(() => {
+    if (!data?.marketingCompetitorMentions?.length) return [];
+    return data.marketingCompetitorMentions.slice(0, 10).map((m, i) => ({
+      name: m.competitor.length > 22 ? `${m.competitor.slice(0, 20)}…` : m.competitor,
+      mentions: m.mentions,
+      fill: CHART_COLORS[i % CHART_COLORS.length],
+    }));
+  }, [data]);
+
   const DAYS_OPEN_PER_MONTH = 26;
 
   const pharmacyValueList = useMemo(() => {
@@ -1015,7 +1091,7 @@ export function MrAdvancedReports({
       {/* Workspace tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <div className="sticky top-0 z-20 mt-5 -mx-4 border-b border-slate-400 bg-white/85 px-4 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 lg:-mx-6 lg:px-6">
-          <TabsList className="flex w-full max-w-7xl items-end gap-2 border-b border-transparent bg-transparent p-0">
+          <TabsList className="flex w-full items-end gap-2 border-b border-transparent bg-transparent p-0">
             <TabsTrigger
               value="executive-summary"
               className="relative flex items-center gap-2 border-b-2 border-transparent px-2 py-6 text-lg font-medium text-slate-800 transition-all duration-200 hover:text-slate-900 data-[state=active]:border-blue-900 data-[state=active]:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 dark:data-[state=active]:border-blue-400 dark:data-[state=active]:text-slate-50"
@@ -1477,40 +1553,36 @@ export function MrAdvancedReports({
                     No region coverage data yet.
                   </p>
                 ) : (
-                  <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/60">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-100/80 dark:bg-slate-900/60">
-                          <TableHead className="text-xs font-semibold text-slate-800 dark:text-slate-100">
-                            Region
-                          </TableHead>
-                          <TableHead className="text-xs font-semibold text-slate-800 dark:text-slate-100">
-                            Pharmacies visited
-                          </TableHead>
-                          <TableHead className="text-xs font-semibold text-slate-800 dark:text-slate-100">
-                            Visits
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {data.regionCoverage
-                          .slice()
-                          .sort((a, b) => b.visits - a.visits)
-                          .map((row) => (
-                            <TableRow key={row.region}>
-                              <TableCell className="text-sm text-slate-900 dark:text-slate-50">
-                                {row.region}
-                              </TableCell>
-                              <TableCell className="text-sm text-slate-800 dark:text-slate-200">
-                                {row.pharmacies.length}
-                              </TableCell>
-                              <TableCell className="text-sm text-slate-800 dark:text-slate-200">
-                                {row.visits}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
+                  <div className={MR_VISIT_TABLE_SHELL}>
+                    <div className={MR_VISIT_TABLE_INNER_SCROLL}>
+                      <Table className="rounded-b-2xl">
+                        <TableHeader>
+                          <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                            <TableHead className={`${MR_VISIT_TABLE_HEAD} pl-3`}>Region</TableHead>
+                            <TableHead className={MR_VISIT_TABLE_HEAD}>Pharmacies visited</TableHead>
+                            <TableHead className={`${MR_VISIT_TABLE_HEAD} pr-3`}>Visits</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {data.regionCoverage
+                            .slice()
+                            .sort((a, b) => b.visits - a.visits)
+                            .map((row) => (
+                              <TableRow key={row.region} className={MR_VISIT_TABLE_BODY_ROW}>
+                                <TableCell className="py-4 pl-3 text-sm text-slate-900 dark:text-slate-50">
+                                  {row.region}
+                                </TableCell>
+                                <TableCell className="py-4 text-sm text-slate-800 dark:text-slate-200">
+                                  {row.pharmacies.length}
+                                </TableCell>
+                                <TableCell className="py-4 pr-3 text-sm text-slate-800 dark:text-slate-200">
+                                  {row.visits}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -1689,12 +1761,12 @@ export function MrAdvancedReports({
                   <div className="min-w-[640px]">
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-0 bg-slate-100/90 dark:bg-slate-800/90">
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">Product</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Region</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Avg Audit (KES)</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Avg Competitor (KES)</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">Difference</TableHead>
+                        <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white first:pl-5">Product</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">Region</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Avg Audit (KES)</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Avg Competitor (KES)</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white last:pr-5">Difference</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1779,43 +1851,220 @@ export function MrAdvancedReports({
               <Card className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/5 dark:border-slate-700 dark:bg-slate-800/90 dark:ring-white/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
-                    F. Marketing Insights
+                    Marketing snapshot
                   </CardTitle>
                   <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
-                    Competitor activities and why they work.
+                    Logged competitor activities from field visits (see full report below).
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {Object.keys(data.marketingByCompetitor).length === 0 ? (
+                <CardContent className="space-y-4">
+                  {!marketingSnapshot || marketingSnapshot.activityCount === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-2 py-8 text-sm text-slate-600 dark:text-slate-400">
                       <Megaphone className="h-10 w-10 text-slate-400" />
                       No competitor marketing data yet.
                     </div>
                   ) : (
-                    Object.entries(data.marketingByCompetitor)
-                      .slice(0, 3)
-                      .map(([comp, activities]) => (
-                        <div
-                          key={comp}
-                          className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3.5 dark:border-slate-700 dark:bg-slate-800/60"
-                        >
-                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                            {comp}
+                    <>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-2 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                          <p className="text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-50">
+                            {marketingSnapshot.activityCount}
                           </p>
-                          <ul className="mt-2 space-y-1 text-xs text-slate-700 dark:text-slate-300">
-                            {activities.slice(0, 3).map((a, i) => (
-                              <li key={i} className="leading-snug">
-                                {a.activity}
-                                {a.reason && <span className="text-slate-500 dark:text-slate-400"> — {a.reason}</span>}
-                              </li>
-                            ))}
-                          </ul>
+                          <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            Activities
+                          </p>
                         </div>
-                      ))
+                        <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-2 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                          <p className="text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-50">
+                            {marketingSnapshot.uniqueCompetitors}
+                          </p>
+                          <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            Competitors
+                          </p>
+                        </div>
+                        <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-2 py-3 dark:border-slate-700 dark:bg-slate-800/60">
+                          <p className="text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-50">
+                            {marketingSnapshot.uniquePharmacies}
+                          </p>
+                          <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            Pharmacies
+                          </p>
+                        </div>
+                      </div>
+                      {marketingSnapshot.topCompetitor && (
+                        <p className="text-center text-xs text-slate-600 dark:text-slate-400">
+                          Most mentioned:{" "}
+                          <span className="font-semibold text-slate-900 dark:text-slate-100">
+                            {marketingSnapshot.topCompetitor.competitor}
+                          </span>{" "}
+                          <span className="tabular-nums text-slate-500 dark:text-slate-500">
+                            ({marketingSnapshot.topCompetitor.mentions} slots)
+                          </span>
+                        </p>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
             </div>
+
+          {/* F. Marketing Insights — full width, chart + table + export */}
+          <Card className="w-full overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/5 dark:border-slate-700 dark:bg-slate-800/90 dark:ring-white/5">
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 pb-2">
+              <div>
+                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-50">
+                  F. Marketing Insights
+                </CardTitle>
+                <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
+                  Competitor activity slots with pharmacy, region, and visit date. Each row is one Activity 1 or Activity 2 entry.
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 gap-2 rounded-full border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200"
+                onClick={() => {
+                  const rows = (data.marketingInsightRows ?? []).map((r) => ({
+                    visit_date: r.visitDate,
+                    competitor: r.competitorName,
+                    slot: r.slot,
+                    activity: r.activity,
+                    reason_works: r.reason,
+                    pharmacy: r.pharmacyName,
+                    region: r.region,
+                    visit_id: r.visitId,
+                  }));
+                  downloadCsv("marketing-insights.csv", rows);
+                }}
+                disabled={!(data.marketingInsightRows ?? []).length}
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export CSV
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-6 sm:px-6 sm:pb-6">
+              {(data.marketingInsightRows ?? []).length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/80 py-14 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-400">
+                  <Megaphone className="h-10 w-10 text-slate-400" />
+                  No competitor marketing data yet.
+                </div>
+              ) : (
+                <>
+                  {marketingBarChartData.length > 0 && (
+                    <div className="h-56 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          layout="vertical"
+                          data={marketingBarChartData}
+                          margin={{ top: 4, right: 16, left: 4, bottom: 4 }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#e2e8f0"
+                            horizontal
+                            vertical={false}
+                          />
+                          <XAxis type="number" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={{ stroke: "#e2e8f0" }} />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            width={108}
+                            tick={{ fontSize: 10, fill: "#64748b" }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <Tooltip
+                            formatter={(value: number) => [`${value} mentions`, ""]}
+                            labelFormatter={(_, payload) => {
+                              const p = payload?.[0]?.payload as { name?: string };
+                              return p?.name ?? "";
+                            }}
+                          />
+                          <Bar dataKey="mentions" radius={[0, 6, 6, 0]} barSize={18}>
+                            {marketingBarChartData.map((entry, index) => (
+                              <Cell key={`mcell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Top competitors by number of activity slots (Activity 1 + 2) in the selected range.
+                  </p>
+                  <div className="max-h-[380px] overflow-auto rounded-2xl border border-slate-200/90 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900/50">
+                    <div className="min-w-[720px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white first:pl-5">
+                              Visit date
+                            </TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">
+                              Competitor
+                            </TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">
+                              Slot
+                            </TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">
+                              Activity
+                            </TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">
+                              Why it works
+                            </TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">
+                              Pharmacy
+                            </TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white last:pr-5">
+                              Region
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(data.marketingInsightRows ?? []).map((r) => {
+                            const d = r.visitDate ? new Date(r.visitDate) : null;
+                            const dateLabel =
+                              d && !Number.isNaN(d.getTime())
+                                ? d.toLocaleDateString(undefined, {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })
+                                : "—";
+                            return (
+                              <TableRow key={r.id} className="border-slate-100 dark:border-slate-800">
+                                <TableCell className="max-w-[100px] whitespace-nowrap px-4 py-3 text-xs text-slate-700 first:pl-5 dark:text-slate-300">
+                                  {dateLabel}
+                                </TableCell>
+                                <TableCell className="max-w-[140px] px-4 py-3 text-xs font-medium text-slate-900 dark:text-slate-50">
+                                  {r.competitorName}
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap px-4 py-3 text-xs text-slate-600 dark:text-slate-400">
+                                  {r.slot}
+                                </TableCell>
+                                <TableCell className="max-w-[220px] px-4 py-3 text-xs leading-snug text-slate-700 dark:text-slate-300">
+                                  {r.activity}
+                                </TableCell>
+                                <TableCell className="max-w-[200px] px-4 py-3 text-xs leading-snug text-slate-600 dark:text-slate-400">
+                                  {r.reason || "—"}
+                                </TableCell>
+                                <TableCell className="max-w-[140px] px-4 py-3 text-xs text-slate-700 dark:text-slate-300">
+                                  {r.pharmacyName}
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap px-4 py-3 text-xs text-slate-600 last:pr-5 dark:text-slate-400">
+                                  {r.region}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
           {/* B. Substitution Threat Index - full width, scrollable + export */}
           <Card className="w-full overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/5 dark:border-slate-700 dark:bg-slate-800/90 dark:ring-white/5">
@@ -1857,10 +2106,10 @@ export function MrAdvancedReports({
                   <div className="min-w-[400px]">
                     <Table>
                       <TableHeader>
-                        <TableRow className="sticky top-0 z-10 border-0 bg-slate-100/95 backdrop-blur dark:bg-slate-800/95">
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">Reason</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Count</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">Top Competitor</TableHead>
+                        <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white first:pl-5">Reason</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">Count</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white last:pr-5">Top Competitor</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1922,10 +2171,10 @@ export function MrAdvancedReports({
                   <div className="min-w-[360px]">
                     <Table>
                       <TableHeader>
-                        <TableRow className="sticky top-0 z-10 border-0 bg-slate-100/95 backdrop-blur dark:bg-slate-800/95">
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">Product</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Prescribed (Rx)</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">Share</TableHead>
+                        <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white first:pl-5">Product</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">Prescribed (Rx)</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white last:pr-5">Share</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1989,12 +2238,12 @@ export function MrAdvancedReports({
                   <div className="min-w-[560px]">
                     <Table>
                       <TableHeader>
-                        <TableRow className="sticky top-0 z-10 border-0 bg-slate-100/95 backdrop-blur dark:bg-slate-800/95">
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">Product</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Prescribed</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Substituted</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Rate</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">Main Rival</TableHead>
+                        <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white first:pl-5">Product</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Prescribed</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Substituted</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Rate</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white last:pr-5">Main Rival</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -2059,11 +2308,11 @@ export function MrAdvancedReports({
                   <div className="min-w-[500px]">
                     <Table>
                       <TableHeader>
-                        <TableRow className="sticky top-0 z-10 border-0 bg-slate-100/95 backdrop-blur dark:bg-slate-800/95">
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">Doctor</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Location</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Region</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">Total Rx</TableHead>
+                        <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white first:pl-5">Doctor</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">Location</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">Region</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white last:pr-5">Total Rx</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -2145,7 +2394,7 @@ export function MrAdvancedReports({
             </Card>
             <Card className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/90">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-white">
                   OOS Days (median)
                 </CardTitle>
                 <CardDescription className="text-slate-600 dark:text-slate-400">
@@ -2167,7 +2416,7 @@ export function MrAdvancedReports({
             </Card>
             {/* <Card className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/90">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-white">
                   Risk Level
                 </CardTitle>
                 <CardDescription className="text-slate-600 dark:text-slate-400">
@@ -2229,15 +2478,15 @@ export function MrAdvancedReports({
                   <div className="min-w-[720px]">
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-0 bg-slate-100/90 dark:bg-slate-800/90">
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">Pharmacy</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Region</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Product</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Days OOS</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Patients/day</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Basket (KES)</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Lost Revenue (KES)</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">Action</TableHead>
+                        <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white first:pl-5">Pharmacy</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">Region</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">Product</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Days OOS</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Patients/day</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Basket (KES)</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Lost Revenue (KES)</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-center text-[11px] font-semibold uppercase tracking-wider text-white last:pr-5">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -2335,14 +2584,14 @@ export function MrAdvancedReports({
                     <div className="min-w-[640px]">
                       <Table>
                         <TableHeader>
-                          <TableRow className="border-0 bg-slate-100/90 dark:bg-slate-800/90">
-                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">Pharmacy</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Region</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Attendants/day</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Basket value (KES)</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Est. monthly (KES)</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Tier</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">Action</TableHead>
+                          <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white first:pl-5">Pharmacy</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">Region</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Attendants/day</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Basket value (KES)</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Est. monthly (KES)</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">Tier</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-center text-[11px] font-semibold uppercase tracking-wider text-white last:pr-5">Action</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -2392,12 +2641,12 @@ export function MrAdvancedReports({
                     <div className="min-w-[420px]">
                       <Table>
                         <TableHeader>
-                          <TableRow className="border-0 bg-slate-100/90 dark:bg-slate-800/90">
-                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">Pharmacy</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Region</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Est. monthly (KES)</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Lost revenue (KES)</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">Action</TableHead>
+                          <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white first:pl-5">Pharmacy</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">Region</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Est. monthly (KES)</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Lost revenue (KES)</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-center text-[11px] font-semibold uppercase tracking-wider text-white last:pr-5">Action</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -2486,10 +2735,10 @@ export function MrAdvancedReports({
                     <div className="min-w-[360px]">
                       <Table>
                         <TableHeader>
-                          <TableRow className="border-0 bg-slate-100/90 dark:bg-slate-800/90">
-                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">Product</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Lost revenue (KES)</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">Pharmacies</TableHead>
+                          <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white first:pl-5">Product</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Lost revenue (KES)</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white last:pr-5">Pharmacies</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -2554,13 +2803,13 @@ export function MrAdvancedReports({
                   <div className="min-w-[480px]">
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-0 bg-slate-100/90 dark:bg-slate-800/90">
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">Pharmacy</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Region</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">OOS audits</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Products</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Total days OOS</TableHead>
-                          <TableHead className="h-12 px-4 py-0 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">Action</TableHead>
+                        <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white first:pl-5">Pharmacy</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white">Region</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">OOS audits</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Products</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white">Total days OOS</TableHead>
+                          <TableHead className="h-12 px-4 py-0 text-center text-[11px] font-semibold uppercase tracking-wider text-white last:pr-5">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -2670,9 +2919,9 @@ export function MrAdvancedReports({
                     <div className="max-h-64 overflow-auto rounded-2xl border border-slate-200/90 dark:border-slate-700 dark:bg-slate-900/50">
                       <Table>
                         <TableHeader>
-                          <TableRow className="border-0 bg-slate-100/90 dark:bg-slate-800/90">
-                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-slate-600 first:pl-5 dark:text-slate-400">Reason</TableHead>
-                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600 last:pr-5 dark:text-slate-400">Share</TableHead>
+                          <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                            <TableHead className="h-12 px-4 py-0 text-[11px] font-semibold uppercase tracking-wider text-white first:pl-5">Reason</TableHead>
+                            <TableHead className="h-12 px-4 py-0 text-right text-[11px] font-semibold uppercase tracking-wider text-white last:pr-5">Share</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>

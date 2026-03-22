@@ -12,6 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  MR_VISIT_TABLE_BODY_ROW,
+  MR_VISIT_TABLE_HEAD,
+  MR_VISIT_TABLE_HEADER_ROW,
+  MR_VISIT_TABLE_INNER_MAX_520,
+  MR_VISIT_TABLE_SHELL,
+} from "@/components/mr/mr-visit-table-classes";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, TrendingDown, Lightbulb, Package } from "lucide-react";
 
@@ -54,7 +61,7 @@ export default async function MrLostSalesReportPage() {
       days_oos,
       quantity_sold_good_month,
       price_per_pack,
-      mr_products (name)
+      mr_products (name, price)
     `)
       .not("days_oos", "is", null)
       .gte("days_oos", 0)
@@ -97,7 +104,10 @@ export default async function MrLostSalesReportPage() {
     days_oos: number | null;
     quantity_sold_good_month: number | null;
     price_per_pack: number | null;
-    mr_products: { name: string } | { name: string }[] | null;
+    mr_products:
+      | { name: string; price?: number | null }
+      | { name: string; price?: number | null }[]
+      | null;
   }>;
 
   const visitIds = [...new Set(list.map((r) => r.visit_id))].filter(Boolean);
@@ -151,22 +161,43 @@ export default async function MrLostSalesReportPage() {
     pharmacyName: string;
     daysOos: number;
     qtySoldGoodMonth: number;
+    /** Effective unit price: audit price when set and positive; else mr_products.price */
     pricePerPack: number | null;
     volumeLoss: number;
     revenueLoss: number;
   };
 
+  function resolvePricePerPack(
+    auditPrice: number | null,
+    catalogPrice: number | null
+  ): number | null {
+    if (auditPrice != null && auditPrice > 0) return auditPrice;
+    if (catalogPrice != null && catalogPrice > 0) return catalogPrice;
+    return null;
+  }
+
   const reportRows: Row[] = list
     .map((r) => {
       const daysOos = Number(r.days_oos) || 0;
-      const qtySoldGoodMonth = Number(r.quantity_sold_good_month) ?? 0;
-      const pricePerPack = r.price_per_pack != null ? Number(r.price_per_pack) : null;
+      const qtySoldGoodMonth = Number(r.quantity_sold_good_month) || 0;
+      const rawAudit =
+        r.price_per_pack != null ? Number(r.price_per_pack) : null;
       const product = r.mr_products;
-      const productName = (Array.isArray(product) ? product[0] : product)?.name ?? "—";
+      const p = Array.isArray(product) ? product[0] : product;
+      const catalogPrice =
+        p?.price != null && !Number.isNaN(Number(p.price))
+          ? Number(p.price)
+          : null;
+      const pricePerPack = resolvePricePerPack(
+        rawAudit != null && !Number.isNaN(rawAudit) ? rawAudit : null,
+        catalogPrice
+      );
+      const productName = p?.name ?? "—";
       const pharmacyName = pharmacyByVisitId[r.visit_id] ?? "—";
 
       const volumeLoss = (daysOos / 30) * qtySoldGoodMonth;
-      const revenueLoss = pricePerPack != null ? volumeLoss * pricePerPack : 0;
+      const revenueLoss =
+        pricePerPack != null ? volumeLoss * pricePerPack : 0;
 
       return {
         id: r.id,
@@ -187,7 +218,7 @@ export default async function MrLostSalesReportPage() {
   const totalVolumeLoss = reportRows.reduce((sum, r) => sum + r.volumeLoss, 0);
 
   return (
-    <div className="mx-auto   space-y-6">
+    <div className="w-full space-y-6">
       <div className="flex flex-col gap-3">
         <Button variant="ghost" size="sm" className="-ml-1 w-fit" asChild>
           <Link href="/mr/reports" className="gap-1.5">
@@ -215,7 +246,8 @@ export default async function MrLostSalesReportPage() {
           <CardDescription className="text-sm">
             <strong>Volume Loss</strong> = (Days Out of Stock ÷ 30) × Qty Sold in a Good Month
             <br />
-            <strong>Revenue Loss</strong> = Volume Loss × Pharmacy Unit Price (per pack)
+            <strong>Revenue Loss</strong> = Volume Loss × Price per pack. If the audit has no
+            unit price (blank or 0), the price from the product catalogue (<code className="text-xs">mr_products.price</code>) is used.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -286,37 +318,47 @@ export default async function MrLostSalesReportPage() {
               audits to see estimates here.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/80 dark:bg-slate-800/50">
-                    <TableHead className="font-semibold">Product</TableHead>
-                    <TableHead className="font-semibold">Pharmacy</TableHead>
-                    <TableHead className="font-semibold text-right">Days OOS</TableHead>
-                    <TableHead className="font-semibold text-right">Sold (good mo)</TableHead>
-                    <TableHead className="font-semibold text-right">Price/pack (KES)</TableHead>
-                    <TableHead className="font-semibold text-right">Volume loss</TableHead>
-                    <TableHead className="font-semibold text-right">Revenue loss (KES)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reportRows.map((r) => (
-                    <TableRow key={r.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                      <TableCell className="font-medium">{r.productName}</TableCell>
-                      <TableCell className="text-slate-600 dark:text-slate-400">{r.pharmacyName}</TableCell>
-                      <TableCell className="text-right">{r.daysOos}</TableCell>
-                      <TableCell className="text-right">{r.qtySoldGoodMonth}</TableCell>
-                      <TableCell className="text-right">
-                        {r.pricePerPack != null ? r.pricePerPack.toLocaleString() : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">{Math.round(r.volumeLoss).toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-semibold text-amber-700 dark:text-amber-400">
-                        {Math.round(r.revenueLoss).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className={MR_VISIT_TABLE_SHELL}>
+              <div className={MR_VISIT_TABLE_INNER_MAX_520}>
+                  <Table className="rounded-b-2xl">
+                    <TableHeader>
+                      <TableRow className={MR_VISIT_TABLE_HEADER_ROW}>
+                        <TableHead className={`${MR_VISIT_TABLE_HEAD} pl-3`}>Product</TableHead>
+                        <TableHead className={MR_VISIT_TABLE_HEAD}>Pharmacy</TableHead>
+                        <TableHead className={`${MR_VISIT_TABLE_HEAD} text-right`}>Days OOS</TableHead>
+                        <TableHead className={`${MR_VISIT_TABLE_HEAD} text-right`}>Sold (good mo)</TableHead>
+                        <TableHead className={`${MR_VISIT_TABLE_HEAD} text-right`}>Price/pack (KES)</TableHead>
+                        <TableHead className={`${MR_VISIT_TABLE_HEAD} text-right`}>Volume loss</TableHead>
+                        <TableHead className={`${MR_VISIT_TABLE_HEAD} pr-3 text-right`}>
+                          Revenue loss (KES)
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reportRows.map((r) => (
+                        <TableRow key={r.id} className={MR_VISIT_TABLE_BODY_ROW}>
+                          <TableCell className="py-4 pl-3 font-medium text-slate-900 dark:text-slate-100">
+                            {r.productName}
+                          </TableCell>
+                          <TableCell className="py-4 text-slate-600 dark:text-slate-400">
+                            {r.pharmacyName}
+                          </TableCell>
+                          <TableCell className="py-4 text-right tabular-nums">{r.daysOos}</TableCell>
+                          <TableCell className="py-4 text-right tabular-nums">{r.qtySoldGoodMonth}</TableCell>
+                          <TableCell className="py-4 text-right tabular-nums">
+                            {r.pricePerPack != null ? r.pricePerPack.toLocaleString() : "—"}
+                          </TableCell>
+                          <TableCell className="py-4 text-right tabular-nums">
+                            {Math.round(r.volumeLoss).toLocaleString()}
+                          </TableCell>
+                          <TableCell className="py-4 pr-3 text-right font-semibold tabular-nums text-amber-700 dark:text-amber-400">
+                            {Math.round(r.revenueLoss).toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+              </div>
             </div>
           )}
         </CardContent>

@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { fetchAllByRange } from "@/lib/mr/fetch-all-paginated";
+import type { AuditVisitRow } from "@/lib/mr/presentation-reports";
+import { computeRetailHealthMetrics } from "@/lib/mr/retail-health-metrics";
 import { getMrAuth } from "@/lib/mr/supabase-server";
 import { MrDashboardClient } from "./MrDashboardClient";
 
@@ -9,7 +11,7 @@ export default async function MrDashboardPage() {
 
   const { supabase } = auth;
 
-  const [visitsRes, productAuditsRes, competitorAuditsRes, pharmaciesRes] =
+  const [visitsRes, auditVisitsRes, productAuditsRes, competitorAuditsRes, pharmaciesRes] =
     await Promise.all([
       fetchAllByRange((from, to) =>
         supabase
@@ -18,6 +20,17 @@ export default async function MrDashboardPage() {
             "id, pharmacy_id, check_in_time, visit_duration_minutes, objective, mr_pharmacies(region, sub_region, name)"
           )
           .eq("status", "SUBMITTED")
+          .order("check_in_time", { ascending: false })
+          .range(from, to)
+      ),
+      fetchAllByRange((from, to) =>
+        supabase
+          .from("mr_visits")
+          .select(
+            "id, pharmacy_id, check_in_time, patients_per_day, basket_value_per_patient, mr_pharmacies(id, name, region, sub_region, location_text, avg_attendants_per_day, avg_order_value)"
+          )
+          .eq("status", "SUBMITTED")
+          .eq("objective", "AUDIT")
           .order("check_in_time", { ascending: false })
           .range(from, to)
       ),
@@ -38,8 +51,22 @@ export default async function MrDashboardPage() {
   if (visitsRes.error) {
     console.error("Dashboard mr_visits error:", visitsRes.error);
   }
+  if (auditVisitsRes.error) {
+    console.error("Dashboard audit mr_visits error:", auditVisitsRes.error);
+  }
 
   const visits = visitsRes.data ?? [];
+  const auditVisits = (auditVisitsRes.data ?? []).map((row) => {
+    const r = row as Record<string, unknown>;
+    const ph = r.mr_pharmacies;
+    const pharmacy = Array.isArray(ph) ? ph[0] : ph;
+    return {
+      ...r,
+      mr_pharmacies: pharmacy,
+    } as AuditVisitRow;
+  });
+  const retailHealthMetrics = computeRetailHealthMetrics(auditVisits);
+
   const productAudits = productAuditsRes.data ?? [];
   const competitorCount = competitorAuditsRes.data?.length ?? 0;
   const totalPharmacies = pharmaciesRes.data?.length ?? 0;
@@ -171,6 +198,7 @@ export default async function MrDashboardPage() {
       chartData={chartData}
       visitsTable={visitsTable}
       recentPharmacies={chartData.byPharmacy.slice(0, 5)}
+      retailHealthMetrics={retailHealthMetrics}
     />
   );
 }

@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         supabase
           .from("mr_competitor_marketing")
           .select(
-            "competitor_name, activity_description, reason_it_works, activity_2_description, activity_2_reason"
+            "id, visit_id, competitor_name, activity_description, reason_it_works, activity_2_description, activity_2_reason, mr_visits(check_in_time, mr_pharmacies(name, region))"
           )
           .range(from, to)
       ),
@@ -326,28 +326,91 @@ export async function GET(request: NextRequest) {
 
   // F. Marketing Insights
   const marketingByCompetitor: Record<string, Array<{ activity: string; reason: string }>> = {};
+  const marketingInsightRows: Array<{
+    id: string;
+    visitId: string;
+    competitorName: string;
+    slot: "Activity 1" | "Activity 2";
+    activity: string;
+    reason: string;
+    pharmacyName: string;
+    region: string;
+    visitDate: string;
+  }> = [];
+  const mentionCountByCompetitor: Record<string, number> = {};
+
   for (const cm of competitorMarketing) {
     const c = cm as {
+      id: string;
+      visit_id: string;
       competitor_name: string;
       activity_description?: string | null;
       reason_it_works?: string | null;
       activity_2_description?: string | null;
       activity_2_reason?: string | null;
+      mr_visits?:
+        | { check_in_time?: string; mr_pharmacies?: { name?: string; region?: string } | { name?: string; region?: string }[] | null }
+        | { check_in_time?: string; mr_pharmacies?: { name?: string; region?: string } | { name?: string; region?: string }[] | null }[]
+        | null;
     };
     if (!marketingByCompetitor[c.competitor_name]) marketingByCompetitor[c.competitor_name] = [];
-    if (c.activity_description) {
+    const vRaw = c.mr_visits;
+    const v = Array.isArray(vRaw) ? vRaw[0] : vRaw;
+    const phRaw = v?.mr_pharmacies;
+    const ph = Array.isArray(phRaw) ? phRaw[0] : phRaw;
+    const pharmacyName = ph?.name ?? "—";
+    const region = ph?.region ?? "—";
+    const visitDate = v?.check_in_time ?? "";
+
+    const bump = (name: string) => {
+      mentionCountByCompetitor[name] = (mentionCountByCompetitor[name] ?? 0) + 1;
+    };
+
+    if (c.activity_description?.trim()) {
       marketingByCompetitor[c.competitor_name].push({
         activity: c.activity_description,
         reason: c.reason_it_works ?? "",
       });
+      marketingInsightRows.push({
+        id: `${c.id}-a1`,
+        visitId: c.visit_id,
+        competitorName: c.competitor_name,
+        slot: "Activity 1",
+        activity: c.activity_description.trim(),
+        reason: (c.reason_it_works ?? "").trim(),
+        pharmacyName,
+        region,
+        visitDate,
+      });
+      bump(c.competitor_name);
     }
-    if (c.activity_2_description) {
+    if (c.activity_2_description?.trim()) {
       marketingByCompetitor[c.competitor_name].push({
         activity: c.activity_2_description,
         reason: c.activity_2_reason ?? "",
       });
+      marketingInsightRows.push({
+        id: `${c.id}-a2`,
+        visitId: c.visit_id,
+        competitorName: c.competitor_name,
+        slot: "Activity 2",
+        activity: c.activity_2_description.trim(),
+        reason: (c.activity_2_reason ?? "").trim(),
+        pharmacyName,
+        region,
+        visitDate,
+      });
+      bump(c.competitor_name);
     }
   }
+
+  marketingInsightRows.sort(
+    (a, b) => new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime()
+  );
+
+  const marketingCompetitorMentions = Object.entries(mentionCountByCompetitor)
+    .map(([competitor, mentions]) => ({ competitor, mentions }))
+    .sort((a, b) => b.mentions - a.mentions);
 
   // G. Comparative Pricing
   const pricingByProductRegion: Record<string, Record<string, { auditPrices: number[]; competitorPrices: number[] }>> = {};
@@ -478,6 +541,8 @@ export async function GET(request: NextRequest) {
     mrProductivity,
     topDoctors: topDoctorsList,
     marketingByCompetitor,
+    marketingInsightRows,
+    marketingCompetitorMentions,
     comparativePricing,
     substitutionRateReport,
     supplyChainAttribution,
