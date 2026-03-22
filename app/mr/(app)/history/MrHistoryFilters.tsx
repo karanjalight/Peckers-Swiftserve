@@ -22,6 +22,8 @@ interface MrHistoryFiltersProps {
   mrOptions: MrOption[];
   regionOptions: string[];
   role: "MR" | "MANAGER" | "ADMIN";
+  /** Defaults to `/mr/history`; use `/mr/history/sales-campaign` for sales & campaign history. */
+  basePath?: string;
   initial: {
     mrId?: string;
     region?: string;
@@ -35,6 +37,7 @@ export function MrHistoryFilters({
   mrOptions,
   regionOptions,
   role,
+  basePath = "/mr/history",
   initial,
 }: MrHistoryFiltersProps) {
   const router = useRouter();
@@ -54,14 +57,14 @@ export function MrHistoryFilters({
         if (value == null || value === "") next.delete(key);
         else next.set(key, value);
       });
-      router.push(`/mr/history?${next.toString()}`);
+      router.push(`${basePath}?${next.toString()}`);
     },
-    [router, searchParams]
+    [router, searchParams, basePath]
   );
 
   const clearFilters = useCallback(() => {
-    router.push("/mr/history");
-  }, [router]);
+    router.push(basePath);
+  }, [router, basePath]);
 
   const isManagerOrAdmin = role === "MANAGER" || role === "ADMIN";
 

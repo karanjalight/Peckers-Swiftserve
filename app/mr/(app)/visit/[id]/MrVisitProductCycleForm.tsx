@@ -27,7 +27,6 @@ import {
   ChevronLeft,
   Check,
   Camera,
-  Sparkles,
   Layers,
   User,
   MapPin,
@@ -40,9 +39,10 @@ import {
   Stethoscope,
   FileText,
   TrendingUp,
-  ShoppingCart,
   Replace,
   AlertCircle,
+  Share2,
+  Mail,
 } from "lucide-react";
 
 type CompetitorEntry = {
@@ -506,13 +506,14 @@ export function MrVisitProductCycleForm({
     }
   }
 
-  const step = STEPS[stepIndex];
-  const isLastStep = stepIndex === STEPS.length - 1;
+  const isCampaign = objective === "CAMPAIGN";
+  const steps = isCampaign ? (["product", "audit"] as const) : STEPS;
+  const step = steps[stepIndex];
+  const isLastStep = stepIndex === steps.length - 1;
   const isFirstStep = stepIndex === 0;
   const canNext =
-    (step === "product" && selectedProduct) ||
-    (step === "audit" && true) ||
-    (step === "prescription" && true);
+    (step === "product" && !!selectedProduct) ||
+    (!isCampaign && (step === "audit" || step === "prescription"));
 
   const inputClass =
     "h-12 rounded-2xl bg-white dark:bg-background text-slate-900 dark:text-foreground placeholder:text-slate-500 dark:placeholder:text-muted-foreground shadow-sm ring-1 ring-black/5 dark:ring-white/10 focus:ring-2 focus:ring-blue-500/30 transition";
@@ -521,11 +522,8 @@ export function MrVisitProductCycleForm({
     <div className="space-y-5">
       {/* Stepper - pills, minimal border */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
-        {STEPS.map((s, i) => {
-          const label =
-            s === "prescription" && objective === "CAMPAIGN"
-              ? "Financial impact"
-              : STEP_LABELS[s];
+        {steps.map((s, i) => {
+          const label = STEP_LABELS[s];
           return (
           <div key={s} className="flex shrink-0 items-center">
             <button
@@ -543,7 +541,7 @@ export function MrVisitProductCycleForm({
               <span className="sm:hidden">{i + 1}</span>
               {i < stepIndex && <Check className="h-3.5 w-3.5" />}
             </button>
-            {i < STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <ChevronRight className="mx-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-muted-foreground/50" />
             )}
           </div>
@@ -591,7 +589,7 @@ export function MrVisitProductCycleForm({
                     : "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/60 dark:text-slate-200 dark:ring-slate-700/70";
 
                   const goToAudit = () => {
-                    if (objective === "CAMPAIGN" && !isComplete && completedProductIds.length >= MAX_CAMPAIGN_PRODUCTS) {
+                    if (isCampaign && !isComplete && completedProductIds.length >= MAX_CAMPAIGN_PRODUCTS) {
                       setMessage({
                         type: "error",
                         text: `You can record a maximum of ${MAX_CAMPAIGN_PRODUCTS} key products for a campaign visit.`,
@@ -682,7 +680,7 @@ export function MrVisitProductCycleForm({
           )}
 
           {step === "audit" && selectedProduct && (
-            objective === "CAMPAIGN" ? (
+            isCampaign ? (
               <CampaignStockForm
                 qty={qty}
                 setQty={setQty}
@@ -904,17 +902,7 @@ export function MrVisitProductCycleForm({
             )
           )}
 
-          {step === "prescription" && selectedProduct && (
-            objective === "CAMPAIGN" ? (
-              <CampaignFinancialImpactStep
-                productName={selectedProduct.name}
-                qty={qty}
-                quantitySoldGoodMonth={quantitySoldGoodMonth}
-                pricePerPack={pricePerPack}
-                daysOos={daysOos}
-                inputClass={inputClass}
-              />
-            ) : (
+          {step === "prescription" && selectedProduct && !isCampaign && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 rounded-2xl bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm text-blue-800 dark:text-blue-200">
                   <FileText className="h-4 w-4 shrink-0" />
@@ -974,7 +962,6 @@ export function MrVisitProductCycleForm({
                   ))}
                 </ul>
               </div>
-            )
           )}
         </div>
       </div>
@@ -1044,7 +1031,7 @@ export function MrVisitProductCycleForm({
               size="lg"
               disabled={!canNext}
               className="min-h-12 touch-manipulation rounded-2xl cta-gradient"
-              onClick={() => canNext && setStepIndex((i) => Math.min(STEPS.length - 1, i + 1))}
+              onClick={() => canNext && setStepIndex((i) => Math.min(steps.length - 1, i + 1))}
             >
               Next
               <ChevronRight className="ml-1 h-5 w-5" />
@@ -1074,83 +1061,18 @@ export function MrVisitProductCycleForm({
   );
 }
 
-function CampaignFinancialPanel({
-  qty,
-  quantitySoldGoodMonth,
-  pricePerPack,
-  daysOos,
-  productName,
-}: {
-  qty: number;
-  quantitySoldGoodMonth: string;
-  pricePerPack: string;
-  daysOos: string;
-  productName: string;
-}) {
-  const goodMonth = Number(quantitySoldGoodMonth) || 0;
-  const price = Number(pricePerPack) || 0;
-  const daysOut = Number(daysOos) || 0;
-  const daily = goodMonth ? goodMonth / 30 : 0;
-  const daysCover = daily ? Math.round((qty / daily) * 10) / 10 : 0;
-  const lostRevenue = daily && price && daysOut ? Math.round(daily * daysOut * price) : 0;
-
-  if (!goodMonth && !price && !daysOut && !qty) return null;
-
-  return (
-    <div className="mt-1 grid gap-3 rounded-2xl bg-slate-50 px-3 py-3 text-xs ring-1 ring-slate-200/70 dark:bg-slate-900/50 dark:ring-slate-700/80 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)]">
-      <div className="space-y-1.5">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          Campaign impact snapshot
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Days current stock can last
-            </p>
-            <p className="mt-0.5 text-base font-semibold text-slate-900 dark:text-slate-50">
-              {daysCover ? `${daysCover} days` : "—"}
-            </p>
-          </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40">
-            <p className="text-[11px] text-amber-900 dark:text-amber-200">
-              Estimated lost revenue (KES)
-            </p>
-            <p className="mt-0.5 text-base font-semibold text-amber-900 dark:text-amber-100">
-              {lostRevenue ? `~${lostRevenue.toLocaleString()}` : "add OOS days & price"}
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="space-y-1.5">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          Story to tell the outlet
-        </p>
-        <p className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-          {lostRevenue && daysOut
-            ? `I noticed ${productName} has been out of stock for about ${daysOut} day${
-                daysOut === 1 ? "" : "s"
-              }. Based on your average sales, that means you may have lost around KES ${lostRevenue.toLocaleString()} in revenue. Let’s increase your order slightly so you don’t lose that opportunity again.`
-            : "Once you fill in good month sales, days out of stock and price, we will generate a financial impact story you can use in your campaign discussion."}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function CampaignFinancialImpactStep({
   productName,
   qty,
   quantitySoldGoodMonth,
   pricePerPack,
   daysOos,
-  inputClass,
 }: {
   productName: string;
   qty: number;
   quantitySoldGoodMonth: string;
   pricePerPack: string;
   daysOos: string;
-  inputClass: string;
 }) {
   const goodMonth = Number(quantitySoldGoodMonth) || 0;
   const price = Number(pricePerPack) || 0;
@@ -1182,8 +1104,21 @@ function CampaignFinancialImpactStep({
     .filter(Boolean)
     .join("\n");
 
+  const shareViaWhatsApp = () => {
+    if (typeof window === "undefined" || !summaryText) return;
+    const url = `https://wa.me/?text=${encodeURIComponent(summaryText)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const shareViaEmail = () => {
+    if (typeof window === "undefined" || !summaryText) return;
+    const subject = encodeURIComponent(`Campaign — ${productName}`);
+    const body = encodeURIComponent(summaryText);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="mt-2 space-y-4 border-t border-slate-200 pt-4 dark:border-slate-700">
       <div className="flex items-center gap-2 rounded-2xl bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm text-blue-800 dark:text-blue-200">
         <FileText className="h-4 w-4 shrink-0" />
         Financial impact for <strong>{productName}</strong>
@@ -1232,7 +1167,7 @@ function CampaignFinancialImpactStep({
             {summaryText}
           </pre>
         </div>
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
           <Button
             type="button"
             size="sm"
@@ -1244,7 +1179,27 @@ function CampaignFinancialImpactStep({
               }
             }}
           >
-            Copy text for WhatsApp / email
+            Copy text
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 rounded-2xl border-green-600/40 px-3 text-[11px] font-semibold text-green-800 hover:bg-green-50 dark:border-green-700 dark:text-green-200 dark:hover:bg-green-950/40"
+            onClick={shareViaWhatsApp}
+          >
+            <Share2 className="mr-1 h-3.5 w-3.5" />
+            WhatsApp
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 rounded-2xl px-3 text-[11px] font-semibold"
+            onClick={shareViaEmail}
+          >
+            <Mail className="mr-1 h-3.5 w-3.5" />
+            Email
           </Button>
         </div>
       </div>
@@ -1338,12 +1293,12 @@ function CampaignStockForm({
         </div>
       </div>
 
-      <CampaignFinancialPanel
+      <CampaignFinancialImpactStep
+        productName={productName}
         qty={qty}
         quantitySoldGoodMonth={quantitySoldGoodMonth}
         pricePerPack={pricePerPack}
         daysOos={daysOos}
-        productName={productName}
       />
     </div>
   );

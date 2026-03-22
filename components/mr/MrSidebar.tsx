@@ -15,6 +15,7 @@ import {
   Package,
   LogOut,
   Megaphone,
+  ShoppingBag,
 } from "lucide-react";
 import {
   Sidebar,
@@ -49,6 +50,7 @@ const mainMenuItems: NavItem[] = [
   { title: "New visit", url: "/mr/visit/create", icon: PlusCircle, roles: ["MR"] },
   { title: "Campaign visit", url: "/mr/campaign-visit", icon: Megaphone, roles: ["MR"] },
   { title: "Visit history", url: "/mr/history", icon: History },
+  { title: "Sales & campaign history", url: "/mr/history/sales-campaign", icon: ShoppingBag },
 ];
 
 const managementItems: NavItem[] = [
@@ -73,6 +75,8 @@ export function MrSidebar({ user }: MrSidebarProps) {
   const isActive = (item: NavItem) => {
     if (item.url === pathname) return true;
     if (item.url === "/mr") return pathname === "/mr";
+    // Exact list route only — do not highlight "Visit history" on /mr/history/sales-campaign
+    if (item.url === "/mr/history") return pathname === "/mr/history";
     if (pathname.startsWith(item.url + "/")) return true;
     return false;
   };

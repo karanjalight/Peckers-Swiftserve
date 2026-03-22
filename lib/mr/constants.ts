@@ -57,8 +57,8 @@ export const REASON_WHY_STOCK_OPTIONS = [
 // Visit objectives (client labels)
 export const VISIT_OBJECTIVES = [
   { value: "AUDIT", label: "Prescription Audit" },
-  { value: "SALES", label: "Sales and campaigns" },
-  { value: "CAMPAIGN", label: "Sales and campaigns" },
+  { value: "SALES", label: "Sales" },
+  { value: "CAMPAIGN", label: "Campaign" },
 ] as const;
 
 // Distributors for order placement (Sales & Campaign)
