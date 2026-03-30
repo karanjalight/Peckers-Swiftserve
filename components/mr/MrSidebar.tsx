@@ -14,6 +14,8 @@ import {
   Users,
   Package,
   LogOut,
+  Megaphone,
+  ShoppingBag,
 } from "lucide-react";
 import {
   Sidebar,
@@ -46,13 +48,16 @@ const mainMenuItems: NavItem[] = [
   { title: "Dashboard", url: "/mr/dashboard", icon: LayoutDashboard },
   { title: "Pharmacies", url: "/mr/pharmacies", icon: MapPin },
   { title: "New visit", url: "/mr/visit/create", icon: PlusCircle, roles: ["MR"] },
+  // { title: "Campaign visit", url: "/mr/campaign-visit", icon: Megaphone, roles: ["MR"] },
   { title: "Visit history", url: "/mr/history", icon: History },
+  { title: "Sales & campaign history", url: "/mr/history/sales-campaign", icon: ShoppingBag },
 ];
 
 const managementItems: NavItem[] = [
   { title: "Maps", url: "/mr/maps", icon: Map, roles: ["MANAGER", "ADMIN"] },
   { title: "Products", url: "/mr/products", icon: Package, roles: ["MANAGER", "ADMIN"] },
   { title: "Reports", url: "/mr/reports", icon: FileBarChart },
+  { title: "Campaign reports", url: "/mr/reports/campaigns", icon: Megaphone, roles: ["MANAGER", "ADMIN"] },
   { title: "Lost Sales", url: "/mr/reports/lost-sales", icon: TrendingDown, roles: ["MANAGER", "ADMIN"] },
   { title: "Users", url: "/mr/users", icon: Users, roles: ["ADMIN"] },
 ];
@@ -70,6 +75,8 @@ export function MrSidebar({ user }: MrSidebarProps) {
   const isActive = (item: NavItem) => {
     if (item.url === pathname) return true;
     if (item.url === "/mr") return pathname === "/mr";
+    // Exact list route only — do not highlight "Visit history" on /mr/history/sales-campaign
+    if (item.url === "/mr/history") return pathname === "/mr/history";
     if (pathname.startsWith(item.url + "/")) return true;
     return false;
   };

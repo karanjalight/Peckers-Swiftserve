@@ -61,5 +61,13 @@ export const VISIT_OBJECTIVES = [
   { value: "CAMPAIGN", label: "Campaign" },
 ] as const;
 
+// Distributors for order placement (Sales & Campaign)
+export const MR_DISTRIBUTORS = [
+  "Surgipharm",
+  "MediLink",
+  "PharmaWorld",
+  "Other",
+] as const;
+
 export type MrRegion = (typeof MR_REGIONS)[number];
 export type NairobiSubRegion = (typeof NAIROBI_SUB_REGIONS)[number];

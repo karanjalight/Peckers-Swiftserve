@@ -9,17 +9,40 @@ import {
 import type { VisitObjective } from "@/lib/mr/types";
 
 // =============================================================================
-// MR: CREATE PHARMACY AND CHECK IN (new pharmacy on-the-fly)
+// CHECK FOR DUPLICATE PHARMACY (by name + region, optional location)
 // =============================================================================
-export async function mrCreatePharmacyAndCheckIn(input: {
+export async function checkPharmacyDuplicate(input: {
   name: string;
   region: string;
-  subRegion?: string | null;
   locationText?: string | null;
-  procurementName?: string | null;
-  procurementContact?: string | null;
-  avgAttendantsPerDay?: number | null;
-  avgOrderValue?: number | null;
+}) {
+  const auth = await getMrAuth();
+  if (auth.error) return { duplicate: false as const, existingPharmacyId: null };
+
+  const { supabase } = auth;
+  const nameNorm = input.name.trim().toLowerCase();
+  const regionTrim = input.region.trim();
+  if (!nameNorm || !regionTrim) return { duplicate: false as const, existingPharmacyId: null };
+
+  const { data: candidates } = await supabase
+    .from("mr_pharmacies")
+    .select("id, name, location_text")
+    .eq("region", regionTrim);
+
+  const match = (candidates ?? []).find(
+    (p: { name?: string }) => (p.name ?? "").trim().toLowerCase() === nameNorm
+  );
+  if (match) {
+    return { duplicate: true as const, existingPharmacyId: (match as { id: string }).id };
+  }
+  return { duplicate: false as const, existingPharmacyId: null };
+}
+
+// =============================================================================
+// MR: CHECK IN TO EXISTING PHARMACY (after duplicate check – assign if needed then check in)
+// =============================================================================
+export async function mrCheckInToExistingPharmacy(input: {
+  pharmacyId: string;
   objective: VisitObjective;
   gpsLat?: number;
   gpsLng?: number;
@@ -38,6 +61,78 @@ export async function mrCreatePharmacyAndCheckIn(input: {
 
   if (openVisit) {
     return { success: false, error: "You have an open visit. Check out first.", visitId: null };
+  }
+
+  const { data: assignment } = await supabase
+    .from("mr_pharmacy_assignments")
+    .select("id")
+    .eq("mr_id", auth.user.id)
+    .eq("pharmacy_id", input.pharmacyId)
+    .maybeSingle();
+
+  if (!assignment) {
+    const { error: assignErr } = await supabase.from("mr_pharmacy_assignments").insert({
+      pharmacy_id: input.pharmacyId,
+      mr_id: auth.user.id,
+    });
+    if (assignErr) {
+      return { success: false, error: assignErr.message, visitId: null };
+    }
+  }
+
+  return mrCheckIn({
+    pharmacyId: input.pharmacyId,
+    objective: input.objective,
+    gpsLat: input.gpsLat,
+    gpsLng: input.gpsLng,
+  });
+}
+
+// =============================================================================
+// MR: CREATE PHARMACY AND CHECK IN (new pharmacy on-the-fly)
+// =============================================================================
+export async function mrCreatePharmacyAndCheckIn(input: {
+  name: string;
+  region: string;
+  subRegion?: string | null;
+  locationText?: string | null;
+  procurementName?: string | null;
+  procurementContact?: string | null;
+  avgAttendantsPerDay?: number | null;
+  avgOrderValue?: number | null;
+  objective: VisitObjective;
+  gpsLat?: number;
+  gpsLng?: number;
+}) {
+  const auth = await requireMrRole();
+  if (auth.error) return { success: false, error: auth.error, visitId: null, duplicate: false };
+
+  const { supabase } = auth;
+
+  const { data: openVisit } = await supabase
+    .from("mr_visits")
+    .select("id")
+    .eq("mr_id", auth.user.id)
+    .eq("status", "OPEN")
+    .maybeSingle();
+
+  if (openVisit) {
+    return { success: false, error: "You have an open visit. Check out first.", visitId: null, duplicate: false };
+  }
+
+  const duplicateResult = await checkPharmacyDuplicate({
+    name: input.name,
+    region: input.region,
+    locationText: input.locationText,
+  });
+  if (duplicateResult.duplicate && duplicateResult.existingPharmacyId) {
+    return {
+      success: false,
+      error: "A pharmacy with this name and region already exists. Use 'Use existing pharmacy' to check in instead.",
+      visitId: null,
+      duplicate: true,
+      existingPharmacyId: duplicateResult.existingPharmacyId,
+    };
   }
 
   const { data: pharmacy, error: phError } = await supabase
@@ -295,6 +390,231 @@ export async function updateVisitAuditMetrics(
 }
 
 // =============================================================================
+// MR ORDER (Sales & Campaign visit)
+// =============================================================================
+export async function upsertMrOrder(input: {
+  visitId: string;
+  pharmacyId: string;
+  distributorName?: string | null;
+  distributorOther?: string | null;
+  telesalesName?: string | null;
+  specialInstructions?: string | null;
+  procurementName?: string | null;
+  procurementContact?: string | null;
+  items: Array<{ productId: string; quantityOrdered: number; bonusQuantity: number; unitPrice?: number | null }>;
+}) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error };
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
+
+  const { data: visit } = await supabase
+    .from("mr_visits")
+    .select("id, mr_id")
+    .eq("id", input.visitId)
+    .single();
+
+  if (!visit) return { success: false, error: "Visit not found" };
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
+    return { success: false, error: "Not your visit" };
+  }
+
+  const { data: existing } = await supabase
+    .from("mr_orders")
+    .select("id")
+    .eq("visit_id", input.visitId)
+    .maybeSingle();
+
+  if (existing) {
+    const { error: updErr } = await supabase
+      .from("mr_orders")
+      .update({
+        distributor_name: input.distributorName ?? null,
+        distributor_other: input.distributorOther ?? null,
+        telesales_name: input.telesalesName ?? null,
+        special_instructions: input.specialInstructions ?? null,
+        procurement_name: input.procurementName ?? null,
+        procurement_contact: input.procurementContact ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", (existing as { id: string }).id);
+
+    if (updErr) return { success: false, error: updErr.message };
+
+    const orderId = (existing as { id: string }).id;
+    await supabase.from("mr_order_items").delete().eq("order_id", orderId);
+
+    for (const item of input.items) {
+      if (item.quantityOrdered <= 0 && item.bonusQuantity <= 0) continue;
+      const { error: itemErr } = await supabase.from("mr_order_items").insert({
+        order_id: orderId,
+        product_id: item.productId,
+        quantity_ordered: item.quantityOrdered,
+        bonus_quantity: item.bonusQuantity,
+        unit_price: item.unitPrice ?? null,
+      });
+      if (itemErr) return { success: false, error: itemErr.message };
+    }
+  } else {
+    const { data: order, error: orderErr } = await supabase
+      .from("mr_orders")
+      .insert({
+        visit_id: input.visitId,
+        pharmacy_id: input.pharmacyId,
+        distributor_name: input.distributorName ?? null,
+        distributor_other: input.distributorOther ?? null,
+        telesales_name: input.telesalesName ?? null,
+        special_instructions: input.specialInstructions ?? null,
+        procurement_name: input.procurementName ?? null,
+        procurement_contact: input.procurementContact ?? null,
+      })
+      .select("id")
+      .single();
+
+    if (orderErr || !order) return { success: false, error: orderErr?.message ?? "Failed to create order" };
+
+    const orderId = (order as { id: string }).id;
+    for (const item of input.items) {
+      if (item.quantityOrdered <= 0 && item.bonusQuantity <= 0) continue;
+      const { error: itemErr } = await supabase.from("mr_order_items").insert({
+        order_id: orderId,
+        product_id: item.productId,
+        quantity_ordered: item.quantityOrdered,
+        bonus_quantity: item.bonusQuantity,
+        unit_price: item.unitPrice ?? null,
+      });
+      if (itemErr) return { success: false, error: itemErr.message };
+    }
+  }
+
+  revalidatePath(`/mr/visit/${input.visitId}`);
+  return { success: true };
+}
+
+export async function getMrOrderForVisit(visitId: string) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error, order: null, items: null };
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
+
+  const { data: visit } = await supabase
+    .from("mr_visits")
+    .select("id, mr_id")
+    .eq("id", visitId)
+    .single();
+
+  if (!visit) return { success: false, error: "Visit not found", order: null, items: null };
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
+    return { success: false, error: "Not your visit", order: null, items: null };
+  }
+
+  const { data: order } = await supabase
+    .from("mr_orders")
+    .select("*")
+    .eq("visit_id", visitId)
+    .maybeSingle();
+
+  if (!order) return { success: true, order: null, items: null };
+
+  const { data: items } = await supabase
+    .from("mr_order_items")
+    .select("*, mr_products(id, name, sku)")
+    .eq("order_id", (order as { id: string }).id);
+
+  return { success: true, order, items: items ?? [] };
+}
+
+// =============================================================================
+// MR VISIT MARKETING (merchandise, next visit, feedback)
+// =============================================================================
+export async function upsertMrVisitMarketing(input: {
+  visitId: string;
+  wobblers?: number;
+  posters?: number;
+  shelfTalkers?: number;
+  flyers?: number;
+  otherActivity?: string | null;
+  nextVisitDate?: string | null;
+  nextVisitNotes?: string | null;
+  feedbackNotes?: string | null;
+}) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error };
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
+
+  const { data: visit } = await supabase
+    .from("mr_visits")
+    .select("id, mr_id")
+    .eq("id", input.visitId)
+    .single();
+
+  if (!visit) return { success: false, error: "Visit not found" };
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
+    return { success: false, error: "Not your visit" };
+  }
+
+  const row = {
+    visit_id: input.visitId,
+    wobblers: input.wobblers ?? 0,
+    posters: input.posters ?? 0,
+    shelf_talkers: input.shelfTalkers ?? 0,
+    flyers: input.flyers ?? 0,
+    other_activity: input.otherActivity ?? null,
+    next_visit_date: input.nextVisitDate ?? null,
+    next_visit_notes: input.nextVisitNotes ?? null,
+    feedback_notes: input.feedbackNotes ?? null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data: existing } = await supabase
+    .from("mr_visit_marketing")
+    .select("id")
+    .eq("visit_id", input.visitId)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from("mr_visit_marketing")
+      .update(row)
+      .eq("id", (existing as { id: string }).id);
+    if (error) return { success: false, error: error.message };
+  } else {
+    const { error } = await supabase.from("mr_visit_marketing").insert(row);
+    if (error) return { success: false, error: error.message };
+  }
+
+  revalidatePath(`/mr/visit/${input.visitId}`);
+  return { success: true };
+}
+
+export async function getMrVisitMarketing(visitId: string) {
+  const auth = await getMrAuth();
+  if (auth.error) return { success: false, error: auth.error, data: null };
+  const { supabase, profile } = auth;
+  const isManagerOrAdmin = profile.role === "MANAGER" || profile.role === "ADMIN";
+
+  const { data: visit } = await supabase
+    .from("mr_visits")
+    .select("id, mr_id")
+    .eq("id", visitId)
+    .single();
+
+  if (!visit) return { success: false, error: "Visit not found", data: null };
+  if (!isManagerOrAdmin && visit.mr_id !== auth.user.id) {
+    return { success: false, error: "Not your visit", data: null };
+  }
+
+  const { data } = await supabase
+    .from("mr_visit_marketing")
+    .select("*")
+    .eq("visit_id", visitId)
+    .maybeSingle();
+
+  return { success: true, data };
+}
+
+// =============================================================================
 // PRODUCT AUDIT
 // =============================================================================
 export async function createProductAudit(input: {
@@ -425,7 +745,7 @@ export async function getVisitAudits(visitId: string) {
         id, visit_id, product_id, quantity_in_stock, usp_understood,
         reason_why_stock, supplier, quantity_sold_good_month, price_per_pack, days_oos, reason_for_oos,
         do_substitute, substitute_with_and_why,
-        mr_products (id, name),
+        mr_products (id, name, price),
         mr_competitor_audits (id, competitor_name, supplier, competitor_stock, stock_sold_per_month, substitution_reason, price_per_pack, days_out, reason_out_of_stock, doctor_prescribing, doctor_location, rx_per_month)
       `)
       .eq("visit_id", visitId),

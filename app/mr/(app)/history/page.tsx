@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { fetchAllByRange } from "@/lib/mr/fetch-all-paginated";
 import { getMrAuth } from "@/lib/mr/supabase-server";
+import { MR_SUPABASE_MAX_ROWS } from "@/lib/mr/supabase-limits";
 import Link from "next/link";
 import {
   Card,
@@ -92,7 +93,9 @@ export default async function MrHistoryPage({
         <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
           <CardHeader>
             <CardTitle className="text-base text-slate-900 dark:text-white">Recent Visits</CardTitle>
-            <CardDescription className="text-slate-600 dark:text-slate-400">Last 50 visits</CardDescription>
+            <CardDescription className="text-slate-600 dark:text-slate-400">
+              Your visits (up to {MR_SUPABASE_MAX_ROWS} most recent)
+            </CardDescription>
           </CardHeader>
         <CardContent>
           {!visits || visits.length === 0 ? (
