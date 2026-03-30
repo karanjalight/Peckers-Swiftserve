@@ -48,7 +48,7 @@ const mainMenuItems: NavItem[] = [
   { title: "Dashboard", url: "/mr/dashboard", icon: LayoutDashboard },
   { title: "Pharmacies", url: "/mr/pharmacies", icon: MapPin },
   { title: "New visit", url: "/mr/visit/create", icon: PlusCircle, roles: ["MR"] },
-  { title: "Campaign visit", url: "/mr/campaign-visit", icon: Megaphone, roles: ["MR"] },
+  // { title: "Campaign visit", url: "/mr/campaign-visit", icon: Megaphone, roles: ["MR"] },
   { title: "Visit history", url: "/mr/history", icon: History },
   { title: "Sales & campaign history", url: "/mr/history/sales-campaign", icon: ShoppingBag },
 ];
